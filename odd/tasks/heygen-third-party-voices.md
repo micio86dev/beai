@@ -38,7 +38,7 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
 - [x] H1 Live verification against LiveAvatar (bind, list, language, duplicates, delete) with the local key; report facts
 - [x] H2 API: field specs, validator, payload, `HeygenVoiceRegistrar` + ledger migration, platform-template save hook, tests
 - [x] H3 Backoffice: platform HeyGen form shows the engine + voice picker (and previews), i18n it/en, unit + Playwright
-- [x] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector: PENDING (owner)
+- [ ] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector: PENDING (owner)
 
 ## Acceptance
 On `/platform-templates` a HeyGen template shows an engine selector and a Cartesia/ElevenLabs voice picker; saving binds the
