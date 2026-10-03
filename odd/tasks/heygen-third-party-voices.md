@@ -37,8 +37,8 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
 ## Tasks
 - [x] H1 Live verification against LiveAvatar (bind, list, language, duplicates, delete) with the local key; report facts
 - [x] H2 API: field specs, validator, payload, `HeygenVoiceRegistrar` + ledger migration, platform-template save hook, tests
-- [ ] H3 Backoffice: platform HeyGen form shows the engine + voice picker (and previews), i18n it/en, unit + Playwright
-- [ ] H4 OpenAPI sync (frontend/backoffice), full suites, rebuild local images, owner checks the selector
+- [x] H3 Backoffice: platform HeyGen form shows the engine + voice picker (and previews), i18n it/en, unit + Playwright
+- [x] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector: PENDING (owner)
 
 ## Acceptance
 On `/platform-templates` a HeyGen template shows an engine selector and a Cartesia/ElevenLabs voice picker; saving binds the
@@ -58,7 +58,12 @@ voice on LiveAvatar and sends the bound voice id; saving twice does not duplicat
   `ttsExternalVoiceId` (platform-only), strict catalogue check before bind, bound id derived from the ledger at session start
   (config stores only the vendor voice id: one source of truth, no drift, no dead `voiceId`), discriminated `voice_settings`
   (UNVERIFIED on a live session), native-voice payloads byte-identical. Mutation checks: ledger short-circuit (4 red), superadmin
-  gate (6 red), platform_only refusal (3 red), strict catalogue check (2 red). Serial CI-equivalent run: pending (H4).
+  gate (6 red), platform_only refusal (3 red), strict catalogue check (2 red). Serial CI-equivalent run (pest --coverage --min=85): 7982 tests, 7964 passed, 18 skipped, 0 failed, exit 0; pint and phpstan clean.
+
+- H3 (backoffice): 563ce4c form + platform page on the platform field-specs route, 38c796d spec sync. Vitest 3518 passed; Playwright
+  `Platform templates` 28 passed (chromium + webkit); typecheck clean. frontend 4d89692 spec sync: typecheck ok, Vitest 2081 passed.
+  `verify-openapi-parity.sh`: identical across the 3 repos.
+- UNVERIFIED (no live calls allowed): the discriminated `voice_settings` and a bound `voice_id` in a real LiveAvatar session.
 
 ## Next step
-H3 backoffice picker, then H4.
+Owner: rebuild api + backoffice images, bind a voice from the UI, run one interview and listen.
