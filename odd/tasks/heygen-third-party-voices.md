@@ -40,6 +40,8 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
 - [x] H3 Backoffice: platform HeyGen form shows the engine + voice picker (and previews), i18n it/en, unit + Playwright
 - [ ] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector: PENDING (owner)
 
+- [x] H5 Scope change (owner, 2026-10-04): SUPERADMIN only on BOTH pages (`/avatar-templates` and `/platform-templates`), plus the `ttsModelName` ("Modello vocale") selector
+
 ## Acceptance
 On `/platform-templates` a HeyGen template shows an engine selector and a Cartesia/ElevenLabs voice picker; saving binds the
 voice on LiveAvatar and sends the bound voice id; saving twice does not duplicate; no key reaches the browser.
@@ -64,6 +66,12 @@ voice on LiveAvatar and sends the bound voice id; saving twice does not duplicat
   `Platform templates` 28 passed (chromium + webkit); typecheck clean. frontend 4d89692 spec sync: typecheck ok, Vitest 2081 passed.
   `verify-openapi-parity.sh`: identical across the 3 repos.
 - UNVERIFIED (no live calls allowed): the discriminated `voice_settings` and a bound `voice_id` in a real LiveAvatar session.
+
+- H5: api 4db3078 (org routes accept/bind for a superadmin, refuse others with `superadmin_only`, org field-specs list the fields for a superadmin
+  only, `ttsModelName` added), spec sync frontend 6c681e7 / backoffice a8e903b, backoffice 1e5420c (always-visible engine/model/voice fields like Tavus,
+  Playwright on /avatar-templates as superadmin and org admin, create + provider switch on /platform-templates). Mutations: gate open to all (1 red),
+  specs leaked to org admin (1 red), gate closed to superadmin (15 red). api parallel 7986 tests 0 failed; serial `--coverage --min=85` exit 0, 95.7%;
+  backoffice Vitest 3525, typecheck, Playwright 32+4 passed; frontend Vitest 2081.
 
 ## Next step
 Owner: rebuild api + backoffice images, bind a voice from the UI, run one interview and listen.
