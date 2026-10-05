@@ -73,6 +73,7 @@ voice on LiveAvatar and sends the bound voice id; saving twice does not duplicat
   Playwright on /avatar-templates as superadmin and org admin, create + provider switch on /platform-templates). Mutations: gate open to all (1 red),
   specs leaked to org admin (1 red), gate closed to superadmin (15 red). api parallel 7986 tests 0 failed; serial `--coverage --min=85` exit 0, 95.7%;
   backoffice Vitest 3525, typecheck, Playwright 32+4 passed; frontend Vitest 2081.
+- R3-SUPERADMIN-FIELD-LOCKOUT (native review warning) is not reachable today: an organization admin cannot create or edit templates at all (policy 403), so a non-superadmin never resubmits these fields; revisit if org-admin editing is ever opened.
 
 ## Next step
 Owner: rebuild api + backoffice images, bind a voice from the UI, run one interview and listen.
