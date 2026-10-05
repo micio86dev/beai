@@ -39,6 +39,7 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
 - [x] H2 API: field specs, validator, payload, `HeygenVoiceRegistrar` + ledger migration, platform-template save hook, tests
 - [x] H3 Backoffice: platform HeyGen form shows the engine + voice picker (and previews), i18n it/en, unit + Playwright
 - [ ] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector: PENDING (owner)
+      2026-10-05 owner: the HeyGen engine/model/voice fields are now visible on create/edit (Template avatar and Template piattaforma). Still unverified: a real bind on save, a real interview with the bound voice, ElevenLabs.
 
 - [x] H5 Scope change (owner, 2026-10-04): SUPERADMIN only on BOTH pages (`/avatar-templates` and `/platform-templates`), plus the `ttsModelName` ("Modello vocale") selector
 
