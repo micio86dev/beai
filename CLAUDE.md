@@ -77,7 +77,8 @@ sync by design — never hand-maintain request/response types across repos.
 the backoffice SPA and the API can live on **different origins with no shared-cookie
 constraint**. Because JWT is stateless, handle logout/revocation with **short access-token
 expiry + refresh tokens + a denylist** (Redis). The **candidate magic-link is a short-lived
-JWT** (carries candidateRef/project/role/lang/exp). External M2M: JWT client token or API-key.
+single-use JWT** (carries candidateRef/project/role/lang/exp; 30 min when returned to a caller,
+24 h when BEAI emails it). External M2M: JWT client token or API-key.
 RBAC via **`spatie/laravel-permission`** in **teams mode**, scoped per organization
 (`team_id = organization_id`). ⚠️ **Do not confuse** Spatie *authorization* roles
 (admin/operator/viewer) with BEAI *organizational* roles (ICO/FLL/MLL/BUL/SRX), which are a
@@ -193,8 +194,10 @@ owning slices (C2+), **not C1**. Do not install or wire any of them during C1.
   Read gates: transcript ≥ `in_valutazione`; structured evaluation only `completato`.
 - **Scoring is asynchronous** (queue; p95 < 10 min). Each Evaluation records
   `framework_version`, `model_version`, `prompt_version`, timestamp.
-- **SSO ingress:** non-forgeable signed token, short expiry (15–60 min); the
-  **opaque candidate identifier** is echoed unchanged in every webhook.
+- **SSO ingress:** non-forgeable signed single-use token. Links returned to a caller
+  (M2M, operator mint with no mail queued, placeholder or visitor targets) expire in
+  30 min; links BEAI emails (initial invitation, scheduled sweep, retry) are
+  config-driven, default 24 h. The **opaque candidate identifier** is echoed unchanged in every webhook.
 - **Public API exposure (permanent rule):** no new public or export field without a `T-EXPOSE-001` entry (`api/tests/Helpers/PublicApi/ExposureCatalogue.php`), classified in the same change; never silence the test by editing the catalogue without a reviewed decision.
 - **Integration surface:** org-scoped M2M API; `progress` + `evaluation` webhooks
   (HMAC-signed, idempotent, retry/backoff); per-project exit redirect URL.
