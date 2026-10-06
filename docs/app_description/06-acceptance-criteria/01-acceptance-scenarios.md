@@ -77,7 +77,7 @@ Narrative scenarios for validating the rebuild. They do not assume compatibility
 
 **Given** a Potential-type project with the MTG and LAT competencies  
 **When** a candidate starts the interview  
-**Then** for every competency 4 predefined questions are asked, followed by AI follow-ups  
+**Then** for every competency up to N predefined questions are asked (N is a platform-configured maximum, default 4), followed by AI follow-ups, in the same adaptive flow as a standard interview  
 **And** no standard competencies (PRS, STG, …) appear  
 
 ---
