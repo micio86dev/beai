@@ -124,6 +124,7 @@ contrast calculation, never by eye.
 | `--color-warning-dark` | `#92400e` | Text/icon-safe warning (7.1:1 on white, §9.1) — use for BARS warning chips |
 | `--color-error` | `#ef4444` | Error states, validation failures |
 | `--color-error-light` | `#fee2e2` | Error backgrounds |
+| `--color-error-dark` | `#b91c1c` | Text/icon-safe error (5.30:1 on `--color-error-light`, 6.5:1 on white, §9.1) — the `destructive` Alert's title, description and icon in light mode |
 | `--color-info` | `#3b82f6` | Informational states (non-text: icons/fills only, see §9.1) |
 | `--color-info-light` | `#dbeafe` | Info backgrounds |
 | `--color-info-dark` | `#1e40af` | Text/icon-safe info (7.15:1 on `--color-info-light`, §9.1) — status badges |
@@ -138,7 +139,7 @@ in. Each outcome now tints its whole surface and border:
 |---------|-----------|-----------|-----------|-----------|
 | `success` | `--color-success-light` | `--color-success-dark` | `--color-success / 15%` | `--color-success` |
 | `warning` | `--color-warning-light` | `--color-warning-dark` | `--color-warning / 15%` | `--color-warning` |
-| `destructive` | `--color-error-light` | `--destructive` (`#b91c1c`) | `--destructive / 15%` | `--destructive` |
+| `destructive` | `--color-error-light` | `--color-error-dark` (`#b91c1c`), title and description at full strength | `--destructive / 15%` | `--destructive` |
 
 Light mode uses the text-safe `-dark` tokens, never `--color-success` / `--color-warning`,
 which §3.1 marks *non-text: icons/fills only* and which measure **below AA** on their own
@@ -330,6 +331,7 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
   --color-warning-light: #fef3c7;
   --color-error: #ef4444;
   --color-error-light: #fee2e2;
+  --color-error-dark: #b91c1c;
   --color-info: #3b82f6;
   --color-info-light: #dbeafe;
   --color-info-dark: #1e40af;
@@ -1274,7 +1276,7 @@ All text against its background MUST achieve:
 | white | `--color-error` (`#ef4444`) | 3.8:1 | ✗ (use `#b91c1c` for text on white) |
 | `--color-success-dark` (`#166534`) | white | 7.1:1 | ✓ AA (verified for BARS `ScoreChip`/`CompetencyMean` text+icon, C11 PR B3) |
 | `--color-warning-dark` (`#92400e`) | white | 7.1:1 | ✓ AA (verified for BARS `ScoreChip`/`CompetencyMean` text+icon, C11 PR B3) |
-| `--destructive` (`#b91c1c`) | `--color-error-light` (`#fee2e2`) | ≈5.30:1 | ✓ AA (invalid `ScoreChip`, C11-follow BARS 1–5 widening) |
+| `--color-error-dark` (`#b91c1c`) | `--color-error-light` (`#fee2e2`) | ≈5.30:1 | ✓ AA (invalid `ScoreChip`, C11-follow BARS 1–5 widening; the `destructive` Alert title and description in `frontend`, asserted by `alert-destructive-contrast.spec.ts`). The `--destructive` oklch value (`#e7000b`) measures 3.90:1 here and must not colour text on this fill |
 
 > ⚠️ Do NOT use `--color-accent` (`#e45526`) for small text on white — it fails the 4.5:1 AA threshold for normal text (3.7:1). Use `--color-accent-dark` (`#431695`, 11.75:1) for text-sized accent elements.
 
