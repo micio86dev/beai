@@ -503,7 +503,8 @@ header.
 - `tone` (`info` / `success` / `warning` / `danger`) may change the **icon chip
   and nothing else**. The moment a tone starts altering copy or structure the
   pages stop being one system. `info` is a solid `bg-primary` chip with a
-  `text-on-primary` glyph (§3.1 rule 3); the other three keep their text-safe
+  `text-on-primary` glyph and a `--color-primary-ink` edge (§3.1 rule 3, §7.0.1 "Primary
+  action"); the other three keep their text-safe
   `-light` / `-dark` pairs.
 - The SA-11 gate is `warning`, not `danger`: nothing failed and the candidate
   did nothing wrong. An error tone there reads as "your assessment broke".
@@ -541,18 +542,27 @@ header.
   on-primary (§3.1), the layer can deepen or lift the canvas without lowering any text contrast.
   No noise texture, no blur filter, no glass.
 - **Header.** On the canvas, left aligned to the same column as the footer: the client logo on a
-  white logo plate (`max-h-8` image, `px-4 py-2.5`, `--radius-lg`, `--shadow-sm`) or, with no
-  logo, the `BEAI` wordmark in `text-on-primary`; then, when known, the organization name in
-  `text-on-primary` at `--text-sm`/semibold, separated by a short vertical hairline. Never
-  nothing (CLAUDE.md ruling 9). The logo is `alt=""`: the name beside it is the accessible text.
+  white logo plate (`max-h-8` image, `px-4 py-2.5`, `--radius-lg`, `--shadow-sm`, a 1px
+  `--color-border` hairline so a light logo on a light canvas still has an edge to sit on) or,
+  with no logo, the `BEAI` wordmark in `text-on-primary`; then, when known, the organization
+  name in `text-on-primary` at `--text-sm`/semibold, separated by a short vertical hairline.
+  Never nothing (CLAUDE.md ruling 9). The logo is `alt=""`: the name beside it is the
+  accessible text. The header's trailing end (`header-end` slot) holds the where-am-I chrome of
+  the interview (§7.3), right aligned.
 - **Surface.** One centred `bg-card` surface, `--radius-surface`, `--shadow-surface`,
   `max-w-[34rem]`. Padding `2.25rem` (`p-9`) on desktop, `1.5rem` below `lg`.
-- **Pre-interview screens.** The consent and device-check screens are states of
-  `InterviewSession`, not routes, and keep their own `bg-card` cards (§7.2); in those two states
-  the session's `<main>` paints the canvas (`bg-primary`) behind the card. The live interview
-  and the screens after it keep their current chrome until the interview-chrome task restyles
-  them; this section does not cover them.
-- **Footer.** On the canvas: the product tagline in `text-on-primary-muted`, `--text-sm`.
+- **Interview screens.** REVISED 2026-10-06: every state of `InterviewSession` (consent, device
+  check, connecting, live, pause, scheduled pause, done, error, terminal) renders on
+  `BrandCanvas` in **bare mode** (`surface=false`): the slot is stacked straight in the
+  landmark and each state brings its own surface, styled exactly as the canvas surface
+  (`bg-card`, `--radius-surface`, `--shadow-surface`, the `brand-canvas__surface` class for the
+  ink focus outline and the entrance). The avatar panel keeps its dark `--color-avatar-bg`
+  surface. The session renders no tagline footer: the device check and the avatar already fill
+  a 1440×900 viewport. Details in §7.3.
+- **Footer.** On the canvas: the product tagline in `text-on-primary-muted`, `--text-sm`. While
+  the analytics consent banner is open it publishes its height as
+  `--consent-banner-clearance`, which the canvas reserves as bottom padding, so the banner never
+  covers the tagline.
 
 **Spacing rhythm** (vertical, on a 4px grid; deliberately not uniform): header `pt-6`;
 canvas to surface `2.5rem` on desktop; inside the surface chip → heading `1.5rem`, heading →
@@ -568,29 +578,40 @@ organization name `--text-sm` semibold; footer `--text-sm`. The canvas never car
 of its own: the `<h1>` lives on the surface, where its contrast is constant.
 
 **Primary action.** One `Button` per screen, `bg-primary text-on-primary` (via
-`--primary-foreground`), height `--spacing-control` (44px), `px-6`. A secondary action, when a
-screen needs one, is `variant="outline"` at the same height.
+`--primary-foreground`) with a 1px `--color-primary-ink` border, height `--spacing-control`
+(44px), `px-6`. The ink edge is what keeps a light client colour a button on the white surface
+(`#ffd400` on white is 1.07:1; the ink is ≥ 4.5:1 for any brand) and disappears into the fill
+when the ink equals the primary. The same edge rule applies to every other solid brand fill on
+a surface: the NoticeShell info chip and the guide's step numerals. A secondary action, when a
+screen needs one, is `variant="outline"` at the same height. The `link` variant is
+`text-primary-ink`.
 
 **Focus.** Every focusable element shows a 2px outline with a 2px offset. Inside a surface the
 outline is `--color-primary-ink` (≥ 4.5:1 on white for any brand). On the canvas itself it is
 `--color-on-primary`. Neither is ever the bare primary.
 
-**Motion** (§10). The surface enters with a fade plus an 8px upward translate, `280ms`,
-`cubic-bezier(0.22, 1, 0.36, 1)`, only under `prefers-reduced-motion: no-preference`. Nothing
-else on the canvas moves, and nothing loops.
+**Motion** (§10). Every canvas surface (`.brand-canvas__surface`, declared globally in
+`main.css`) enters with a fade plus an 8px upward translate, `280ms`,
+`cubic-bezier(0.22, 1, 0.36, 1)`, once per mount, only under
+`prefers-reduced-motion: no-preference`; an interview state change mounts a new surface, so each
+state enters the same way. Nothing else on the canvas moves, and nothing loops (the first-connect
+placeholder is a still dark panel, not a pulsing skeleton).
 
 **Contrast guarantees** (asserted by a unit test over the screenshot matrix colours, never by
 eye): on-primary and on-primary-muted on the primary ≥ 4.5:1; on-primary on the primary blended
 with the canvas tone at any opacity ≥ the unblended ratio; primary-ink on white ≥ 4.5:1;
 on-primary-surface on primary-surface ≥ 4.5:1; card text tokens on `bg-card` unchanged from
-§9.1.
+§9.1; the primary-ink edge on white ≥ 3:1; the progress fill (primary-ink) on its
+`--secondary` track ≥ 3:1; the current-step numeral (primary on an on-primary disc) ≥ 4.5:1;
+the urgent timer (`--color-recording`) on the white status pill ≥ 4.5:1.
 
 **Screenshot matrix.** Any change to the canvas, the shell or a candidate page is reviewed in
 screenshots at 1440×900 for four brands: light `#ffd400` (black on-primary), dark `#771aaf`
 (the Quint default, white on-primary), mid-tone `#2f6fed` (the closest call: black wins at about
 4.8:1 against 4.4:1 for white), and no colour configured (the Quint fallback). The routes covered
-are the landing, the entry loading state, the reusable identity form, the device check, done,
-error, a terminal reason and the SA-11 gate.
+are the landing, the entry loading state, the reusable identity form, the consent screen, the
+device check, the live interview, the scheduled pause, done, error, a terminal reason and the
+SA-11 gate.
 
 ### 7.1 Entry (SSO / Magic-Link)
 
@@ -640,36 +661,45 @@ Device preference persistence: see the change design D4.
 
 ### 7.3 Interview View
 
-The interview view is immersive and minimal:
+REVISED 2026-10-06: the interview sits on the brand canvas (§7.0.1 "Interview screens"); the
+page background is the client colour, no longer `--color-avatar-bg`. There is no Skip and no
+Submit control: the timer is the only client-side early end, and a competency cannot be
+skipped.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ [Brand logo]                        [Timer: 2:45]  [🔴] │  ← Navigation (--spacing-nav)
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│        ┌─────────────────────────────────┐             │
-│        │                                 │             │
-│        │         AVATAR VIDEO            │             │
-│        │         (HeyGen/Tavus)          │             │
-│        │                                 │             │
-│        └─────────────────────────────────┘             │
-│                                                         │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  Question:                                        │  │
-│  │  "Tell me about a time you led a cross-          │  │
-│  │   functional team through ambiguity..."           │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                         │
-│  [● Recording...  Your answer is being captured]        │
-│                                                         │
-│  [  Submit answer  ]    [Skip (1 remaining)]            │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ [logo plate] │ Organization           ( Q1.2 │ ▬▬▬▭ 2 / 5 │ 04:12 )   │  header, on canvas
+│                                                                      │  status pill = bg-card
+│            ┌────────────────────────────────────────────┐            │
+│            │                                            │            │
+│            │        AVATAR (HeyGen/Tavus), dark panel   │            │  --color-avatar-bg,
+│            │                                            │            │  --radius-surface,
+│            └────────────────────────────────────────────┘            │  --shadow-avatar
+│            ┌────────────────────────────────────────────┐            │
+│            │ Caption (or the listen hint)     [ Pause ] │            │  live dock = bg-card
+│            └────────────────────────────────────────────┘            │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-- Background: `--color-avatar-bg` (dark, immersive).
-- Avatar panel: centered, `--shadow-avatar`.
-- Question card: `--color-neutral-100` background, `--radius-lg`.
+- **Header chrome.** On consent and the device check the header's trailing end shows the
+  three-step indicator (`InterviewSteps`: Consent, Devices, Interview), an `<ol>` with
+  `aria-current="step"`, drawn with on-primary tokens only: the current step is an on-primary
+  disc with the numeral in the primary, steps ahead `text-on-primary-muted`, steps behind a
+  check plus a screen-reader "completed". While live it shows a white **status pill**
+  (`bg-card`, `rounded-full`, `h-11`): the question label, the server's progress
+  (`ProgressBar compact`, only once the server has stated a total) and the timer. The pill is
+  white so the timer's last-ten-seconds red (`--color-recording`) has a measured contrast.
+- **Avatar panel.** Centred, `max-w-3xl`, `--radius-surface`, `--shadow-avatar`, its dark
+  surface and internals unchanged. The first connect shows a still dark panel of the same
+  aspect ratio with the loading line under it, so the page does not jump when the avatar paints.
+- **Live dock.** One white surface under the avatar: the caption (`text-card-foreground`, an
+  `aria-live` region that stays mounted) and the single Pause control (outline, 44px). Until the
+  first question arrives a muted hint ("Listen to the question, then answer out loud.") sits in
+  the caption's place.
+- **Other states** (pause, scheduled pause, done, error, terminal, session expired, the
+  between-competencies transition) are one canvas surface each, `max-w-[34rem]`, primary action
+  44px. The scheduled pause shows the server progress bar (primary-ink fill) once; support links
+  are `text-primary-ink`.
 
 #### 7.3.1 Voice-only variant
 
