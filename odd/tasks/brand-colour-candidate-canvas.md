@@ -33,7 +33,7 @@ Out: backoffice, api, the interview avatar/video panel internals, per-tenant cop
 
 ## Tasks
 - [ ] F1 Amend `DESIGN.md`: brand canvas as the candidate-flow background, on-primary foreground token, elevated surface rules, motion and contrast rules. Route: delegated writer (wrapper).
-- [ ] F2 Port `readableForeground` to `frontend/app/utils/brand-color.ts`; make `applyBrandColor` also set the on-primary foreground tokens, with parity tests against the backoffice fixtures. Route: delegated writer (frontend).
+- [x] F2 Port `readableForeground` to `frontend/app/utils/brand-color.ts`; make `applyBrandColor` also set the on-primary foreground tokens, with parity tests against the backoffice fixtures. Route: delegated writer (frontend).
 - [ ] F3 Shared canvas shell (full-bleed primary, logo, elevated content surface, typography scale, subtle motion) used by every candidate page. Route: delegated writer.
 - [ ] F4 Restyle the candidate pages and components on the canvas; fix every `text-primary` or white-assumption that becomes invisible. Route: delegated writer.
 - [ ] F5 Interview screen chrome coherent with the canvas (header, progress, controls, captions) without touching the avatar panel internals. Route: delegated writer.
@@ -46,13 +46,14 @@ Out: backoffice, api, the interview avatar/video panel internals, per-tenant cop
 - Existing unit and e2e suites pass; screenshots are refreshed and reviewed.
 
 ## Progress
-Created 2026-10-06. Nothing implemented yet.
+Created 2026-10-06.
+- F2 done (frontend 2f8b192): `readableForeground` ported; `applyBrandColor` sets `--color-on-primary`, `--color-on-primary-muted`, `--color-primary-surface`, `--color-on-primary-surface` (concrete hex, 4.5:1 guaranteed, removed on the no-colour path); Quint defaults in `main.css` pinned to the runtime derivation by `token-parity.spec.ts`. Values for `#771aaf`: `#ffffff`, `#e1cded`, `#f4edf9`, `#0f172a`; for `#ffd400`: `#000000`, `#382f00`, `#fffceb`, `#0f172a`.
 
 ## Verification evidence
-(none yet)
+- F2: RED 38 failed then GREEN; parent spot check `bun run test:unit brand-color brand-theme token-parity`: 60 passed. Full unit suite after `bun run proctor:assets` (the 8 `proctor-assets` failures were only the gitignored MediaPipe binaries missing in the fresh worktree): 82 files, 2105 tests passed. Lint 0 errors, typecheck clean. Playwright not run yet (F6).
 
 ## Route declaration
 Mapping delegated (2 read-only explorers, findings recorded above). Implementation delegated per task; one writer at a time per repository.
 
 ## Next step
-F1 and F2, then F3.
+F1 (DESIGN.md), then F3 and F4 (one writer, in progress).
