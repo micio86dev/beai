@@ -124,7 +124,7 @@ contrast calculation, never by eye.
 | `--color-warning-dark` | `#92400e` | Text/icon-safe warning (7.1:1 on white, §9.1) — use for BARS warning chips |
 | `--color-error` | `#ef4444` | Error states, validation failures |
 | `--color-error-light` | `#fee2e2` | Error backgrounds |
-| `--color-error-dark` | `#b91c1c` | Text/icon-safe error (5.30:1 on `--color-error-light`, 6.5:1 on white, §9.1) — the `destructive` Alert's title, description and icon in light mode |
+| `--color-error-dark` | `#b91c1c` | Text/icon-safe error (5.30:1 on `--color-error-light`, 6.5:1 on white, §9.1) — the `destructive` Alert's title, description and icon in light mode. The `backoffice` reaches the same value through its `--destructive` token (`#b91c1c`), so it defines no separate `--color-error-dark`; §17 is satisfied by the value, not by the name |
 | `--color-info` | `#3b82f6` | Informational states (non-text: icons/fills only, see §9.1) |
 | `--color-info-light` | `#dbeafe` | Info backgrounds |
 | `--color-info-dark` | `#1e40af` | Text/icon-safe info (7.15:1 on `--color-info-light`, §9.1) — status badges |
