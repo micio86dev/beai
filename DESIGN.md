@@ -70,11 +70,21 @@ apps (`assets/css/main.css`). They MUST be kept in sync.
 | `--color-accent-dark` | `var(--color-primary-dark)` (`#431695`) | Active / pressed state of accent — aliased to `--color-primary-dark`, not a separate orange literal (reversed: it used to be `#B8431E`) |
 | `--color-lavender` | `#8373D2` | Supporting secondary (lavender) — subtle highlights, badges |
 
-**Background** — pages use a very light brand gradient, not a flat fill:
-`--color-bg-gradient: linear-gradient(135deg, #FAF7FD 0%, #F6F1FC 45%, #FDF4EF 100%)`
-(near-white lavender→peach; supersedes flat `--color-neutral-50` for page backgrounds.
-Strong purple/orange stay for accents only — per WCAG AA, orange `#E45526` is not used for
-small body text.)
+**Background** — two rules, one per app, REVISED 2026-10-06 (`odd/brand-colour-candidate-canvas`):
+
+- **`frontend` candidate flow: the brand canvas.** Every candidate page outside the live
+  interview renders on a full-bleed canvas painted in the client organization's primary
+  colour (`--color-primary`, Quint `#771AAF` when the organization configured none). Content
+  sits on elevated surfaces on top of it, and everything drawn directly on the canvas uses the
+  on-primary token family. Rules, tokens and guarantees: "Candidate brand canvas" below and
+  §7.0. The live interview screen keeps `--color-avatar-bg` (§7.3).
+- **`backoffice`: the light gradient.**
+  `--color-bg-gradient: linear-gradient(135deg, #FAF7FD 0%, #F6F1FC 45%, #FDF4EF 100%)`
+  (near-white lavender→peach; supersedes flat `--color-neutral-50` for page backgrounds).
+
+This supersedes the earlier statement that strong purple/orange stay "for accents only" on
+every page: in the backoffice that still holds, on the candidate canvas the primary IS the
+page. Orange `#E45526` is still never used for small body text (WCAG AA, §9.1).
 
 #### Neutrals
 
@@ -149,6 +159,47 @@ surface carries the same signal. Enforced by a test, not by convention.
 | `--color-recording` | `#dc2626` | Recording indicator (live red dot) |
 | `--color-avatar-bg` | `#0f172a` | Avatar panel background (dark, immersive) |
 
+#### Candidate brand canvas (`frontend` only)
+
+The candidate flow paints the client's primary colour as the page background (see
+"Background" above). The colour is arbitrary, chosen by an operator, so nothing drawn on it
+may be a constant: white text on a saturated yellow is unreadable. Every token below is
+**derived in JavaScript** by `applyBrandColor()` (`app/composables/useBrandTheme.ts`) from the
+validated `#rrggbb`, written to `document.documentElement` as a **concrete hex** (never
+`color-mix()`, §7.3.2 rule 1), and removed on the no-colour path so the Quint defaults declared
+in `main.css` come back. Contrast is guaranteed by that code, never delegated to the operator.
+
+| Token | Quint default | Derivation | Usage |
+|-------|---------------|------------|-------|
+| `--color-on-primary` | `#ffffff` | `readableForeground(primary)`: black or white, whichever has the higher WCAG contrast; a tie and an invalid value go to white. Same function and fixtures as the backoffice. | Every text, icon and hairline drawn DIRECTLY on the canvas: wordmark, organization name, footer. Also `--primary-foreground`, so a primary `Button` is legible on any brand. |
+| `--color-on-primary-muted` | `#e1cded` | on-primary mixed toward the primary (weights 0.78 → 0.95, softest first) as far as it stays **≥ 4.5:1** on the primary | Secondary text on the canvas (tagline, footer). |
+| `--color-primary-surface` | `#f4edf9` | 8% primary, 92% white | Tinted insets INSIDE an elevated surface (chips, step numerals backgrounds, callouts). Never the page. |
+| `--color-on-primary-surface` | `#0f172a` | `#0f172a` if it clears 4.5:1 on the surface, otherwise black | Text and icons on `--color-primary-surface`. |
+| `--color-primary-ink` | `#771aaf` | the primary darkened toward black in fixed steps until it clears **4.5:1 on white** (the primary itself when it already does) | The brand colour used as text or as a mark on a white surface: links, the focus ring inside a surface, the mic level meter, the info chip outline. Never `text-primary` on a surface: yellow on white is 1.07:1. |
+| `--color-canvas-tone` | `#410e60` | the primary moved AWAY from on-primary: mixed toward black (55% primary) when on-primary is white, toward white (30% primary) when on-primary is black | The only colour the decorative canvas layer may use (§7.0.1). Moving away from on-primary can only RAISE text contrast, so the decoration can never pull a line under 4.5:1. |
+
+**Usage rules (binding).**
+
+1. Text, icons and links drawn directly on the canvas use `text-on-primary` or
+   `text-on-primary-muted`, nothing else. `text-foreground`, `text-muted-foreground` and
+   `text-primary` are **forbidden on the canvas**: the first two assume a white page, the third is
+   the canvas colour itself and is invisible on it.
+2. Content (headings, body copy, forms, actions) sits on an **elevated surface**, never on the
+   bare canvas. The surface is `bg-card` (white) with the ordinary card foreground tokens, so the
+   whole existing component vocabulary (inputs, alerts, selects, muted text) keeps its measured
+   contrast unchanged. `--color-primary-surface` is for insets inside a surface; it is not a
+   surface itself, because `--muted-foreground` measures under 4.5:1 on it.
+3. The brand colour inside a surface is `--color-primary-ink` (text, outlines, marks) or a solid
+   `bg-primary` fill carrying `text-on-primary` (the primary button, the info chip, the step
+   numerals). `bg-primary/10 text-primary` is forbidden: it is invisible for light brands.
+4. Decoration on the canvas uses `--color-canvas-tone` only (rule above).
+5. A client logo is drawn on a white **logo plate** (`bg-card`, `--radius-lg`), never straight on the
+   canvas: a logo in the brand colour on a transparent background, the most common logo file there
+   is, would vanish into a canvas of the same colour.
+
+These tokens are frontend-only. The backoffice paints no canvas, so §17's mirror rule does not
+apply to them; shared tokens keep mirroring as before.
+
 ---
 
 ### 3.2 Typography
@@ -203,6 +254,7 @@ tokens below supplement Tailwind's built-in scale for BEAI-specific layout needs
 | `--radius-md` | `0.5rem` | Cards, modals, inputs |
 | `--radius-lg` | `0.75rem` | Panels, dialogs |
 | `--radius-xl` | `1rem` | Avatar panel, large card surfaces |
+| `--radius-surface` | `1.25rem` | `frontend` only: the elevated content surface on the brand canvas (§7.0.1) |
 | `--radius-full` | `9999px` | Pills, avatars, recording indicator |
 
 ---
@@ -215,6 +267,11 @@ tokens below supplement Tailwind's built-in scale for BEAI-specific layout needs
 | `--shadow-md` | `0 4px 6px -1px rgb(0 0 0 / 0.1)` | Cards, dropdowns |
 | `--shadow-lg` | `0 10px 15px -3px rgb(0 0 0 / 0.1)` | Modals, popovers |
 | `--shadow-avatar` | `0 25px 50px -12px rgb(0 0 0 / 0.5)` | Avatar panel elevation |
+| `--shadow-surface` | `0 1px 2px rgb(15 23 42 / 0.08), 0 24px 56px -20px rgb(15 23 42 / 0.45)` | `frontend` only: the content surface lifted off the brand canvas (§7.0.1) |
+
+**Elevation on the brand canvas** has exactly three levels: the canvas (0), the content surface
+and the logo plate (1, `--shadow-surface` / `--shadow-sm`), and floating chrome such as the
+analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside a raised card.
 
 ---
 
@@ -280,6 +337,15 @@ tokens below supplement Tailwind's built-in scale for BEAI-specific layout needs
   --color-recording: #dc2626;
   --color-avatar-bg: #0f172a;
 
+  /* Candidate brand canvas — frontend only (§3.1 "Candidate brand canvas").
+     Quint defaults; useBrandTheme.ts overrides them per tenant. */
+  --color-on-primary: #ffffff;
+  --color-on-primary-muted: #e1cded;
+  --color-primary-surface: #f4edf9;
+  --color-on-primary-surface: #0f172a;
+  --color-primary-ink: #771aaf;
+  --color-canvas-tone: #410e60;
+
   /* === Typography === */
   /* Open Sans loaded via @fontsource/open-sans (self-hosted, GDPR-safe) */
   --font-sans: "Open Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -304,6 +370,10 @@ tokens below supplement Tailwind's built-in scale for BEAI-specific layout needs
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   --shadow-avatar: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+
+  /* frontend only — the brand canvas content surface (§7.0.1) */
+  --radius-surface: 1.25rem;
+  --shadow-surface: 0 1px 2px rgb(15 23 42 / 0.08), 0 24px 56px -20px rgb(15 23 42 / 0.45);
 }
 ```
 
@@ -417,25 +487,108 @@ No `sm` or `md` breakpoints are used in production UI (those widths = unsupporte
 
 ### 7.0 Standalone routes (`NoticeShell`)
 
-The four non-interview routes — root landing, SA-11 gate, interview done,
-interview error — all render through one component,
-`app/components/molecules/NoticeShell.vue`. They exist for four different
-reasons but share one job: tell a candidate in one glance what happened and
-what to do next.
+Every candidate page outside the live interview renders on the brand canvas through one
+organism, `app/components/organisms/BrandCanvas.vue` (§7.0.1). The notice routes (root
+landing, SA-11 gate, interview done, interview error, the terminal reasons, the embed exchange
+failure, the reusable entry states) add one molecule on top of it,
+`app/components/molecules/NoticeShell.vue`. They exist for different reasons but share one job:
+tell a candidate in one glance what happened and what to do next.
 
-Layout is a two-column grid: a solid `--color-primary` brand band (wordmark +
-tagline) beside a content column holding a tone chip, an `<h1>` and one
-paragraph. Below `lg` it collapses to a single column, which is the SA-11 gate's
-only rendering — that page is the one BEAI surface a phone visitor ever sees.
+`NoticeShell` fills the canvas's content surface with, top to bottom: a tone chip, the `<h1>`,
+one paragraph, and an optional slot for the route's single action. REVISED 2026-10-06: it used
+to be a two-column grid with a solid primary band beside a white content column; the brand
+colour is now the whole page, so the band is gone and the logo lockup moved to the canvas
+header.
 
 - `tone` (`info` / `success` / `warning` / `danger`) may change the **icon chip
   and nothing else**. The moment a tone starts altering copy or structure the
-  four pages stop being one system.
+  pages stop being one system. `info` is a solid `bg-primary` chip with a
+  `text-on-primary` glyph (§3.1 rule 3); the other three keep their text-safe
+  `-light` / `-dark` pairs.
 - The SA-11 gate is `warning`, not `danger`: nothing failed and the candidate
   did nothing wrong. An error tone there reads as "your assessment broke".
-- No action affordance unless a route passes one in. The root landing must stay
-  free of forms, buttons and contact links — see `tests/unit/root-page.spec.ts`
-  for why each of those is prohibited.
+- No action affordance unless a route passes one in, and at most ONE primary
+  action per screen. The root landing must stay free of forms, buttons and
+  contact links — see `tests/unit/root-page.spec.ts` for why each of those is
+  prohibited.
+- Below `lg` (the SA-11 gate's only rendering) the canvas keeps its header and
+  surface, with the surface spanning the width minus a 16px gutter.
+
+#### 7.0.1 The brand canvas shell (`BrandCanvas`)
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  [logo plate | BEAI]  ·  Organization name                            │  header, on canvas
+│                                                                      │
+│                 ┌──────────────────────────────────┐                 │
+│                 │  (chip)                          │                 │
+│                 │  Heading on the surface          │                 │  elevated surface
+│                 │  One paragraph of body copy.     │                 │  bg-card, --radius-surface,
+│                 │  [ Primary action ]              │                 │  --shadow-surface
+│                 └──────────────────────────────────┘                 │
+│                                                                      │
+│  Tagline                                                              │  footer, on canvas
+└──────────────────────────────────────────────────────────────────────┘
+        canvas: bg-primary, decorative tone layer, text-on-primary
+```
+
+- **Canvas.** Full bleed, `min-h-screen`, `bg-primary`, `text-on-primary`. It replaces every
+  per-page `min-h-screen bg-background` in the candidate flow. The page `<main>` landmark is the
+  region between header and footer and carries the route's `data-testid` and `aria-labelledby`.
+- **Decorative layer.** ONE layer, `aria-hidden`, CSS only (no image, no font, no script): two
+  large soft radial gradients of `--color-canvas-tone` fading to transparent, one from the top
+  corner and one from the opposite bottom corner. Because the tone only moves away from
+  on-primary (§3.1), the layer can deepen or lift the canvas without lowering any text contrast.
+  No noise texture, no blur filter, no glass.
+- **Header.** On the canvas, left aligned to the same column as the footer: the client logo on a
+  white logo plate (`max-h-8` image, `px-4 py-2.5`, `--radius-lg`, `--shadow-sm`) or, with no
+  logo, the `BEAI` wordmark in `text-on-primary`; then, when known, the organization name in
+  `text-on-primary` at `--text-sm`/semibold, separated by a short vertical hairline. Never
+  nothing (CLAUDE.md ruling 9). The logo is `alt=""`: the name beside it is the accessible text.
+- **Surface.** One centred `bg-card` surface, `--radius-surface`, `--shadow-surface`,
+  `max-w-[34rem]`. Padding `2.5rem` (`p-10`) on desktop, `1.5rem` below `lg`.
+- **Pre-interview screens.** The consent and device-check screens are states of
+  `InterviewSession`, not routes, and keep their own `bg-card` cards (§7.2); in those two states
+  the session's `<main>` paints the canvas (`bg-primary`) behind the card. The live interview
+  and the screens after it keep their current chrome until the interview-chrome task restyles
+  them; this section does not cover them.
+- **Footer.** On the canvas: the product tagline in `text-on-primary-muted`, `--text-sm`.
+
+**Spacing rhythm** (vertical, on a 4px grid; deliberately not uniform): header block `py-8`;
+canvas to surface at least `3rem`; inside the surface chip → heading `1.5rem`, heading → body
+`0.75rem`, body → action `2rem`; footer `py-8`. Inside forms the existing `FieldGroup` rhythm
+(§16) applies unchanged.
+
+**Typography on the canvas.** Open Sans only. Heading on the surface: `--text-3xl` (30px),
+semibold, leading `1.2`, tracking `-0.01em`, `text-balance`. Body: `--text-base`, leading `1.75`,
+`text-muted-foreground`, capped at `58ch`. Header wordmark `--text-lg` semibold tracking `0.3em`;
+organization name `--text-sm` semibold; footer `--text-sm`. The canvas never carries a heading
+of its own: the `<h1>` lives on the surface, where its contrast is constant.
+
+**Primary action.** One `Button` per screen, `bg-primary text-on-primary` (via
+`--primary-foreground`), height `--spacing-control` (44px), `px-6`. A secondary action, when a
+screen needs one, is `variant="outline"` at the same height.
+
+**Focus.** Every focusable element shows a 2px outline with a 2px offset. Inside a surface the
+outline is `--color-primary-ink` (≥ 4.5:1 on white for any brand). On the canvas itself it is
+`--color-on-primary`. Neither is ever the bare primary.
+
+**Motion** (§10). The surface enters with a fade plus an 8px upward translate, `280ms`,
+`cubic-bezier(0.22, 1, 0.36, 1)`, only under `prefers-reduced-motion: no-preference`. Nothing
+else on the canvas moves, and nothing loops.
+
+**Contrast guarantees** (asserted by a unit test over the screenshot matrix colours, never by
+eye): on-primary and on-primary-muted on the primary ≥ 4.5:1; on-primary on the primary blended
+with the canvas tone at any opacity ≥ the unblended ratio; primary-ink on white ≥ 4.5:1;
+on-primary-surface on primary-surface ≥ 4.5:1; card text tokens on `bg-card` unchanged from
+§9.1.
+
+**Screenshot matrix.** Any change to the canvas, the shell or a candidate page is reviewed in
+screenshots at 1440×900 for four brands: light `#ffd400` (black on-primary), dark `#771aaf`
+(the Quint default, white on-primary), mid-tone `#2f6fed` (the closest call: black wins at about
+4.8:1 against 4.4:1 for white), and no colour configured (the Quint fallback). The routes covered
+are the landing, the entry loading state, the reusable identity form, the device check, done,
+error, a terminal reason and the SA-11 gate.
 
 ### 7.1 Entry (SSO / Magic-Link)
 
@@ -1097,6 +1250,16 @@ All text against its background MUST achieve:
 
 > ⚠️ Do NOT use `--color-error` (#ef4444) as text on white. Use `#b91c1c` for error text.
 
+> **The candidate brand canvas (§3.1, §7.0.1) is contrast-guaranteed by code.** The canvas
+> colour is chosen by an operator, so its pairs cannot be pre-verified in the table above.
+> Instead `applyBrandColor()` derives every foreground from it and `tests/unit/brand-canvas-contrast.spec.ts`
+> asserts, for each colour of the screenshot matrix (`#ffd400`, `#771aaf`, `#2f6fed`, none):
+> `--color-on-primary` and `--color-on-primary-muted` ≥ 4.5:1 on `--color-primary`;
+> `--color-on-primary` ≥ 4.5:1 on the primary blended with `--color-canvas-tone` at 0–100%;
+> `--color-primary-ink` ≥ 4.5:1 on white; `--color-on-primary-surface` ≥ 4.5:1 on
+> `--color-primary-surface`. `text-primary`, `text-foreground` and `text-muted-foreground`
+> directly on the canvas are forbidden (§3.1 rule 1); a source test enforces it for the shell.
+
 > ⚠️ Do NOT use `--color-success` (`#22c55e`) or `--color-warning` (`#f59e0b`) as text/icon color on white or on their own `-light` background — both measure well under 3:1 (a real @axe-core WCAG failure caught this exact pattern for `--color-success` during C11 PR B2's status badges, see `sdd/admin-dashboards/apply-progress`). Use `--color-success-dark`/`--color-warning-dark` for any text-sized or icon-sized success/warning element (BARS `ScoreChip`, `CompetencyMean`).
 
 ### 9.2 Focus Management
@@ -1135,6 +1298,9 @@ No keyboard shortcut may conflict with browser or OS reserved shortcuts.
   - Recording indicator: pulse (1 s infinite ease-in-out).
   - Toast entry: slide-in from bottom (300 ms ease-out).
   - Modal entry: scale from 95% + fade (200 ms ease-out).
+  - Brand canvas content surface entry: fade + 8 px upward translate (280 ms,
+    `cubic-bezier(0.22, 1, 0.36, 1)`), once per page load (§7.0.1). Allowed range for any
+    future canvas entrance: 200–320 ms, opacity and transform only, never a layout property.
 - All animations MUST respect `prefers-reduced-motion: reduce` → instant/no animation.
 - No animation may autoplay for more than 5 seconds unless user-initiated and stoppable.
 
