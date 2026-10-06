@@ -45,3 +45,6 @@ data/
 # decisions, infrastructure identifiers and local filesystem paths. This repo
 # is PUBLIC, so committing it publishes all of that irreversibly.
 .engram/
+
+# graphify generated knowledge graph
+graphify-out/
