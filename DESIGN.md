@@ -546,7 +546,7 @@ header.
   `text-on-primary` at `--text-sm`/semibold, separated by a short vertical hairline. Never
   nothing (CLAUDE.md ruling 9). The logo is `alt=""`: the name beside it is the accessible text.
 - **Surface.** One centred `bg-card` surface, `--radius-surface`, `--shadow-surface`,
-  `max-w-[34rem]`. Padding `2.5rem` (`p-10`) on desktop, `1.5rem` below `lg`.
+  `max-w-[34rem]`. Padding `2.25rem` (`p-9`) on desktop, `1.5rem` below `lg`.
 - **Pre-interview screens.** The consent and device-check screens are states of
   `InterviewSession`, not routes, and keep their own `bg-card` cards (§7.2); in those two states
   the session's `<main>` paints the canvas (`bg-primary`) behind the card. The live interview
@@ -554,9 +554,11 @@ header.
   them; this section does not cover them.
 - **Footer.** On the canvas: the product tagline in `text-on-primary-muted`, `--text-sm`.
 
-**Spacing rhythm** (vertical, on a 4px grid; deliberately not uniform): header block `py-8`;
-canvas to surface at least `3rem`; inside the surface chip → heading `1.5rem`, heading → body
-`0.75rem`, body → action `2rem`; footer `py-8`. Inside forms the existing `FieldGroup` rhythm
+**Spacing rhythm** (vertical, on a 4px grid; deliberately not uniform): header `pt-6`;
+canvas to surface `2.5rem` on desktop; inside the surface chip → heading `1.5rem`, heading →
+body `0.75rem`, body → action `2rem`; footer `pb-6`. Kept compact on purpose: the identity
+form must fit a 1280×720 viewport, because content that overflows moves with every inline
+error instead of growing symmetrically around the centre. Inside forms the existing `FieldGroup` rhythm
 (§16) applies unchanged.
 
 **Typography on the canvas.** Open Sans only. Heading on the surface: `--text-3xl` (30px),
@@ -1870,7 +1872,10 @@ decisions so no UI task has to invent them. It adds no token and no colour. The 
   - **No `maxlength`.** The limits (255 characters each, counted in code points) are enforced by the
     script, because a silently truncated address is a different address than the one typed.
 - **Validation timing (§16 rule 3).** A field is validated on blur once it has been touched (an
-  untouched empty field shows nothing until it is blurred or the form is submitted). Submit validates
+  untouched empty field shows nothing until it is blurred or the form is submitted). Exception:
+  a blur caused by the POINTER pressing Start is left to the submit. Validating there inserted
+  the error above the button between pointerdown and pointerup, the button moved, and the
+  press was lost; a keyboard Tab to Start still validates on the way. Submit validates
   ALL fields, never short-circuited; with any error nothing is sent and focus moves to the first
   invalid field. A valid submit sends the trimmed values. The email check is deliberately loose (one
   `@`, a dot in the domain, no whitespace): the server's rule is authoritative.
