@@ -16,22 +16,25 @@ If the threshold is **not** reached → evaluation status `pending`.
 | State | Meaning | Suggested portal action |
 |-------|-------------|--------------------------|
 | `completed` | Definitive evaluation | Show the results, close the cycle |
-| `pending` | Evaluation processed but coverage insufficient | Notify the candidate, offer a retry |
+| `pending` | Evaluation processed but coverage insufficient | Show the partial data; an admin, an operator or the calling system may authorize the single retry |
 
 **Note:** even in the `pending` state, the evaluation **is still sent** (with the data available). It is not a technical error.
 
 ## When `completed` is reached
 
 1. The candidate reaches the minimum threshold of valid competencies; **or**
-2. The candidate has **exhausted the retry** without reaching the threshold.
+2. The single retry has run: its outcome is always `completed`, whether or not the threshold is reached.
 
 ## Retry handling
 
 | Rule | Value |
 |--------|--------|
 | Retry attempts per candidate | **1** |
-| Retry trigger | An evaluation in the `pending` state |
-| Insufficient retry outcome | The evaluation is marked `completed` (definitive, even if below threshold) |
+| Retry trigger | An evaluation in the `pending` state, authorized by an admin/operator or by the calling system (never by the candidate) |
+| Scope of the retry | Only the competencies that were not valid are re-interviewed |
+| Retry outcome | The evaluation is always marked `completed` (definitive, whatever the ratio of valid competencies) |
+
+The full participant-side rules (state transitions, link validity, no expiry) are in `01-candidate-lifecycle.md`.
 
 ## Per-competency reliability
 
