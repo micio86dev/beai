@@ -36,7 +36,7 @@ The calling system does **not** necessarily have to pre-create the candidate thr
 
 - The token must be **non-forgeable** (cryptographic signature or equivalent);
 - Transmission preferably over HTTPS;
-- A short expiry is recommended for a link the calling system hands out (e.g. 15–60 minutes); a link BEAI itself emails to a candidate (invitation, scheduled start, retry) lives 24 hours, single-use;
+- A short expiry is recommended for a link the calling system hands out (e.g. 15–60 minutes); a link BEAI itself emails to a candidate (invitation, scheduled start, retry) lives 24 hours, single-use; in both cases the expiry is read from the token's own `exp` claim and is never recomputed or extended;
 - A token must not stay reusable indefinitely after the assessment completes (except in an explicit retry flow).
 
 ## Narrative example
