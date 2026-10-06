@@ -69,8 +69,16 @@ must not be treated as legally validated.
    `candidate_ref`) and `participants.display_name`.
 3. **Framework versioning — RATIFIED**: `framework_version` is pinned at project creation
    (snapshot-at-pin), so a live project is never retargeted by a later catalogue revision.
-4. **Retry semantics** — still open, product-gated. Blocks the C9 chain-PR 4 (RT-B) only;
-   nothing else waits on it.
+4. **Retry semantics — RATIFIED 2026-10-05.** Exactly one retry per evaluation, offered only
+   for a `pending` evaluation of a `completato` participant. It is authorized by an admin or
+   operator in the backoffice, or by the calling system through the M2M API
+   (`participants:retry`), through one shared action. Only the competencies that were not valid
+   are re-interviewed; the candidate receives a fresh single-use link by BEAI email (valid 24
+   hours, like every emailed invitation), which is also returned to the authorizer. The outcome
+   of the retry is always the definitive `completed`, whatever the ratio, and its webhook is
+   delivered separately. No expiry or reminder: a retry never taken leaves the evaluation
+   `pending` and the participant `in_attesa`. Delivered by the `scoring-retry-rt-b` change
+   (the C9 chain-PR 4, RT-B).
 5. **Time limits / deadline behaviour — RATIFIED: out of product scope.** The calling system
    owns candidate scheduling and reminders, consistent with the SSO-first architecture in
    which the portal owns candidate UX. BEAI enforces only its short-lived token expiry and
@@ -78,13 +86,26 @@ must not be treated as legally validated.
 6. **Non-English BARS anchors** — still open. Data, not code: expert-authored translations
    block non-EN scoring go-live.
 7. **Provider concurrency/cost at scale** — still open, revisit when real load exists.
-8. **Candidate contact data (C12) — RATIFIED: BEAI does not hold it.** `participants` carries
-   no contact column by design, and that stays. Invitations and reminders to candidates
-   belong to the calling system; C12 is scoped to **operator-facing** notifications only.
-   Adding candidate PII would be a GDPR decision, not an architectural one.
-9. **White-label and FR-006 multi-test portal — PARKED, not deferred within a slice.** Two
-   lines of brief between them, and FR-006 is marked "Optional". Removed from C13's scope
-   entirely; they need a written requirement before any design work is meaningful.
+8. **Candidate contact data — REVERSED 2026-09-01: BEAI holds one piece of it, a mandatory
+   email address.** The original ruling (no contact column, invitations belong to the calling
+   system) assumed every candidate arrives through an SSO ingress the calling system owns.
+   Operators also create candidates directly in the backoffice, where no calling system exists
+   to send the invitation. Identity is the email address and it is global, but isolation is
+   unchanged: a global `candidates` table was rejected because it would create a read surface
+   spanning tenants, so `participants` stays the per-project enrolment, unique per
+   `(project_id, email)`, and every read stays scoped by `organization_id`. The email is
+   personal data covered by decision 2's retention sign-off. C12 notifications stay
+   operator-facing; the candidate invitation (and the retry email of decision 4) is a separate,
+   static, multilingual transactional message (decision 10 of `CLAUDE.md`), never a C12 trigger.
+   Full text: `CLAUDE.md`, "Product decisions", ruling 8.
+9. **White-label — REOPENED 2026-09-01, partially; the FR-006 multi-test portal stays PARKED.**
+   The missing requirement now exists and is narrow: an admin sets a logo and a primary colour
+   in Settings, and both Nuxt apps render in them. Both fields are nullable permanently (an
+   organization that configures neither renders in the Quint palette). The colour is a
+   validated `#rrggbb`; the logo is a path on the configured disk written only by the logo
+   upload endpoint, accepted on magic bytes, and SVG is refused. Nothing else is in scope: no
+   per-tenant copy or layout. The FR-006 multi-test portal remains underspecified and needs a
+   written requirement before any design work. Full text: `CLAUDE.md`, ruling 9.
 
 ## Carried-forward risk
 
