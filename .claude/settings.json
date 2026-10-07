@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/alessandromicelli/.local/bin/graphify hook-guard search",
+            "command": "G=$(command -v graphify 2>/dev/null); [ -z \"$G\" ] && [ -x \"$HOME/.local/bin/graphify\" ] && G=\"$HOME/.local/bin/graphify\"; [ -n \"$G\" ] || exit 0; exec \"$G\" hook-guard search",
             "timeout": 10
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/alessandromicelli/.local/bin/graphify hook-guard read",
+            "command": "G=$(command -v graphify 2>/dev/null); [ -z \"$G\" ] && [ -x \"$HOME/.local/bin/graphify\" ] && G=\"$HOME/.local/bin/graphify\"; [ -n \"$G\" ] || exit 0; exec \"$G\" hook-guard read",
             "timeout": 10
           }
         ]
