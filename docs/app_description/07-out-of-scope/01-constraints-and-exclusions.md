@@ -32,7 +32,7 @@ The supplier is **free** to choose:
 ## Non-negotiable constraints (domain)
 
 - The roles and competencies framework (`02-domain/framework/`);
-- Two assessment types: standard and potential;
+- Two assessment types: Prontezza / Readiness (machine value `standard`) and Potential;
 - BARS-based evaluation;
 - The 90% threshold and single-retry rules (`05-business-rules/`);
 - The abstract integration surface (`04-integration-surface/`);

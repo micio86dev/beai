@@ -38,7 +38,7 @@ A **functional** list of the operations the platform must expose to external sys
 - the owning organization;
 - the target role;
 - the competency list;
-- the assessment type (standard / potential);
+- the assessment type (`standard` / `potential`, displayed as Prontezza / Readiness and Potenziale / Potential);
 - the language;
 - UX options (pause every N competencies, short-answer nudge threshold).
 
