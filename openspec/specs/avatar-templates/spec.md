@@ -68,37 +68,46 @@ auditor asks about after the fact.
   organization B
 - THEN the created template's `organization_id` is A, not B
 
-### Requirement: Exactly one active template per organization, enforced at the database
+### Requirement: Exactly one active template per organization and provider, enforced at the database
 
 The database MUST enforce, via a partial unique index on
-`avatar_templates (organization_id) WHERE is_active`, that an organization can
-hold at most one row with `is_active = true` at a time. Enforcing this in
-application code alone is insufficient: two concurrent activations would each
-read "no other template is active," each write, and both win, leaving the
-organization with two active templates and the next interview picking
-whichever row a query happens to return first — a check that only holds when
-nobody is in a hurry is not a check.
+`avatar_templates (organization_id, provider) WHERE is_active`, that an
+organization can hold at most one row with `is_active = true` **per
+provider** at a time. Enforcing this in application code alone is
+insufficient: two concurrent activations would each read "no other template
+is active for this provider," each write, and both win, leaving the
+organization with two active templates on the same provider and the next
+interview picking whichever row a query happens to return first.
 
-The index MUST be partial (`WHERE is_active`), not a plain unique index on
-`(organization_id, is_active)`. A plain index would also cap each organization
-at exactly one INACTIVE template, which is absurd — organizations accumulate
-many draft or retired templates.
-
-The invariant MUST be per-organization, not global: two organizations MAY each
-hold their own active template simultaneously.
+The index MUST be partial (`WHERE is_active`) and scoped to
+`(organization_id, provider)`, not `(organization_id)` alone. Provider is
+resolved per project, not per organization: an organization running one
+project on HeyGen and another on Tavus needs two simultaneously active
+templates — one per provider — and a plain `(organization_id)` index would
+make that unconfigurable.
 
 A newly created template MUST default to `is_active = false`. Creating a
-template must never change what candidates are currently seeing; activation is
-a separate, deliberate act.
+template must never change what candidates are currently seeing; activation
+is a separate, deliberate act.
 
-#### Scenario: An organization cannot hold two active templates, asserted at the database
+(Previously: the partial unique index was scoped to `(organization_id)` alone,
+capping an organization at exactly one active template across ALL providers —
+insufficient once provider is chosen per project rather than per organization.)
 
-- GIVEN organization O already has one active template
-- WHEN a second `AvatarTemplate::create(['is_active' => true, ...])` is
+#### Scenario: An organization cannot hold two active templates on the same provider, asserted at the database
+
+- GIVEN organization O already has one active `tavus` template
+- WHEN a second `AvatarTemplate::create(['is_active' => true, 'provider' => 'tavus', ...])` is
   attempted directly against the database for organization O, bypassing the
   service layer
 - THEN the database raises `Illuminate\Database\QueryException` (unique
-  violation on `avatar_templates_one_active_per_org`)
+  violation on `avatar_templates_one_active_per_org_provider`)
+
+#### Scenario: One organization may hold an active template on each of its providers simultaneously
+
+- GIVEN organization O with an active `heygen` template
+- WHEN organization O also activates a `tavus` template
+- THEN both remain active — the constraint is scoped to `(organization_id, provider)`, not to `organization_id` alone
 
 #### Scenario: Two organizations may each hold an active template
 
@@ -190,44 +199,44 @@ Absence of a `required` field MUST be reported as `required`.
 - THEN the response is 422 carrying `config.language` coded `unknown` — the
   field spec no longer defines `language` for either provider
 
-### Requirement: Activation swaps the organization's active template atomically and re-validates
+### Requirement: Activation swaps the active template within the same provider, atomically, and re-validates
 
 `POST /api/avatar-templates/{id}/activate` MUST deactivate the organization's
-current active template (if any) and activate the requested one inside ONE
-database transaction, deactivate-then-activate in that order. The order is
-forced by the partial unique index: activating the new row first, before the
-old one is deactivated, would be refused by the index outright. Doing the swap
-outside a transaction would leave a window with no active template at all,
-during which a session start would silently fall back to environment
-defaults — precisely the behaviour this whole capability exists to replace.
+current active template **on the same provider** (if any) and activate the
+requested one inside ONE database transaction, deactivate-then-activate in
+that order. Activating a template on one provider MUST NOT deactivate an
+active template on a different provider within the same organization.
 
 The template's config MUST be re-validated against the current field spec at
-the moment of activation, not only at the moment it was last written. A field
-spec can change after a template was saved; activation is the last point
-before a candidate's session where a stale config can be caught, so an
-activation of a template whose config no longer validates MUST be rejected
-with 422 and MUST NOT change `is_active` on any row.
+the moment of activation. Activating an already-active template MUST be a
+no-op that succeeds (200).
 
-Activating an already-active template MUST be a no-op that succeeds (200),
-not an error — a double click is not a mistake worth surfacing.
+(Previously: deactivated the organization's single active template regardless
+of provider, which is now incorrect — an organization may hold one active
+template per provider.)
 
-#### Scenario: Activating a template deactivates the previous one
+#### Scenario: Activating a template deactivates the previous one on the same provider
 
-- GIVEN template A is active and template B is not, in the same organization
+- GIVEN template A (`tavus`) is active and template B (`tavus`) is not, in the same organization
 - WHEN template B is activated
 - THEN template B is active and template A is no longer active
 
-#### Scenario: Activation never leaves the organization with two active templates
+#### Scenario: Activating a Tavus template does not deactivate an active HeyGen template
 
-- GIVEN template A is active
-- WHEN template B is activated
-- THEN exactly one template in the organization has `is_active = true`
+- GIVEN organization O has an active `heygen` template and an inactive `tavus` template
+- WHEN the `tavus` template is activated
+- THEN the `heygen` template remains active and the `tavus` template becomes active — both are now active simultaneously
+
+#### Scenario: Activation never leaves the organization with two active templates on the same provider
+
+- GIVEN template A (`tavus`) is active
+- WHEN template B (`tavus`) is activated
+- THEN exactly one `tavus` template in the organization has `is_active = true`
 
 #### Scenario: A template with an invalid config cannot be activated
 
 - GIVEN a template whose config was written directly to the database and no
-  longer satisfies the current field spec (e.g. missing a since-added required
-  knob)
+  longer satisfies the current field spec
 - WHEN activation is attempted
 - THEN the response is 422 and the template's `is_active` remains `false`
 
@@ -802,3 +811,65 @@ the existing unknown-provider-name convention on template create/update.
 - THEN no substring of `config('interview.heygen.api_key')` or
   `config('interview.tavus.api_key')`'s value appears anywhere in it
 
+### Requirement: Active template resolution requires an explicit provider and never crosses providers
+
+`ActiveTemplateResolver::resolve(string $provider)` MUST take a **required**
+`$provider` argument with no default value, and MUST filter on
+`->where('provider', $provider)` in addition to `is_active`. An optional
+argument would allow a future call site to omit it and reintroduce
+cross-provider template leakage.
+
+Resolving an organization's active template for a given provider MUST return
+`null` rather than throw when no template is active for that provider —
+including when the organization has an active template on a *different*
+provider. Resolution failures or a `null` result MUST be swallowed at the
+call site; a candidate session MUST NOT fail to start because a template
+could not be resolved, and the provider payload falls back to
+byte-identical pre-template behavior.
+
+(Previously: `resolve()` took no arguments and matched on `is_active` alone,
+returning an active template regardless of its provider — a project running
+on Tavus could silently receive a HeyGen-shaped active template.)
+
+#### Scenario: An active template on a different provider is not returned
+
+- GIVEN organization O has an active `heygen` template and no `tavus` template
+- WHEN `ActiveTemplateResolver::resolve('tavus')` is called for organization O
+- THEN the result is `null` — the active `heygen` template is never returned
+
+#### Scenario: resolve() has no default argument
+
+- WHEN `ActiveTemplateResolver::resolve()` is called with no `$provider` argument
+- THEN a compile/type error results — there is no legal no-argument call
+
+#### Scenario: An organization with no active template on any provider resolves to null
+
+- GIVEN an organization with zero templates
+- WHEN `resolve('heygen')` is called
+- THEN the result is `null`, not an exception
+
+#### Scenario: Resolution never crosses tenants
+
+- GIVEN organization B has an active `tavus` template and organization A has none
+- WHEN `resolve('tavus')` is called for organization A
+- THEN the result is `null` — organization B's template is never returned
+
+### Requirement: Unbinding a template clears only that template's binding
+
+`PATCH /avatar-templates/{id}` with both `llm_model_id` and
+`llm_credential_id` set to null MUST clear the binding on that template
+alone, leaving every other template referencing the same credential
+untouched. Unbinding a HeyGen-provider template MUST delete its
+`heygen_llm_configuration_id` resource.
+
+#### Scenario: Unbinding one template leaves siblings intact
+
+- GIVEN two templates bound to the same credential
+- WHEN one is unbound via PATCH with both binding ids null
+- THEN the other template's binding is unchanged
+
+#### Scenario: Unbinding a HeyGen template removes its configuration
+
+- GIVEN a bound HeyGen template with a stored `heygen_llm_configuration_id`
+- WHEN it is unbound
+- THEN the HeyGen `llm_configuration` is deleted and the stored id is cleared
