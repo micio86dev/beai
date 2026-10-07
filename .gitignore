@@ -48,3 +48,6 @@ data/
 
 # graphify generated knowledge graph
 graphify-out/
+
+# Per-developer Claude Code permissions: never shared
+.claude/settings.local.json
