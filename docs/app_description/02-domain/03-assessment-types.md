@@ -2,13 +2,15 @@
 
 The platform supports two interview modes with distinct competency rules and question flows.
 
-## Standard (readiness)
+> **Display names.** The machine value `standard` is displayed as **Prontezza** (Italian) / **Readiness** (English); `potential` is displayed as **Potenziale** / **Potential**. Only the display name changes: the machine value `standard` stays in the API, the database and every payload.
+
+## Prontezza / Readiness (`standard`)
 
 **Purpose:** assess the classic soft skills associated with the candidate's organizational role.
 
 | Aspect | Behaviour |
 |---------|---------------|
-| Competencies | The standard framework set for the role (PRS, STG, INN, …) |
+| Competencies | The framework set for the role (PRS, STG, INN, …), type `standard` |
 | Questions | The first question per competency may be predefined; the following ones are decided by the AI in real time |
 | Flow | Adaptive conversation: probe deeper or switch competency |
 | Typical target | A "readiness" assessment for an organizational level |
@@ -21,17 +23,17 @@ The platform supports two interview modes with distinct competency rules and que
 |---------|---------------|
 | Competencies | Only **MTG** (Managing) and/or **LAT** (Leadership Attributes) |
 | Questions | **Up to N predefined questions** per competency (N is a platform-configured **maximum**, default 4; it is never a fixed count), followed by AI follow-ups |
-| Flow | The same adaptive conversation as the standard type: the AI decides in real time whether to probe deeper or move on |
+| Flow | The same adaptive conversation as the Prontezza (Readiness) type: the AI decides in real time whether to probe deeper or move on |
 | Typical target | High-potential identification |
 
 ## Exclusivity rules
 
 | Type | Admissible competencies |
 |------|-------------------|
-| Standard | Classic framework competencies (PRS … INC) |
+| Prontezza / Readiness (`standard`) | Classic framework competencies (PRS … INC) |
 | Potential | Only MTG and/or LAT |
 
-Standard and potential competencies **cannot** be mixed within the same project.
+Prontezza (`standard`) and Potential competencies **cannot** be mixed within the same project.
 
 ## Choosing the type
 
@@ -47,7 +49,7 @@ Beyond role and competencies, a project defines:
 | Interview language | e.g. `it`, `en` |
 | Pauses | How many competencies apart a pause is shown (e.g. every N competencies; `null` = no pause) |
 | Nudges | The minimum answer character threshold before prompting for elaboration |
-| Assessment type | Standard vs Potential |
+| Assessment type | Prontezza (`standard`) vs Potential |
 
 ## Impact on the candidate
 
