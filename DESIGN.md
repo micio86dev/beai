@@ -1169,7 +1169,7 @@ The evaluation report is the most complex view:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  Candidate: Jane Doe — Role: MLL — Assessment: Standard    │
+│  Candidate: Jane Doe — Role: MLL — Assessment: Prontezza   │
 │  Status: Completed — Score: 3.8 / 5.0                      │
 ├────────────────────────────────────────────────────────────┤
 │  Competency (?)  Indicator (?)  Reliability (?)  BARS (?)   │  ← glossary row

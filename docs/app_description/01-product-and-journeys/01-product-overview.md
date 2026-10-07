@@ -89,7 +89,7 @@ See `02-domain/03-assessment-types.md`. In short:
 
 | Type | Description |
 |------|-------------|
-| **Standard (readiness)** | Framework competencies for the role; adaptive AI questions |
+| **Prontezza / Readiness** (`standard`) | Framework competencies for the role; adaptive AI questions |
 | **Potential** | Managing and Leadership Attributes competencies only; up to N predefined questions per competency (a platform-configured maximum, default 4) + AI follow-ups, in the same adaptive flow |
 
 ## Expected deliverable

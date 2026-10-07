@@ -19,7 +19,7 @@ The full structured files are in `framework/`:
 | **BUL** | Business Unit Leader | Country/region strategy, full P&L, multiple functions |
 | **SRX** | Senior Executive | Multi-year strategic direction (3–5 years), multi-country organization/region, consolidated P&L |
 
-## Standard competencies
+## Prontezza competencies (type `standard`)
 
 | Code | Name |
 |--------|------|
