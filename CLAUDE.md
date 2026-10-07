@@ -329,3 +329,13 @@ table and dependencies.
 - `docs/git-flow.md` — Git Flow ×4 + SemVer M.m.p release flow for all four repos.
 - `docs/version-catalog.md` — Version Catalog: the single source of truth for all pinned versions. Extracted from D25 of the archived project-skeleton-ci design, which drifted once it could no longer be corrected in place.
 - `openspec/changes/archive/2026-07-16-project-skeleton-ci/design.md` — D37 Dependency Resolution Policy, and D25 as originally written (historical record; the live catalog is the file above).
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
