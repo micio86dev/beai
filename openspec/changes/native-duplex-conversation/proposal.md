@@ -1,5 +1,12 @@
 # Proposal: Native-Duplex Conversation — Gemini Live
 
+> **STATUS (2026-10-08): KEEP OPEN, NOT STARTED, BLOCKED.** `native_duplex` is still refused with 422
+> `mode_unsupported` (`LlmMode`, `AvatarTemplate`), there is no `gemini_realtime_config` anywhere, and the Live group is
+> still disabled in `LlmModelPicker.vue`. Prerequisite `pluggable-conversation-llm` is archived
+> (`archive/2026-10-08-pluggable-conversation-llm`) but its live-provider questions (P5.12/P5.13: does HeyGen
+> `POST /v1/contexts` accept `llm_configuration_id`, secret placement) are still unanswered and need a human with live
+> HeyGen credentials. Next: answer those, then the proposal's question round, then spike, tasks and implementation.
+
 ## Intent
 
 Change 1 of the ratified two-change split (`pluggable-conversation-llm`, 2026-08-26) shipped

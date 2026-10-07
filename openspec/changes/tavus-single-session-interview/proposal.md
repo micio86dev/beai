@@ -1,5 +1,12 @@
 # Proposal: One Tavus Conversation Across Many Competencies
 
+> **STATUS (2026-10-08): KEEP OPEN, NOT STARTED, NEEDS AN EXPLICIT KEEP/DEFER DECISION.** Verified: no
+> `overwrite_llm_context` / `sendAppMessage` in `frontend/app`, no `ReleaseProviderConversation` in `api/app`, and
+> `TavusProvider` still creates one `provider_session_ref` per `/start` (one conversation per competency). Nothing
+> supersedes it; its prerequisite (the invisible competency handover crossfade) shipped. It is the oldest open
+> proposal (2026-08-21) and has no `tasks.md`. Remaining work: tasks, api session model, `ReleaseProviderConversation`,
+> the Tavus data-channel boundary path in the frontend, and the 3600s ceiling handover.
+
 > **The constraint that shapes everything below.** Tavus interactions travel **only over the
 > Daily data channel**. There is no server-side REST endpoint for them — the Tavus server
 > module creates a conversation and ends it, nothing more. So whoever sends

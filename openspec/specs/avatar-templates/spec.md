@@ -555,6 +555,8 @@ backoffice may additionally offer a picker for it.
 > both providers until that secret exists.
 ## Out of Scope (C14)
 
+None at present. Items previously deferred here have been delivered or moved into their own changes.
+
 ---
 
 ## Portability Surface
