@@ -546,12 +546,6 @@ backoffice may additionally offer a picker for it.
 > both providers until that secret exists.
 ## Out of Scope (C14)
 
-- **Per-project template override.** The requirement is one active template per
-  ORGANIZATION, not per project. A project-level override is a plausible next
-  step — projects already carry `language` and `role_code`, so a single
-  org-wide avatar may prove too coarse for a tenant running interviews in two
-  languages — but it is deliberately not designed in now, so it stays easy to
-  add without reworking the single-active invariant. Tracked as open item 7.2.
 - **An avatar/voice catalogue.** `avatarId`, `voiceId`, `faceId` and `palId`
   stay free-text, validated for shape (`FieldType::Text`) only, never against
   either provider's live inventory. Fetching and caching each provider's
