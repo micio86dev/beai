@@ -1330,12 +1330,33 @@ No keyboard shortcut may conflict with browser or OS reserved shortcuts.
 - **When animations are enabled** (`@media (prefers-reduced-motion: no-preference)`):
   - Page transitions: fade (200 ms ease-in-out).
   - Recording indicator: pulse (1 s infinite ease-in-out).
-  - Toast entry: slide-in from bottom (300 ms ease-out).
+  - Toast entry: slide-in from bottom (300 ms ease-out). Integrity toasts in the candidate app
+    (below) use an 8 px upward slide with fade, 300 ms ease-out.
   - Modal entry: scale from 95% + fade (200 ms ease-out).
   - Brand canvas content surface entry: fade + 8 px upward translate (280 ms,
     `cubic-bezier(0.22, 1, 0.36, 1)`), once per page load (§7.0.1). Allowed range for any
     future canvas entrance: 200–320 ms, opacity and transform only, never a layout property.
 - All animations MUST respect `prefers-reduced-motion: reduce` → instant/no animation.
+- **No backdrop filter on overlays (both apps).** Sheet, Dialog and AlertDialog scrims are a flat
+  colour (`bg-black/10`); `backdrop-blur-*`, `backdrop-filter` and `-webkit-backdrop-filter` are
+  not used anywhere in `app/`. Where a browser composites on the GPU the blur is cheap; where it
+  renders in software (virtual desktops, remote sessions, the CI container) it dropped WebKit
+  to about one frame every few seconds, which froze every control inside a drawer and made the
+  e2e run fail one test in three. Enforced by `tests/unit/arch/no-backdrop-filter.spec.ts` in
+  `backoffice` and `frontend`.
+- **Integrity toasts (`frontend`).** One Toaster per interview (`IntegrityToaster`), top right
+  under the header, flush with the header column and inside the safe area, at `--z-toast` set on
+  its fixed wrapper. Each toast is an opaque `--card` surface with `--card-foreground` text and
+  a 4 px `--color-error-dark` edge and icon, never a brand token, so it keeps 4.5:1 on any
+  client colour. Copy is a localized title plus one instruction per integrity kind (13 kinds,
+  it and en), generic for an unknown kind, and `proctor_unavailable` is never shown. Polite live
+  region, never focused, dismissible, 6 s; a repeated kind refreshes its toast instead of
+  stacking. Entrance is an 8 px upward slide with fade, 300 ms ease-out, only under
+  `prefers-reduced-motion: no-preference`.
+- **Known gap (tracked):** the vendored Dialog, AlertDialog, Sheet, DropdownMenu, Combobox,
+  Tooltip and popper-mode Select animations are not yet gated by `prefers-reduced-motion`, which
+  this section requires; only `FormDrawer`, `HelpTip` and Accordion carry `motion-reduce`
+  overrides.
 - No animation may autoplay for more than 5 seconds unless user-initiated and stoppable.
 
 ---
