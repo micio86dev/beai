@@ -94,12 +94,16 @@ produce a document, never that the committed snapshot matched one.)
 - WHEN the `api` CI job runs
 - THEN the test step exits non-zero
 - AND the job status is failure
-- AND subsequent steps (coverage check) do not run
+- AND subsequent steps (OpenAPI export and drift checks, Docker build) do not run
 
 #### Scenario: API job fails when coverage is below 85%
 
+The suite runs ONCE, in parallel and with coverage, in the same step (it used to run twice, once
+without coverage and once serially with it, which took 27 of the job's 32 minutes). A red test and a
+coverage shortfall therefore fail that one step.
+
 - GIVEN all Pest tests pass but authored-code coverage is 72%
-- WHEN the coverage step runs `php artisan test --coverage --min=85`
+- WHEN the test step runs `php -d memory_limit=2G artisan test --parallel --coverage --min=85`
 - THEN the step exits non-zero
 - AND the job status is failure
 
