@@ -1,6 +1,6 @@
 [project]
 name = "beai"
-version = "0.67.1"
+version = "0.68.0"
 description = "BEAI"
 authors = [
   {name = "OpenAPI Generator Community",email = "team@openapitools.org"},
