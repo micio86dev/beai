@@ -62,7 +62,7 @@ See `../03-ux-reference/evaluation-report-example.json` for a real output (compe
 
 | State | Meaning |
 |-------|-------------|
-| `completed` | The evaluation is considered definitive (competency threshold reached, or the retry is exhausted) |
-| `pending` | The evaluation was processed but competency coverage is insufficient; the candidate may retry |
+| `completed` | The evaluation is considered definitive (competency threshold reached, or the single retry has run) |
+| `pending` | The evaluation was processed but competency coverage is insufficient; one retry may be authorized |
 
 Rule detail: `../05-business-rules/02-evaluation-rules.md`.

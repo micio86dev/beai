@@ -66,9 +66,10 @@ Narrative scenarios for validating the rebuild. They do not assume compatibility
 **Given** Mario has insufficient answers on too many competencies (< 90% valid)  
 **When** the evaluation job finishes  
 **Then** a webhook arrives with status `pending` and partial data  
-**When** Mario repeats the interview (the single retry)  
-**And** still does not reach the threshold  
-**Then** the following webhook carries status `completed` (definitive)  
+**When** an admin, an operator or the calling system authorizes the single retry  
+**And** Mario re-interviews only the competencies that were not valid, through a fresh single-use link  
+**Then** the following webhook carries status `completed` (definitive), whether or not the threshold is reached  
+**And** a second retry cannot be authorized  
 
 ---
 
@@ -76,7 +77,7 @@ Narrative scenarios for validating the rebuild. They do not assume compatibility
 
 **Given** a Potential-type project with the MTG and LAT competencies  
 **When** a candidate starts the interview  
-**Then** for every competency 4 predefined questions are asked, followed by AI follow-ups  
+**Then** for every competency up to N predefined questions are asked (N is a platform-configured maximum, default 4), followed by AI follow-ups, in the same adaptive flow as a standard interview  
 **And** no standard competencies (PRS, STG, …) appear  
 
 ---

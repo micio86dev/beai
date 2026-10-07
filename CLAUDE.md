@@ -77,7 +77,8 @@ sync by design — never hand-maintain request/response types across repos.
 the backoffice SPA and the API can live on **different origins with no shared-cookie
 constraint**. Because JWT is stateless, handle logout/revocation with **short access-token
 expiry + refresh tokens + a denylist** (Redis). The **candidate magic-link is a short-lived
-JWT** (carries candidateRef/project/role/lang/exp). External M2M: JWT client token or API-key.
+single-use JWT** (carries candidateRef/project/role/lang/exp; 30 min when returned to a caller,
+24 h when BEAI emails it). External M2M: JWT client token or API-key.
 RBAC via **`spatie/laravel-permission`** in **teams mode**, scoped per organization
 (`team_id = organization_id`). ⚠️ **Do not confuse** Spatie *authorization* roles
 (admin/operator/viewer) with BEAI *organizational* roles (ICO/FLL/MLL/BUL/SRX), which are a
@@ -187,14 +188,20 @@ owning slices (C2+), **not C1**. Do not install or wire any of them during C1.
   and a future unified competency object; **no hardcoding** — frameworks are
   custom/versioned per tenant.
 - **Completion gate:** ≥ **90%** valid competencies → `completed`; below → `pending`
-  (still sent via webhook with partial data). **Exactly 1 retry**; after a failed retry
-  → `completed` (definitive).
+  (still sent via webhook with partial data). **Exactly 1 retry** (ruling 4): only the
+  competencies that were not valid are re-interviewed, and the retry's outcome is always the
+  definitive `completed`, whatever the ratio.
 - **Candidate lifecycle:** `in_attesa → in_corso → in_valutazione → completato | errore`.
   Read gates: transcript ≥ `in_valutazione`; structured evaluation only `completato`.
+  `completato` is not terminal in exactly one case: a `completato` participant whose
+  evaluation is `pending` can re-enter `in_attesa` ONLY through the evaluation-retry
+  authorization action (ruling 4), which runs the same lifecycle once more.
 - **Scoring is asynchronous** (queue; p95 < 10 min). Each Evaluation records
   `framework_version`, `model_version`, `prompt_version`, timestamp.
-- **SSO ingress:** non-forgeable signed token, short expiry (15–60 min); the
-  **opaque candidate identifier** is echoed unchanged in every webhook.
+- **SSO ingress:** non-forgeable signed single-use token. Links returned to a caller
+  (M2M, operator mint with no mail queued, placeholder or visitor targets) expire in
+  30 min; links BEAI emails (initial invitation, scheduled sweep, retry) are
+  config-driven, default 24 h. The **opaque candidate identifier** is echoed unchanged in every webhook.
 - **Public API exposure (permanent rule):** no new public or export field without a `T-EXPOSE-001` entry (`api/tests/Helpers/PublicApi/ExposureCatalogue.php`), classified in the same change; never silence the test by editing the catalogue without a reviewed decision.
 - **Integration surface:** org-scoped M2M API; `progress` + `evaluation` webhooks
   (HMAC-signed, idempotent, retry/backoff); per-project exit redirect URL.
@@ -241,7 +248,7 @@ Full rationale in `openspec/ROADMAP.md`. Summary:
    them unchanged: a documented default pending this sign-off, not a legal conclusion.
 3. **RATIFIED** — `framework_version` pinned at project creation; live projects are never
    retargeted by a later catalogue revision.
-4. **OPEN** — retry semantics. Gates only the C9 chain-PR 4 (RT-B).
+4. **RATIFIED 2026-10-05** — retry semantics. Exactly one retry per evaluation, offered only for a `pending` evaluation of a `completato` participant. It is authorized by an admin or operator in the backoffice, or by the calling system through the M2M API (`participants:retry`), through one shared action. Only the competencies that were not valid are re-interviewed; the candidate receives a fresh single-use link by BEAI email (valid 24 hours, like every emailed invitation), which is also returned to the authorizer. The outcome of the retry is always the definitive `completed`, whatever the ratio, and its webhook is delivered separately. No expiry or reminder: a retry never taken leaves the evaluation `pending` and the participant `in_attesa`.
 5. **RATIFIED — out of scope** — the calling system owns candidate scheduling and reminders.
    BEAI enforces only its short-lived token expiry and has no deadline concept of its own.
 6. **OPEN** — non-English BARS anchors need expert-authored translations (data, not code).
@@ -322,3 +329,13 @@ table and dependencies.
 - `docs/git-flow.md` — Git Flow ×4 + SemVer M.m.p release flow for all four repos.
 - `docs/version-catalog.md` — Version Catalog: the single source of truth for all pinned versions. Extracted from D25 of the archived project-skeleton-ci design, which drifted once it could no longer be corrected in place.
 - `openspec/changes/archive/2026-07-16-project-skeleton-ci/design.md` — D37 Dependency Resolution Policy, and D25 as originally written (historical record; the live catalog is the file above).
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
