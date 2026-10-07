@@ -40,6 +40,9 @@ by this change. That bullet is now stale; it was left untouched because the delt
 change". Binding a third-party TTS secret (so each provider's catalogue contains an Italian voice) remains a
 separate future decision.
 
+**Resolved post-hoc (2026-10-08).** The stale "An avatar/voice catalogue" bullet was removed from "Out of Scope (C14)" in
+`openspec/specs/avatar-templates/spec.md` (7 lines). The now-empty heading was left in place.
+
 ## Not delivered / deferred
 
 - **Task 5.2 (left unchecked) - OPEN VERIFIED-RISK.** The residual risk of design decision D5 (whether catalogue

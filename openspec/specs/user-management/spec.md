@@ -330,3 +330,28 @@ deactivate the last active superadmin.
 - GIVEN an authenticated org admin
 - WHEN they open Settings → Users and roles
 - THEN the organization variant is shown, whatever the request state
+### Requirement: The org-scoped user surface refuses a missing organization legibly
+
+`POST /api/users` reached without an organization context MUST answer `409` carrying a
+machine-readable code, not `500`.
+
+A superadmin viewing all clients has no organization, and reaching this endpoint from that
+state is one click away in the product. An internal server error describes a fault in the
+system; this is a caller in the wrong scope, and the backoffice already translates codes
+into the operator's language.
+
+The org-scoped surface MUST continue to exclude superadmins from every read and write it
+performs, unconditionally.
+
+#### Scenario: A superadmin with no client selected is refused legibly
+
+- GIVEN a superadmin with no acting client
+- WHEN they `POST /api/users`
+- THEN the response is 409 with a machine-readable code
+- AND no user is created
+
+#### Scenario: A superadmin is still invisible to the org-scoped surface
+
+- GIVEN a superadmin
+- WHEN an org admin lists or reads users
+- THEN that superadmin is neither listed nor reachable by id

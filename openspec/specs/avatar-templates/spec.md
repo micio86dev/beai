@@ -546,13 +546,6 @@ backoffice may additionally offer a picker for it.
 > both providers until that secret exists.
 ## Out of Scope (C14)
 
-- **An avatar/voice catalogue.** `avatarId`, `voiceId`, `faceId` and `palId`
-  stay free-text, validated for shape (`FieldType::Text`) only, never against
-  either provider's live inventory. Fetching and caching each provider's
-  inventory is a second integration per provider, technically independent of
-  the schema this change ships, and can be added later without a migration.
-  Tracked as open item 7.3.
-
 ---
 
 ## Portability Surface
