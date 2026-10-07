@@ -200,6 +200,6 @@ Test commands: `php artisan test --parallel`; coverage
       nothing indicated a short expiry") — not independently reverified here.
       No signature/expiry query parameter was found because no live request
       was possible; this is an open gap, not a confirmed-safe result.
-- [ ] **5.3** — Update `openspec/specs/avatar-templates/spec.md` (merge
+- [x] **5.3** — Update `openspec/specs/avatar-templates/spec.md` (merge
       this change's delta) and archive this change per the SDD archive
       step.
