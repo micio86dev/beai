@@ -38,7 +38,7 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
 - [x] H1 Live verification against LiveAvatar (bind, list, language, duplicates, delete) with the local key; report facts
 - [x] H2 API: field specs, validator, payload, `HeygenVoiceRegistrar` + ledger migration, platform-template save hook, tests
 - [x] H3 Backoffice: platform HeyGen form shows the engine + voice picker (and previews), i18n it/en, unit + Playwright
-- [ ] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector: PENDING (owner)
+- [x] H4 OpenAPI sync (frontend/backoffice), full suites (done); rebuild local images and owner check of the selector. DONE 2026-10-06: the owner heard the right Italian voice with Cartesia on HeyGen (and on Tavus) after binding it from the UI. Still unverified: ElevenLabs on a live session.
       2026-10-05 owner: the HeyGen engine/model/voice fields are now visible on create/edit (Template avatar and Template piattaforma). Still unverified: a real bind on save, a real interview with the bound voice, ElevenLabs.
 
 - [x] H5 Scope change (owner, 2026-10-04): SUPERADMIN only on BOTH pages (`/avatar-templates` and `/platform-templates`), plus the `ttsModelName` ("Modello vocale") selector
@@ -47,7 +47,7 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
       Fix: the four knobs are declared superseded by `ttsEngine=cartesia` (derived from `HEYGEN_ENGINE_UNSUPPORTED_KNOBS`, one source), so the existing form mechanism hides them and drops their value; a knob sent anyway keeps `tts_setting_unsupported`.
       RED seen (api), mutation seen (backoffice: breaking the declared engine turned 3 tests red). api C14 582 passed; pint, phpstan clean; backoffice spec 34 passed, eslint, prettier, typecheck clean.
       Commits: api 07dfa06, backoffice 0f4a365. Assessed medium, 53 lines, review_due=false (under_budget): stays pending in the slice.
-- [ ] H7 Native review follow-up (2026-10-06): the api candidate (9 commits, 29 files, 2585 lines, base 63e1f3f) was APPROVED and acknowledged with 3 advisory findings, none blocking.
+- [x] H7 Native review follow-up (2026-10-06): the api candidate (9 commits, 29 files, 2585 lines, base 63e1f3f) was APPROVED and acknowledged with 3 advisory findings, none blocking.
       R3-001 (WARNING, do first) `app/Actions/AvatarTemplates/BindHeygenTemplateVoice.php:65-67`: every `HeygenVoiceRegistrar` failure code is surfaced under the `config.ttsExternalVoiceId` validation key, including platform misconfiguration (`tts_provider_unconfigured`, `tts_vendor_key_missing`) and transient lock contention (`tts_bind_busy`), so the user sees an error on a field that is not at fault. Fix: only per-voice codes map to the field; the others become a non-field error (server/transient) with the right HTTP class.
       R3-002 (SUGGESTION) `tests/Feature/C14/HeygenExternalVoiceTemplateTest.php:111-123`: add the case of `ttsModelName` alone refused with `superadmin_only` for a non-superadmin.
       R3-003 (SUGGESTION) `app/Http/Controllers/AvatarTemplatePortabilityController.php:131-141`: on import, the catch collapses the field-keyed errors into one imploded string and loses the field key; keep the key.
@@ -60,6 +60,9 @@ what `GET /v1/voices?voice_type=private` returns. Any test bind is cleaned up (D
       R3-002 (SUGGESTION) `configFieldsClass` ~502 counts `visibleFields` instead of `activeFields` for the two-column layout: pin the intended count with a test.
       R3-003 (SUGGESTION) `app/utils/superseded-fields.ts` ~23: `isSuperseded` honours string governing values only; pin and document the string-only contract.
       Route: delegated writer (backoffice: 1 component + 1 util + specs). TDD strict, Vitest.
+
+- [x] H10 (done 2026-10-07, backoffice e27a125 and c7fe2ee; merged in backoffice v0.48.0) CI of the backoffice PR failed on `platform-templates.spec.ts` "clearing the engine...". Two causes, both in the tests: 17 specs mocked the identity without answering the first-visit prompts (the onboarding tour and the analytics banner open late, take focus and the picker closes on `focusin`), and the test never filled the name so the blur validation shifted the layout and lost the click. Fix: export `answerFirstVisitPrompts` from the shared fixture and apply it to all 17 specs, add a guard spec (`tests/unit/arch/e2e-first-visit-prompts.spec.ts`), fill the name in the test. Evidence: unit 218 files / 3622 passed; full Playwright in the CI container 450 passed, 0 flaky; GitHub CI green. The remaining product defect (name blur validation can lose a real operator's click) is tracked as a follow-up fix on `fix/template-form-name-blur-click-loss`.
+- [x] RELEASED 2026-10-07: api v0.67.0, backoffice v0.48.0, frontend v0.23.0, wrapper v0.52.0 (Railway services deployed, `/api/health/ready` 200). Native reviews: api candidate and backoffice candidate approved and acknowledged; frontend heygen sync approved (2 non-blocking findings on the generated openapi.json, not actionable in the frontend). Coverage: api 95.8%, frontend lines 95.5%, backoffice lines 96.8%.
 
 ## Acceptance
 On `/platform-templates` a HeyGen template shows an engine selector and a Cartesia/ElevenLabs voice picker; saving binds the
@@ -94,4 +97,4 @@ voice on LiveAvatar and sends the bound voice id; saving twice does not duplicat
 - R3-SUPERADMIN-FIELD-LOCKOUT (native review warning) is not reachable today: an organization admin cannot create or edit templates at all (policy 403), so a non-superadmin never resubmits these fields; revisit if org-admin editing is ever opened.
 
 ## Next step
-Owner: rebuild api + backoffice images, bind a voice from the UI, run one interview and listen.
+Feature delivered and released (see RELEASED). Open only: the name-blur click-loss fix in the backoffice template form, and the owner's optional ElevenLabs check on a live session.

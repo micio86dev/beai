@@ -1472,6 +1472,14 @@ Usage:
    Server-side: Laravel `422` responses map to the same field-level messages through the
    typed API client. Error messages are always i18n-keyed (`$t('validation.required')`
    etc.), never hardcoded.
+   **Blur validation never runs while a pointer press is in progress.** Pressing another
+   control blurs the focused field first; if that blur inserts an error ABOVE the control being
+   pressed, the control moves between pointerdown and pointerup and the click is lost. The
+   validation is therefore deferred until the press ends (one macrotask after pointerup or
+   pointercancel, so the click has already fired): `pressingSubmit` in the `frontend` identity
+   form (§16.19) and `usePointerPressGuard` in the `backoffice` template form. Tab still
+   validates immediately and submit validates every field. A new form that validates on blur
+   uses the same guard.
 4. **Accessibility (unchanged, binding).** `data-invalid` on `Field`, `aria-invalid` on
    the control, `aria-describedby` pointing at the message element's `id`, id convention
    `{form}-{field}-error`.
