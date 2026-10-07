@@ -14,7 +14,7 @@ Feature: three owner requests of 2026-10-07 after the 0.67.1 / 0.48.1 / 0.23.1 /
 
 ## Decisions (owner, 2026-10-07)
 - Toaster: mandatory.
-- Naming: "Standard" becomes "Prontezza" everywhere, with English translations where needed, in every submodule. Open: whether the machine value `standard` is renamed too (asked to the owner), the labels are not in doubt: IT "Prontezza", EN "Readiness" (the BEAI brief already calls the standard type "readiness").
+- Naming: "Standard" becomes "Prontezza" everywhere, with English translations where needed, in every submodule: IT "Prontezza", EN "Readiness" (the BEAI brief already calls the standard type "readiness"). DECIDED by the owner 2026-10-07: the machine value stays `standard` (DB, enums, API payloads, both OpenAPI specs, SDKs, i18n keys); "Prontezza" is a display name only, so the public API v1 contract and the SDKs do not change.
 - CI stability: a dedicated hotfix via Git Flow (cut from main, merged to main with a patch tag and back to develop).
 
 ## Constraints
@@ -28,7 +28,7 @@ Feature: three owner requests of 2026-10-07 after the 0.67.1 / 0.48.1 / 0.23.1 /
 - [ ] T1 e2e stability hotfix (backoffice, from main): reproduce the flake with a measured rate, remove the cause, prove it with a repeat run, hotfix release.
 - [ ] T2 Toaster (frontend): mount a localized, accessible Toaster, map every integrity event type to copy, test and verify on the brand canvas.
 - [ ] T3 "Prontezza" labels: backoffice i18n and app strings, api `lang` sentences, wrapper documents, tests and e2e text; English "Readiness".
-- [ ] T4 Decide and, if confirmed, execute the machine-value rename of `standard` (DB values, both OpenAPI specs, SDKs, tests): breaking for public API consumers, needs the owner decision.
+- [x] T4 Machine-value rename of `standard`: DECIDED NOT to rename (owner, 2026-10-07). No code change; the display-name mapping is documented in the wrapper docs by T3.
 
 ## Acceptance
 - T1: the repeat run of the flaky specs under load shows 0 flakes where the baseline showed some, and one full CI run is green first time.
@@ -42,4 +42,4 @@ Created 2026-10-07.
 Delegated writers in isolated worktrees, one per task; the api writer is the only one running Pest at a time.
 
 ## Next step
-T1, T2 and T3 in parallel; T4 waits for the owner.
+T1, T2 and T3 in parallel (in progress); T4 closed.
