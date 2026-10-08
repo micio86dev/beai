@@ -45,6 +45,8 @@ into `develop` in every repo, and no work branch is left open ("completa tutto, 
       `DELETE /v1/sessions/{ref}` (405); the real stop is `POST /v1/sessions/stop` (api PR #144, merged, `develop`
       `e215c43`). Archive docs, the merged requirements and the native-duplex status are updated in the wrapper.
       Follow-up F2c (HeyGen context cleanup, about 20 `beai-*` contexts left by `issue()`) is in progress and NOT done.
+- [ ] F2c HeyGen context cleanup: `provider_context_ref` column, `DELETE /v1/contexts/{id}` after a confirmed stop, plus the
+      two non-blocking test warnings of the F2b review (branch `feature/heygen-context-cleanup`, in progress)
 - [ ] F3 `db-driven-conversation-prompts`: rescope design to the current composer, tasks, golden test, tables,
       resolver, composer cut-over, `conversation_prompt_version` stamp (chained PRs, each under the review budget)
 - [ ] F4 `tavus-single-session-interview`: tasks.md, api session model + `ReleaseProviderConversation`, frontend

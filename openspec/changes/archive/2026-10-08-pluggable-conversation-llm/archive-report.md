@@ -39,7 +39,7 @@ Composition used `gentle-ai sdd-archive-compose` (exit 0) except where noted.
 | interview-session | 47 -> 48 | 1 added (session snapshots its LLM binding at issue) |
 | observability | 20 -> 22 | 2 added (append-only usage aggregate with rate-card snapshot; actual usage permanently null in managed mode) |
 | avatar-templates | 14 -> 16 | 2 modified (see below), 2 added ("Active template resolution requires an explicit provider and never crosses providers"; "Unbinding a template clears only that template's binding") |
-| conversation-llm (NEW) | 0 -> 6 | 6 of the 10 delta requirements: registry sync via console command; credential in use cannot be deleted; mode derivation and `native_duplex` refusal; Tavus wire merge; usage estimator; per-template forecast |
+| conversation-llm (NEW) | 0 -> 6 at archive time (8 after the 2026-10-08 additions below) | 6 of the 10 delta requirements at archive time: registry sync via console command; credential in use cannot be deleted; mode derivation and `native_duplex` refusal; Tavus wire merge; usage estimator; per-template forecast |
 
 `git diff --stat` of `openspec/specs`: 299 insertions, 45 deletions in the four modified files, plus the new
 `conversation-llm/spec.md` (150 lines).
@@ -108,6 +108,8 @@ test. The spec now holds 8 requirements; the scope note in its Purpose was updat
   the Tavus equivalents of the live questions (not re-run on 2026-10-08), and the cleanup of the HeyGen contexts
   that `issue()` creates and never deletes (about 20 `beai-*` contexts accumulated during testing; a follow-up
   keyed on `provider_context_ref` is in progress and is NOT done).
+- **P9.4 Model column**: DROPPED (not required by the delta spec); forecast rendering on template rows is done.
+- **Final verification F.1-F.5 and F.7, and P9.8**: NOT RE-RUN at archive time (2026-10-08).
 
 ## Live evidence, 2026-10-08
 
@@ -131,8 +133,6 @@ truth: `https://docs.liveavatar.com/openapi.json` plus live probes. `interview:s
   `HeygenProvider::teardown()` used `DELETE /v1/sessions/{ref}`, which answers 405 (the session was never stopped
   and the failure was swallowed). The real stop is `POST /v1/sessions/stop {session_id, reason}`; the smoke check now
   fails when the stop is not confirmed.
-- **P9.4 Model column**: DROPPED (not required by the delta spec); forecast rendering on template rows is done.
-- **Final verification F.1-F.5 and F.7, and P9.8**: NOT RE-RUN at archive time (2026-10-08).
 
 ## Task corrections (tasks.md)
 

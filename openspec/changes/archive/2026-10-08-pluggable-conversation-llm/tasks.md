@@ -418,12 +418,14 @@ degraded" claim is proven via `LlmBindingResolver::resolveStatus()` (already bui
 - [x] P5.10 **RED** same file: changing the `TOKEN_FIELD_ALLOWLIST`-governing env var does not
   remove `llm_configuration_id` from the body.
 - [x] P5.11 **GREEN** confirmed by P5.9's `$providerOwned` placement.
-- [x] P5.12 **NOT DONE — question (b) unanswered.** The supplied live evidence covered only the
-  `/v1/sessions/token` control experiment; nothing established whether `POST /v1/contexts` also
-  needs `llm_configuration_id`. Per this task's own instruction ("do not guess either way"),
-  `HeygenProvider::buildContextBody()` is UNCHANGED this batch — zero diff, confirmed by the
-  pre-existing L1/L2 `/contexts` fixture tests staying green untouched. — NOT APPLICABLE (proven 2026-10-08): contexts have no LLM field; binding lives on /sessions/token. `HeygenProvider::buildContextBody()` correctly stays unchanged. `native-duplex-conversation` must not expect to bind the LLM on the context.
-- [x] P5.13 **NOT DONE** — depends on P5.12's still-open question (b). — NOT APPLICABLE (proven 2026-10-08): contexts have no LLM field; binding lives on /sessions/token.
+- [x] P5.12 **NOT APPLICABLE (proven 2026-10-08)** — question (b) answered: `POST /v1/contexts` does not accept
+  `llm_configuration_id` (`CreateContextSchema`/`UpdateContextSchema` carry only `name`, `prompt`, `opening_text`,
+  `links`; a 200 response drops the field and ignores unknown fields). The LLM binding lives only on
+  `POST /v1/sessions/token`. `HeygenProvider::buildContextBody()` correctly stays UNCHANGED (zero diff, confirmed by the
+  `/contexts` fixture tests staying green). Originally left open because the earlier evidence covered only the
+  `/v1/sessions/token` control experiment.
+- [x] P5.13 **NOT APPLICABLE (proven 2026-10-08)** — depended on question (b), now answered: there is nothing to add
+  to the context body.
 - [x] P5.14 **GREEN** persist the sync outcome the same way as Tavus:
   `AvatarTemplateController::recordSync()` now dispatches per-provider (`TavusPalSync` /
   `HeygenLlmRegistrar::ensureConfiguration()`) and writes `llm_sync_status`/`llm_synced_at` via
