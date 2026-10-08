@@ -2,21 +2,24 @@
 
 ## ADDED Requirements
 
-### Requirement: Per-Role×Competency Prompt-Override Surface Alongside BARS Indicators
+### Requirement: Prompt Overrides Are Keyed By Role And Competency Code, Not By Catalogue Row
 
-The catalog MUST expose a per-role×competency prompt-override surface — owned by
-`conversation-prompt-templates` — that lives alongside `framework_bars_indicators` and
-follows the same global (non-tenant-scoped), platform-level versioning rules. No
-per-organization override is introduced by this change.
+Per-role and per-competency prompt overrides (owned by `conversation-prompt-templates`) MUST reference the catalogue
+by `role_code` (nullable: a competency-wide override) and `competency_code`, never by a foreign key to
+`framework_roles`, `framework_competencies` or `framework_bars_indicators`. Catalogue roles and competencies are cloned
+per catalogue revision with new ids, so a code-keyed override survives a new revision unchanged, and opening, editing,
+publishing or discarding a catalogue revision MUST NOT copy, remap, invalidate or require any override. The override
+tables are global like the catalogue (no `organization_id`) and add no framework-version pin of their own: they inherit
+the same versioning limits as the anchors they sit beside.
 
-#### Scenario: The override surface is global, not tenant-scoped
+#### Scenario: The override schema has no foreign key into the catalogue and no organization
 
-- GIVEN a per-role×competency prompt override
-- WHEN its schema is inspected
-- THEN it carries no `organization_id` column, matching `framework_roles`, `framework_competencies`, and `framework_bars_indicators`
+- GIVEN the prompt-override table
+- WHEN its columns and constraints are inspected
+- THEN it holds `role_code` and `competency_code` as plain strings, has no foreign key to any `framework_*` table, and has no `organization_id`
 
-#### Scenario: The override unique key mirrors framework_bars_indicators' key shape
+#### Scenario: A new catalogue revision does not touch overrides
 
-- GIVEN the override's uniqueness constraint
-- WHEN compared to `framework_bars_indicators`' unique key (scoped by role and competency)
-- THEN the override's key follows the same role×competency shape, with role OPTIONAL to allow a competency-wide row
+- GIVEN an override for role FLL and competency INN and a draft revision opened from the baseline
+- WHEN the draft is opened, edited and published
+- THEN the override rows are unchanged and still resolve for the cloned FLL and INN
