@@ -386,4 +386,4 @@ that guards `/settings`. The response shape is unchanged: the same groups and ke
 
 - GIVEN an admin, operator or viewer of an organization
 - WHEN `GET /api/auth/me` is called
-- THEN the abilities are exactly those they had before this change
+- THEN no ability group is suppressed and the abilities are computed from their role alone
