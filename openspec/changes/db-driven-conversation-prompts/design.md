@@ -1,10 +1,236 @@
 # Design: Database-Driven Conversation Prompts
 
+## Amendments 2026-10-08
+
+> The 2026-09-11 design (kept in full below the horizontal rule at the end of this section) was written against a
+> composer that has since changed, and several of its decisions were wrong or have been replaced. **This section
+> wins wherever it disagrees with the text below it.** Every decision, table and diagram of the old text that is
+> overridden carries a `SUPERSEDED by Amendments` marker; a decision without a marker is still in force (it is
+> labelled `RETAINED` where that is worth saying). Verified against api `origin/develop` `e215c43`; the wrapper pins
+> `30a18b6`, whose `SystemPromptComposer.php` is byte-identical.
+
+### Corrections to the 2026-09-11 artifacts
+
+| # | The old artifacts said | What is true, and what this change does | Evidence |
+|---|---|---|---|
+| A-1 | Everything is a "revision" (`conversation_prompt_revisions`, `revision_id`, `r{id}`) | "Revision" already means `FrameworkCatalogRevision`, and catalogue rows are cloned per revision. Use **`prompt_set`** everywhere (`conversation_prompt_sets`, `prompt_set_id`, `s{id}`) | `OpenDraftRevision`; `FrameworkCatalogRevision` in `TenantModelArchTest` |
+| A-2 | 17 section keys, each a whole paragraph | **31 leaf fragment keys.** The opening and primary-question prose is branch-dependent (fresh, resumed, re-ask of an asked primary, fallback, last, next), the labels are separate lines, and the advance floor has three pieces. Branch selection stays in PHP; only prose moves | `buildOpeningSection()`, `buildPrimaryQuestionsSection()`, `buildAdvanceSection()` |
+| A-3 | The seeder needs human-authored Italian (task 4.2, human-blocking), and a missing `it` row is a reason to author | The composer emits English directives for every locale by documented decision; only the coverage section is localised. The `it` rows are **verbatim copies of `en`**. No Italian authoring, nothing human-blocking | `SystemPromptComposer` class docblock; main spec "i18n - Composed Prompt in Project Language"; `StandardPromptCharacterizationTest` pins the `it` output at 4323 bytes |
+| A-4 | Overrides keyed by `role_id` / `competency_id` foreign keys | Catalogue roles and competencies are cloned per catalogue revision with new ids, so an id-keyed override silently stops matching after the next revision. Overrides are keyed by **`role_code` (nullable) and `competency_code`** | `OpenDraftRevision`; `composePromptForCompetency()` already resolves ids per revision |
+| A-5 | `:token` placeholders plus a post-interpolation sweep that throws on any surviving `/:[a-z_]{2,}/` | The sweep would answer 422 for legitimate operator text (a primary question or advance phrase containing `:budget` or `Re:think`). Delimiter is **`{{token}}`**, rendering is one `strtr()` pass (a value containing `{{budget}}` renders literally), and the contract validates TEMPLATES only, never rendered output | G14 injection case; `buildAdvanceSection()` history |
+| A-6 | The proposal said the active revision is a pointer in `config/conversation.php`; the design said `is_active` | The design is right: **`is_active` on the set** with the `avatar_templates` partial-unique idiom. No config pointer | `avatar_templates_one_active_per_org_provider`; old D-6 |
+| A-7 | `ComposedPrompt::version` becomes `{config}+r{id}.{sha12}` | `version` is returned to the client as `question_context.prompt_version` and `OpeningTextComposer` stamps the same config string. **It stays the config string**; the set reference is carried separately and joined only in the durable stamp (`{config}+s{id}.{sha12}`) | `OpeningTextComposer.php:129`; `InterviewController` `$ctx->promptVersion` |
+| A-8 | The stamp is written "where `system_prompt_chars` is written at `issue()` time" | The site is precisely **`InterviewSessionLlmSnapshot::stamp()`**, called at two sites (`InterviewController` about l.1216 and l.1292, the resume and the plain path), and it needs a third argument. It must be write-once and never overwritten from null, like `system_prompt_chars` | `InterviewSessionLlmSnapshot.php:58`; controller call sites |
+| A-9 | `compose(PromptTemplateSet $templates, ...)` as the FIRST required parameter, converting about 20 test call sites; a nullable default was rejected as "two sources of truth" | `compose()` now has 11 parameters (`?int $roleId`, `?int $revisionId`, `?SpokenOpening`, ...). The signature becomes `compose(..., ?int $revisionId = null, ?PromptTemplateSet $templates = null)`: **trailing nullable, `null` = baseline.** The baseline duplication is deliberate and time-boxed (seed source, test default, break-glass target, one release) and keeps every existing test unchanged | `SystemPromptComposer::compose()`; one production caller, `composePromptForCompetency()` about l.876 (the old `:719-722` reference is stale) |
+| A-10 | An append-only activation ledger `conversation_prompt_activations`, as `audit_logs` cannot carry a platform event | The finding (old F-2) stands; the ledger is dropped. `activated_at` on the set plus the per-session stamp are enough. No audit capability is built here | owner default 3 |
+| A-11 | Five goldens regenerated with `PROMPT_GOLDEN_UPDATE=1` | 17 composer cases (G01 to G17) plus 3 HTTP cases (H1 to H3). Capture is a one-time act on the pre-change tree and **refuses to overwrite** an existing fixture (no update mode). The fixtures directory hash is pinned in the test; a harness self-test proves a one-byte mutation fails the comparison | "Golden design" below |
+
+Two further statements of the old artifacts are corrected by the same evidence, without their own number:
+
+- Locale storage as a spatie translatable `jsonb` column (old D-2) is replaced by **one row per (set, key, locale)**,
+  so completeness is a plain comparison of loaded keys with `PromptFragmentKey::cases()` and the seal covers plain
+  rows.
+- The config docblock "bump this string on ANY edit to the conversation prompt template" becomes false for fragment
+  text (that is what the set seal and stamp are for). It stays true for edits to PHP structure and for
+  `OpeningTextComposer`, which still stamps the config string; PR8 rewrites the docblock accordingly.
+
+### New decisions
+
+**N-1 - Fragment grain: 31 leaf keys, each for `en` and `it`.**
+
+| Group | Keys | Tokens |
+|---|---|---|
+| Frame (1) | `header` | `{{competency_code}}` |
+| Labels (8) | `label.opening`, `label.coverage`, `label.override`, `label.star`, `label.follow_up`, `label.nudge`, `label.primary`, `label.advance` | none. `label.override` is reserved and unused until PR9 |
+| Bodies (3) | `star` (nowdoc; 3 interior blank lines; 6-space continuation indent on `not what the team did.`), `budget`, `nudge` | `budget`: `{{budget}}`; `nudge`: `{{nudge_min_chars}}` |
+| Opening (7) | `opening.resumed_notice`, `opening.fallback`, `opening.quoted`, `opening.spoken_reask_all`, `opening.spoken_resumed`, `opening.spoken_fresh`, `opening.closing` | `quoted`: `{{number}}`, `{{question}}`; `spoken_reask_all`, `spoken_resumed`, `spoken_fresh`: `{{quoted}}`; others none |
+| Primary (7) | `primary.none`, `primary.intro`, `primary.asked_before_one`, `primary.asked_before_many`, `primary.progress_all_asked`, `primary.progress_last`, `primary.progress_next` | `asked_before_many`: `{{count}}`; `progress_last`: `{{spoken}}`; `progress_next`: `{{spoken}}`, `{{next}}`; others none |
+| Advance (5) | `advance.floor_one`, `advance.floor_many`, `advance.floor_with_primaries`, `advance.with_phrase`, `advance.without_phrase` | `floor_many`: `{{min_questions}}`; `floor_with_primaries`: `{{floor}}`; `with_phrase`: `{{floor}}` and `{{advance_phrase}}` (its surrounding double quotes live in the template); `without_phrase`: `{{floor}}` |
+
+Total 1 + 8 + 3 + 7 + 7 + 5 = 31. A fragment body is stored **trimmed**: every space join, `implode("\n")`, blank
+separator part, `N. question` numbering, the `buildCoverageSection()` line format and its Excellent / Adequate /
+Insufficient labels, `effectiveMinimum()` (`max(1, min(configured, primaries + budget))`),
+`normalizePrimaryQuestions()` and `resolveSpokenOpening()` stay in PHP. The raw budget is substituted, never
+inflated (the 2026-09-16 reversal stands). Rendering order for the advance rule: the floor is rendered first
+(`floor_one` or `floor_many`, wrapped by `floor_with_primaries` when primaries exist), then passed as `{{floor}}` to
+`with_phrase` or `without_phrase`.
+
+**N-2 - Placeholder contract (`PromptFragmentContract`).** For every key: all required tokens present at least once;
+no `{{x}}` that is not in that key's allowed set; no stray `{{` or `}}`; no leading or trailing whitespace. An
+override body carries **no placeholder at all** (`{{` is refused). The contract is enforced at publish
+(`PublishPromptSet`) and again by the resolver at composition, because migrations, seeders and raw SQL bypass
+publish. It validates templates, never rendered text.
+
+**N-3 - Schema (global tables, no `organization_id`; the three models join the `$excluded` list of
+`tests/Arch/C2/TenantModelArchTest.php`).**
+
+`conversation_prompt_sets`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | bigserial | PK |
+| `label` | `varchar(64)` | `UNIQUE`; the idempotency key of the bootstrap |
+| `content_sha256` | `char(64)` | `NOT NULL`, CHECK `~ '^[0-9a-f]{64}$'`; the seal, written at INSERT |
+| `is_active` | boolean | `NOT NULL DEFAULT false` |
+| `activated_at` | timestamp | nullable |
+| `notes` | text | nullable |
+| `created_at` / `updated_at` | timestamps | |
+
+`CREATE UNIQUE INDEX conversation_prompt_sets_one_active ON conversation_prompt_sets (is_active) WHERE is_active;`
+
+`conversation_prompt_fragments`: `id`, `prompt_set_id` (FK, `restrictOnDelete`), `fragment_key varchar(48)`,
+`locale varchar(8)`, `body text NOT NULL`, `created_at` only. `UNIQUE (prompt_set_id, fragment_key, locale)`. There
+is no DB CHECK on `fragment_key`: membership is enforced by publish and by the resolver against the enum (a CHECK
+would duplicate the enum and need a migration per key).
+
+`conversation_prompt_overrides`: `id`, `prompt_set_id` (FK, `restrictOnDelete`), `role_code varchar(255)` nullable,
+`competency_code varchar(255)` NOT NULL, `locale varchar(8)`, `body text NOT NULL`, `created_at` only. Two partial
+unique indexes, the pair idiom of `make_bars_indicator_role_nullable`:
+`UNIQUE (prompt_set_id, role_code, competency_code, locale) WHERE role_code IS NOT NULL` and
+`UNIQUE (prompt_set_id, competency_code, locale) WHERE role_code IS NULL`. Plain `UNIQUE` cannot constrain the
+role-less rows because NULLs are distinct.
+
+**N-4 - Immutability trigger.** A plpgsql function and `BEFORE UPDATE OR DELETE ... FOR EACH ROW` triggers:
+UPDATE and DELETE on `conversation_prompt_fragments` and `conversation_prompt_overrides` are refused; on
+`conversation_prompt_sets` an UPDATE is refused unless only `is_active`, `activated_at` and `updated_at` change.
+Same idiom as `2026_09_15_201434_enforce_catalogue_published_content_immutability.php`: `CREATE OR REPLACE
+FUNCTION` (because `migrate:fresh` does not run `down()`), `ERRCODE = '23514'` and a message that names the table, so
+tests assert the exact constraint with `assertPostgresConstraintViolation()`. There is deliberately no INSERT
+trigger: a publish and the bootstrap insert the children after the parent in one transaction, and a late INSERT into
+a sealed set is caught by the hash (N-5).
+
+**N-5 - Hash seal.** `content_sha256` = SHA-256 of the canonical JSON of `{"fragments": [...], "overrides": [...]}`
+where fragments are `{key, locale, body}` sorted by (key, locale) and overrides are `{role_code, competency_code,
+locale, body}` sorted by (role_code with NULL first, competency_code, locale), encoded with
+`JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR`. `PromptSetSeal` computes it from the
+validated payload BEFORE the set is inserted, because the trigger forbids a later UPDATE of the column. The resolver
+recomputes it from the loaded rows on cache fill; a mismatch throws.
+
+**N-6 - Resolver and cache.** `PromptSetResolver::resolveActive(string $locale, string $competencyCode, ?string
+$roleCode): PromptTemplateSet`. One query finds the active set; it loads that set's rows for the locale, compares the
+loaded keys with `PromptFragmentKey::cases()` (a missing OR unknown key throws), verifies the seal, then picks the
+override (role-specific beats role-less; at most one applies; never concatenated). Anything wrong throws
+`PromptTemplateUnresolvableException extends CompositionException` (no active set, missing key, unknown key, missing
+locale, tampered hash). The fragment payload is cached by (set id, locale) with no TTL and no invalidation, since a
+set is immutable; the active-set lookup itself is never cached.
+
+**N-7 - Composer.** `PromptTemplateSet::render(PromptFragmentKey $key, array $tokens): string` is one `strtr()`
+pass. Builders in `SystemPromptComposer` call it for their prose and keep every branch. `BaselinePromptFragments`
+holds today's literals moved verbatim and is what `null` resolves to. Purity is unchanged: the composer receives a
+value object and performs no IO.
+
+**N-8 - Durable stamp.** `interview_sessions.conversation_prompt_version varchar(255) NULL`, named to avoid
+`evaluations.prompt_version` (the scoring prompt). `stamp(InterviewSession $session, ?string $systemPrompt, ?string
+$promptVersion)` sets it write-once and never from null. PR3 stores today's config string (shipped before any stored data is read,
+observable as soon as it merges). PR8 changes the value to `{config}+s{id}.{sha12}` for a database-resolved set and leaves the
+bare config string for the baseline source. `QuestionContext` and `ComposedPrompt` gain a trailing nullable
+`?string $promptSetRef` (`s{id}.{sha12}`, null for the baseline) so the stamp site can build it;
+`question_context.prompt_version` in the `/start` response is unchanged. `ResetSessionForRetry` does not reference
+the snapshot columns (checked by search), so a re-offered competency keeps its first stamp; PR3 pins that with a
+test.
+
+**N-9 - Failure and break-glass.** A missing or unusable active set is a HARD failure through the existing
+`catch (CompositionException)` in `composePromptForCompetency()`: 422 `composition_error`, no new API code, no OpenAPI
+change. `config('conversation.prompt_source')` (`db` | `baseline`, env `CONVERSATION_PROMPT_SOURCE`) selects the
+source; `baseline` passes `null` templates. `DeployCommand` gains a fatal check that an active set exists and its
+seal verifies.
+
+**N-10 - Bootstrap by data migration.** One migration, with inline `DB::table` code (precedent
+`2026_09_15_090004_backfill_baseline_revision.php`) so it does not depend on app classes that later change, inserts
+the baseline set, its fragments (`it` copies of `en`) and the seal, and activates it. It is idempotent keyed on the
+unique `label`: if the set exists it verifies the hash and writes nothing. The hash algorithm is frozen inline and a
+test asserts it equals `PromptSetSeal`. `beai:prompt-set:dump-baseline` writes `database/prompt-sets/<label>.json`
+FROM `BaselinePromptFragments`; a test asserts the JSON equals the baseline and the migrated set equals the baseline
+for `en` and `it`.
+
+**N-11 - Golden design.** Capture on the PRE-change tree (PR1) with `tests/Support/PromptGolden.php` and
+`PROMPT_GOLDEN_CAPTURE=1`; capture refuses to overwrite. Fixtures: `tests/Fixtures/Conversation/prompts/Gxx.txt` raw
+bytes plus `manifest.json` (sha256, byte length, source commit); the test pins the SHA-256 of the whole fixtures
+directory as a constant; `StandardPromptCharacterizationTest` stays as a second pin. A fixed competency code with
+three indicators in `en` and `it`, `compose()` called directly.
+
+| Case | Inputs |
+|---|---|
+| G01 | en, budget 4, no nudge, no phrase, 0 primaries |
+| G02 | en, nudge, blank phrase `'   '`, 1 primary, min 1 |
+| G03 | en, budget 2, nudge 100, phrase, min 4, 0 primaries |
+| G04 | en, budget 0 (clamp to 1) |
+| G05 | en, 2 primaries, fresh |
+| G06 | en, 6 primaries, budget 2 |
+| G07 | it, real `interview.end_phrase`, 2 primaries (the Characterization inputs) |
+| G08 | resumed (1, 3) |
+| G09 | resumed (2, 4) |
+| G10 | resumed (3, 3) |
+| G11 | resumed (0, 2) |
+| G12 | fallback resumed, 0 primaries |
+| G13 | it, `roleId` null (potential), final phrase |
+| G14 | injection: primaries and phrase containing `:budget`, `{{budget}}`, `Re:think`, quotes, an em dash, multibyte text, padding whitespace, and a blank primary that is dropped |
+| G15 | configured minimum 99 |
+| G16 | configured minimum -3 |
+| G17 | 1 primary, resumed (1, 1) |
+
+HTTP level, `tests/Feature/C8/InterviewStartPromptGoldenTest.php`, capturing the `prompt` field of the provider
+`/contexts` call (helper pattern of `EndPhraseInPromptTest`): H1 standard `en` fresh; H2 standard `it` resume; H3
+potential `it` last competency (final phrase, not the intermediate one). A recording `PromptTemplateSet` double
+asserts that all 31 keys except `label.override` are rendered across G01 to G17. From PR3 on, CI checks that
+`git diff --stat origin/develop -- api/tests/Fixtures/Conversation/prompts` is empty.
+
+**N-12 - Overrides.** Keyed by code. One append section after COVERAGE TOPICS and before the STAR protocol, headed
+by `label.override`. At most one row applies. No override means byte-identical output; with an override only that
+section differs and the ADVANCE RULE bytes are unchanged.
+
+**N-13 - Delivery.** Ten numbered slices (twelve PRs: PR4 and PR6 are each split in two), chained, each merged to `develop` on green CI before the next starts, each at most
+about 400 authored changed lines (generated fixtures and JSON excluded, and stated in the PR). The slice list, the
+dependency order and the RED / GREEN pairs live in `tasks.md`.
+
+### Data flow (replaces the old diagram)
+
+```
+POST /api/candidate/interview/start
+  +- composePromptForCompetency()                  [inside the existing try]
+       +- source = config('conversation.prompt_source')
+       |    +- baseline -> $templates = null
+       |    +- db       -> PromptSetResolver::resolveActive(locale, competencyCode, roleCode)
+       |         +- one query: the active set        -> none? PromptTemplateUnresolvableException
+       |         +- rows for the locale (cached by set id + locale)
+       |         +- keys == PromptFragmentKey::cases() -> missing/unknown? throw
+       |         +- seal recomputed == content_sha256  -> mismatch? throw
+       |         +- override: role-specific ?? role-less ?? null
+       |              => PromptTemplateSet (readonly)
+       +- SystemPromptComposer::compose(..., $templates)   <- still PURE
+            +- ComposedPrompt{ text, version = config string, promptSetRef? }
+                 +- question_context.prompt_version   (response, unchanged)
+                 +- interview_sessions.conversation_prompt_version  <- stamp(), write-once
+```
+
+### Verification notes (what the code says, where it differs from the planning notes)
+
+- **A failed composition on the resume path is not "zero provider calls".** Before composing, `start()` harvests the
+  outgoing provider session's transcript, and on a composition failure it releases that outgoing session (exactly
+  once; pinned by `ResumeCompositionFailureTeardownTest`). What holds on every path: no `InterviewSession` row is
+  created and no NEW provider session is issued. The specs state this narrower guarantee.
+- **The planning notes defined tokens only for the advance fragments, `header`, `budget` and `nudge`.** The opening
+  and primary fragments also need tokens to carry the number, the question text, the already-rendered quote and the
+  counts; N-1 defines them from the code.
+- **`tests/Support/` does not exist.** `PromptGolden` is a class, so PSR-4 (`Tests\\` => `tests/`) autoloads it with
+  no `composer.json` change; any plain function helper would have to live in `tests/Helpers/` and be registered in
+  `autoload-dev.files` (api `AGENTS.md`).
+- **`beai:deploy` does run `db:seed`, for explicitly named seeders** (the catalogue and the superadmin). It never runs
+  `DatabaseSeeder`, so the conclusion stands: the baseline set must come from a migration.
+- **Test count.** 37 test files contain the literal route `/api/candidate/interview/start`; the notes said about 46.
+  The extra files, if any, reach it through helpers. PR8's full-suite run is the real measure.
+
+---
+
+## Original design (2026-09-11) - history
+
 > Exceeds the generic 800-word design budget deliberately: the phase brief requires
 > column-by-column DDL, a per-section placeholder table, and a byte-exact section map.
 > Those are the artifact's reason to exist.
 
 ## Technical Approach
+
+> **SUPERSEDED by Amendments (A-1, A-9, A-10, N-7).** The shape below (call-site resolution, a pure composer, immutable sets, byte identity as the gate) is still right, but it names four tables, an activation ledger, a revision vocabulary and a first-position parameter. Read it through the Amendments.
 
 Move the competency-agnostic prompt text out of `SystemPromptComposer`'s PHP heredocs into
 two platform-level tables, resolved at the **call site** into an immutable value object and
@@ -15,6 +241,8 @@ append-only activation ledger. Byte identity through the move is the primary gat
 Maps to proposal §Approach, with three refinements recorded below (§Deviations).
 
 ## Findings that changed the design
+
+> **RETAINED as history.** F-1 is why the durable stamp ships ahead of the schema and cut-over slices (N-8). F-2 is why no ledger is built (A-10). The idioms of F-3 are reused (N-3).
 
 **F-1 — the conversation `prompt_version` is persisted NOWHERE.** `evaluations.prompt_version`
 carries `config('scoring.prompt_version')` (the *scoring* prompt — `config/conversation.php`
@@ -42,6 +270,8 @@ with a partial-index pair. `avatar_templates_one_active_per_org_provider` is the
 
 ### D-1 — Composer purity: resolver at the call site, VO into `compose()`
 
+> **SUPERSEDED by Amendments (A-1, A-9, N-7), in part.** RETAINED: resolution at the call site, an immutable value object, a pure composer. SUPERSEDED: the first-position required parameter, the conversion of about 20 test call sites and the rejection of a nullable default. The parameter is the trailing `?PromptTemplateSet $templates = null` (`null` = baseline) and the resolver is `PromptSetResolver`.
+
 **Choice**: new `PromptTemplateResolver` (call site) → readonly `PromptTemplateSet` →
 `compose(PromptTemplateSet $templates, string $competencyCode, ...)`, as the **first**
 parameter.
@@ -61,6 +291,8 @@ records for `AGENTS.md` and the BARS indicator count. Cost: every positional cal
 
 ### D-2 — Locale storage: spatie translatable JSON column, not one row per locale
 
+> **SUPERSEDED by Amendments (note after A-11, N-3).** Storage is one row per (set, key, locale) with no translatable `jsonb`. The proposal's original row-per-locale shape was the right one.
+
 **Choice**: `body` is a `jsonb` translatable column (`{"en": "...", "it": "..."}`), read with
 `hasTranslation('body', $locale)` / `getTranslation('body', $locale)`.
 **Rejected**: one row per `(revision, section_key, locale)` — which is what the proposal said.
@@ -73,6 +305,8 @@ matches the neighbour. Locale hard-fails, no fallback (user decision 4).
 
 ### D-3 — Section-key enumeration: PHP enum **and** a DB CHECK constraint
 
+> **SUPERSEDED by Amendments (A-2, N-1, N-3).** The enum is `PromptFragmentKey` with 31 cases, and there is no DB CHECK on the key: membership is enforced at publish and by the resolver.
+
 **Choice**: backed enum `App\Enums\PromptSectionKey` cast on the model, plus raw-DDL
 `CHECK (section_key IN (...))`.
 **Rejected**: enum only.
@@ -84,6 +318,8 @@ key needs a migration. That is correct rather than friction — a new section is
 anyway.
 
 ### D-4 — Override uniqueness with a nullable `role_id`: a partial-index PAIR
+
+> **SUPERSEDED by Amendments (A-4, N-3), in part.** RETAINED: the partial-index pair and the reasoning about NULLs in a unique index. SUPERSEDED: the columns are `role_code` (nullable) and `competency_code`, and the index lists them, not foreign-key ids.
 
 `role_id` is nullable, meaning "belongs to this competency and to no role" — the exact
 semantics and wording of `make_bars_indicator_role_nullable.php`. **PostgreSQL 17 treats NULLs
@@ -99,12 +335,16 @@ buys nothing and costs one more mechanism for one invariant.
 
 ### D-5 — Override mode APPEND only, at most ONE row applies
 
+> **RETAINED** (keyed by code per A-4; position and byte guarantees in N-12).
+
 Role-specific row wins over role-less; they are never concatenated. Two appends for one
 competency would double the guidance and make the concatenation order an implicit,
 unspecified rule. REPLACE stays deferred (user decision 3): a row able to replace
 `advance_*` can delete a safety invariant per competency.
 
 ### D-6 — Exactly one active revision, enforced by the database
+
+> **RETAINED with the rename** (A-1, A-6): the table is `conversation_prompt_sets` and the index is `conversation_prompt_sets_one_active`. The deactivate-then-activate order and the single transaction stand.
 
 `CREATE UNIQUE INDEX conversation_prompt_revisions_one_active ON
 conversation_prompt_revisions (is_active) WHERE is_active` — inside the partial index every
@@ -117,6 +357,8 @@ reverse order fails mid-transaction. Whole operation in one `DB::transaction`; a
 double-activation loses on 23505 rather than producing two active revisions.
 
 ### D-7 — Revision immutability, and why `is_active` costs nothing in traceability
+
+> **SUPERSEDED by Amendments (N-4, N-5), in part.** RETAINED: `is_active` costs nothing in traceability because of the per-session stamp. SUPERSEDED: the mechanism (a database trigger refuses UPDATE and DELETE, and the seal is computed before the INSERT and verified by the resolver) and the "records who" behaviour (A-10).
 
 Content columns are never UPDATEd. `is_active` is the one deliberately mutable column, and
 flipping it changes only which revision the **next** composition resolves. Combined with the
@@ -131,6 +373,8 @@ than checkable.
 
 ### D-8 — Activation trail: a purpose-built append-only ledger, not `audit_logs`
 
+> **SUPERSEDED by Amendments (A-10).** No ledger table and no arch guard are built. The finding that `audit_logs` cannot carry a platform event stays true.
+
 **Choice**: `conversation_prompt_activations`.
 **Rejected**: (a) `AuditRecorder` — cannot work, per F-2, and fails *silently*;
 (b) making `audit_logs.organization_id` nullable — that changes the tenancy invariant of the
@@ -144,6 +388,8 @@ platform-audit capability is its own change.
 lands later, this ledger is its natural *source*, not its competitor.
 
 ### D-9 — `prompt_version` format, and the new durable stamp
+
+> **SUPERSEDED by Amendments (A-7, A-8, N-8).** `ComposedPrompt::version` stays the config string; the durable stamp is `{config}+s{set id}.{sha12}` (set vocabulary, not `r{id}`), written through `InterviewSessionLlmSnapshot::stamp()`, and shipped (PR3) before any stored data is read, with today's config string. The column name `conversation_prompt_version` and its write-once discipline are RETAINED.
 
 **Format**: `{config}+r{revisionId}.{sha12}` — e.g. `conv-2026-09-04+r7.9f2a1c4b8e07`.
 
@@ -182,6 +428,8 @@ activation mid-interview yields a mixed-revision interview. A per-session stamp 
 composition was rejected as inventing a session-spanning lifetime nothing else in C8 has.
 
 ### D-10 — Placeholder contract, enforced at save AND at composition
+
+> **SUPERSEDED by Amendments (A-5, N-1, N-2).** The two-sided enforcement (publish and composition) is RETAINED. The `:token` syntax, the 17-key table, the post-interpolation sweep and `strtr()` longest-key-first are SUPERSEDED by `{{token}}`, the 31-key table and a single `strtr()` pass over templates only.
 
 Save-time alone is insufficient: seeders and raw SQL bypass it. This is the guard that
 replaces the code-review gate `is_active` removes, and it is the mitigation for the defect
@@ -222,6 +470,8 @@ shorter key), never chained `str_replace`.
 
 ### D-11 — Failure mode: a `CompositionException` subclass, no new API error code
 
+> **RETAINED** (class renamed `PromptTemplateUnresolvableException` stays). Qualification: on the resume path the existing harvest and release of the outgoing provider session still happen on a composition failure; see "Verification notes" above.
+
 `PromptTemplateUnresolvableException extends CompositionException`. The controller's existing
 `catch (CompositionException)` already maps to `composition_error` / 422, so there is **no new
 machine-facing code, no OpenAPI change and no frontend change**, while the subclass carries a
@@ -234,6 +484,8 @@ already runs before `createOrResumeSession()` and before `issue()` — so a reso
 still leaves zero `InterviewSession` rows and makes zero provider calls.
 
 ### D-12 — Framework-version pinning: inherit the anchors' scheme, fix nothing here
+
+> **RETAINED.** Overrides carry no `organization_id` and no framework-version column; they are keyed by code (A-4).
 
 The override table carries **no `framework_version_id` and no `organization_id`**.
 `framework_bars_indicators` has neither; `framework_versions` **is** `organization_id`-scoped,
@@ -250,6 +502,8 @@ owned by a future `framework-version-pinning` change. **Not fixed here.**
 
 ### D-13 — These tables are NOT tenant-scoped. Do not "fix" this.
 
+> **RETAINED**, now for three tables; the models join the `$excluded` list of `TenantModelArchTest`.
+
 No `organization_id` on any of the four new tables, therefore **no composite index leading
 with `organization_id`** — the `CLAUDE.md` composite-index rule applies to tenant-scoped
 tables and these are platform-level by user decision 5. Consistent with
@@ -259,6 +513,8 @@ institutional avatar chrome, not per-tenant. A future reader adding `organizatio
 would create a cross-tenant read surface for content that is identical everywhere.
 
 ## Schema (column-by-column DDL)
+
+> **SUPERSEDED by Amendments (N-3).** Four tables with `revision_id` and `jsonb` bodies are replaced by three tables with `prompt_set_id` and one row per locale.
 
 ### `conversation_prompt_revisions`
 
@@ -336,6 +592,8 @@ CREATE INDEX conversation_prompt_activations_revision_created
 
 ## Section-key map (byte-exact)
 
+> **SUPERSEDED by Amendments (A-2, N-1).** The byte notes (em dash, nowdoc without trailing newline, 6-space STAR indent, 3 interior blank lines) remain valid warnings; the 17-key list does not.
+
 17 keys. Every body is stored with **no leading and no trailing newline**;
 `assemblePrompt()`'s `implode("\n", $parts)` supplies every separator, and the literal `''`
 blank parts stay in code as structure.
@@ -367,6 +625,8 @@ owns. Moving it here would split one catalogue's rendering across two tables. Op
 
 ## Data Flow
 
+> **SUPERSEDED by Amendments ("Data flow (replaces the old diagram)").**
+
 ```
 POST /api/candidate/interview/start
   └─ composePromptForCompetency()            [InterviewController, inside existing try]
@@ -392,6 +652,8 @@ cached under a key containing the immutable `revisionId`, so a flip is simply a 
 and there is **no invalidation logic at all**.
 
 ## File Changes
+
+> **SUPERSEDED by Amendments.** The proposal's Affected Areas and the per-slice tasks in `tasks.md` list the files.
 
 | File | Action | Description |
 |---|---|---|
@@ -420,6 +682,8 @@ and there is **no invalidation logic at all**.
 
 ## Interfaces / Contracts
 
+> **SUPERSEDED by Amendments (N-6, N-7).** `PromptTemplateSet` carries rendered-on-demand fragments (`render()`), a set id, a label, the seal and the optional override; the constructor is not the one below.
+
 ```php
 final readonly class PromptTemplateSet
 {
@@ -437,6 +701,8 @@ final readonly class PromptTemplateSet
 ```
 
 ## Testing Strategy
+
+> **SUPERSEDED by Amendments (A-11, N-11), in part.** RETAINED: the goldens are characterization tests (green when captured on the pre-change tree) and the RED / GREEN pairs for new behaviour live in later slices. SUPERSEDED: the five-case table, `PROMPT_GOLDEN_UPDATE=1` and the arch guard for the ledger.
 
 Strict TDD. **One distinction must be stated, or slice 1 looks like a violation**: the golden
 is a *characterization* test — green the moment it is written, because it pins behaviour that
@@ -476,6 +742,8 @@ with fixed (not `uniqid`) competency codes since the code appears in `header_int
 
 ## Threat Matrix
 
+> **RETAINED.** Still N/A for the enumerated boundaries; publishing remains console-only and override bodies carry no placeholders.
+
 `N/A` for the enumerated boundaries — no routing change (backoffice UI deferred, user decision
 7), no shell command, no subprocess, no VCS/PR automation, no executable-file classification,
 no process integration. `references/threat-matrix.md` was therefore not loaded and no rows are
@@ -489,6 +757,8 @@ the STAR protocol, so a test asserts the advance-rule text is byte-identical wit
 an override present.
 
 ## Migration / Rollout
+
+> **SUPERSEDED by Amendments (N-10, N-13) and by the proposal's Rollback Plan.** Bootstrap is a data migration, not a seeder, and the break-glass flag is the rollback for the cut-over.
 
 Additive only: four new tables and one nullable column. Nothing dropped, nothing rewritten, no
 interview/transcript/evaluation data touched, no re-scoring.
@@ -508,6 +778,8 @@ pins.
 
 ## Delivery: PR slices (`auto-chain`)
 
+> **SUPERSEDED by Amendments (N-13) and `tasks.md`.** Ten numbered slices (PR0 to PR9; twelve PRs, PR4 and PR6 being split in two) replace the six below.
+
 | # | Slice | Authored lines (est.) | Deliverable |
 |---|---|---|---|
 | 1 | Golden harness | ~140 (+5 generated fixtures) | byte-identity gate exists, green on current behaviour |
@@ -522,6 +794,8 @@ should not be combined with any other. Chain: PR 1 → feature branch; PRs 2–6
 previous.
 
 ## Deviations from the proposal (flagged, not smuggled)
+
+> **SUPERSEDED by Amendments.** Δ1 is reversed (row per locale, as the proposal said). Δ2 is replaced by the 31-key grain. Δ3 is accepted and moved ahead of the schema and cut-over slices (PR3).
 
 - **Δ1** — locale storage is a translatable JSON column, not one row per locale (D-2). The
   proposal said row-per-locale.
@@ -538,6 +812,8 @@ previous.
   it "already-composed" has no record and `is_active` would be genuinely untraceable.
 
 ## Open Questions
+
+> **RESOLVED by Amendments / owner defaults.** Δ3 scope: yes, shipped ahead of the schema slices (PR3). The coverage line format and its labels stay in PHP. The framework-version gap stays out of scope. Italian authoring: not needed, `it` rows copy `en` (A-3).
 
 - [ ] **Δ3 scope**: confirm the durable stamp belongs in this change rather than a follow-up.
       If deferred, `is_active` ships without per-interview traceability — state that acceptance
