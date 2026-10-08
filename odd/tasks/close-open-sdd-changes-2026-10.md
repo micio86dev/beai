@@ -88,10 +88,16 @@ Route per task: C1-C5, C8 delegated writer (multi-file spec merges / test author
 - Arch test fails on an unscoped `BarsIndicator` query and passes on the current tree. (met)
 
 ## Progress
-2026-10-08: all local work done and verified. api PR #142 (arch guard) merged into develop (merge 42beea2), branch
-deleted, submodule pins restored. Wrapper PR #87 (14 archives + status notes, CI green) is OPEN and NOT merged: the
-native review is due (assessed high only because an archived spec filename matches "auth": 160 files, 32k lines of
-docs) and the consent envelope (sha256:807e497c..., granted | declined) awaits the owner.
+2026-10-08: all work done and verified. api PR #142 (arch guard) merged into develop (merge 42beea2), branch deleted,
+submodule pins restored.
+
+Review record for wrapper PR #87 (14 archives + status notes, docs only):
+- `gga` PR mode over every authored `.md` (default `FILE_PATTERNS` skip markdown, so run with a temporary `.gga`):
+  PASSED twice; all notes of both runs fixed (glued headings, stale wording, moved scenario, a "16" that was 14).
+- Native review: assessed high (false positive: an archived spec filename matches "auth"), owner answered `granted`,
+  START refused in preflight with `lens_context_budget_exceeded` (161 files, ~32k lines; no review authority was
+  created; the tool says to split into smaller candidates). Owner chose to keep `gga` as the review of record rather
+  than a ~15-step native chain. Recorded here so the gap is visible, not hidden.
 
 ## Next step
-Owner answers the consent envelope (granted | declined), then merge #87 into develop and delete the branch.
+Merge #87 into develop, delete the branch, then the follow-ups above.
