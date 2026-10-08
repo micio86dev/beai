@@ -18,7 +18,7 @@ PR1 to PR9 are `api` slices, each a pull request into the api `develop` branch.
 
 ```text
 Decision needed before apply: No
-Chained PRs recommended: Yes (10 slices)
+Chained PRs recommended: Yes (10 numbered slices, 12 PRs: PR4 and PR6 are each split in two)
 Chain strategy: stacked-to-main, sequential
 400-line budget risk: Medium (PR4b, PR5)
 ```

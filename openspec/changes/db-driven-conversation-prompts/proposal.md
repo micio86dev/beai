@@ -5,7 +5,7 @@
 > Nothing is implemented yet: no `conversation_prompt_*` table, resolver or golden test exists. The 2026-09-11 version
 > of this change was stale in eleven places, listed with evidence in `design.md` (section "Amendments 2026-10-08");
 > the old design is kept below that section as history, with every superseded decision marked. This change is a
-> living SDD change delivered as ten chained slices (PR0 to PR9, see `tasks.md`); PR0 is this documentation slice.
+> living SDD change delivered as ten numbered slices, twelve PRs because PR4 and PR6 are each split in two (PR0 to PR9, see `tasks.md`); PR0 is this documentation slice.
 
 ## Intent
 

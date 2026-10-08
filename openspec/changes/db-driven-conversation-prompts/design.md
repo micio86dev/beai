@@ -179,7 +179,7 @@ asserts that all 31 keys except `label.override` are rendered across G01 to G17.
 by `label.override`. At most one row applies. No override means byte-identical output; with an override only that
 section differs and the ADVANCE RULE bytes are unchanged.
 
-**N-13 - Delivery.** Ten chained slices, each merged to `develop` on green CI before the next starts, each at most
+**N-13 - Delivery.** Ten numbered slices (twelve PRs: PR4 and PR6 are each split in two), chained, each merged to `develop` on green CI before the next starts, each at most
 about 400 authored changed lines (generated fixtures and JSON excluded, and stated in the PR). The slice list, the
 dependency order and the RED / GREEN pairs live in `tasks.md`.
 
@@ -778,7 +778,7 @@ pins.
 
 ## Delivery: PR slices (`auto-chain`)
 
-> **SUPERSEDED by Amendments (N-13) and `tasks.md`.** Ten chained slices (PR0 to PR9) replace the six below.
+> **SUPERSEDED by Amendments (N-13) and `tasks.md`.** Ten numbered slices (PR0 to PR9; twelve PRs, PR4 and PR6 being split in two) replace the six below.
 
 | # | Slice | Authored lines (est.) | Deliverable |
 |---|---|---|---|
