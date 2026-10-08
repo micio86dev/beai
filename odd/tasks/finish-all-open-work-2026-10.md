@@ -29,12 +29,22 @@ into `develop` in every repo, and no work branch is left open ("completa tutto, 
 
 ## Tasks
 - [x] F0 delete the three superseded local api branches (verified superseded)
-- [ ] F1 `acting-org-409-contract` (api, backoffice if needed): 409 `organization_context_required` on POST /projects,
+- [x] F1 `acting-org-409-contract` (api, backoffice if needed): 409 `organization_context_required` on POST /projects,
       org PATCH, logo store/destroy; keep GET /organization `data:null` (backoffice already handles it); Part B
       ability suppression in `UserAbilities`; arch guard on `$user->organization_id` under `app/Http`; reconcile
-      `no_client_selected` vs `organization_context_required`; OpenAPI + clients sync
-- [ ] F2 HeyGen live test (a)/(b) via the local api container; record evidence; update the archived
-      `pluggable-conversation-llm` report and merge the requirement that was blocked, only if proven
+      `no_client_selected` vs `organization_context_required`; OpenAPI + clients sync.
+      Evidence: merged into `develop` (api PR #143 `e0c30d3`, backoffice PR #83 `05dfea9`, frontend PR #66 `99523a3`,
+      wrapper PR #88 with the archive). Native review of the api part APPROVED; the wrapper docs review ended
+      `escalated`; `gga` PASSED.
+- [x] F2 HeyGen live test (a)/(b) via the local api container; record evidence; update the archived
+      `pluggable-conversation-llm` report and merge the requirement that was blocked, only if proven.
+      Evidence (2026-10-08): (a) PROVEN, `llm_configuration_id` is a top-level field of `POST /v1/sessions/token`
+      (nested under `avatar_persona` it is silently ignored; unknown id passes the token call and fails at
+      `/sessions/start` with 400); (b) PROVEN NO, `/v1/contexts` has no LLM field, so P5.12/P5.13 are not applicable;
+      the secrets API has no update verb. Bug found and fixed: `HeygenProvider::teardown()` used
+      `DELETE /v1/sessions/{ref}` (405); the real stop is `POST /v1/sessions/stop` (api PR #144, merged, `develop`
+      `e215c43`). Archive docs, the merged requirements and the native-duplex status are updated in the wrapper.
+      Follow-up F2c (HeyGen context cleanup, about 20 `beai-*` contexts left by `issue()`) is in progress and NOT done.
 - [ ] F3 `db-driven-conversation-prompts`: rescope design to the current composer, tasks, golden test, tables,
       resolver, composer cut-over, `conversation_prompt_version` stamp (chained PRs, each under the review budget)
 - [ ] F4 `tavus-single-session-interview`: tasks.md, api session model + `ReleaseProviderConversation`, frontend
@@ -48,7 +58,10 @@ into `develop` in every repo, and no work branch is left open ("completa tutto, 
 - All suites green per repo; gga PASSED on each slice.
 
 ## Progress
-F0 done. Starting F1 (api writer) and F2 (live test) in parallel.
+F0, F1 and F2 done. F2c (HeyGen context cleanup keyed on `provider_context_ref`) is in progress in `api/`. F3
+(`db-driven-conversation-prompts`) and F4 (`tavus-single-session-interview`) are pending. F5 is re-scoped: the HeyGen
+questions are proven, so `native-duplex-conversation` is no longer blocked on them and needs its proposal amended and
+its own question round. F6 is pending.
 
 ## Next step
-F1 and F2 reports, verify on disk, then F3.
+Finish F2c, then F3 and F4; amend the `native-duplex-conversation` proposal (F5).
