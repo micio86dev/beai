@@ -47,8 +47,8 @@ projects).
 None: no delta spec. One edit to the canonical spec, made because the delivered feature makes it false:
 `openspec/specs/avatar-templates/spec.md` "Out of Scope (C14)" no longer lists the "Per-project template
 override" bullet (6 lines removed, nothing added; it still carried "Tracked as open item 7.2"). No requirement was
-added for the per-project pin: the canonical spec still states only "exactly one active template per
-organization", and has no requirement describing the pinned, required `projects.avatar_template_id`. That is a gap
+added for the per-project pin: the canonical spec (after the `pluggable-conversation-llm` merge) states "exactly one active template per
+organization and provider", and has no requirement describing the pinned, required `projects.avatar_template_id`. That is a gap
 for a human to decide.
 
 ## Not delivered / deferred

@@ -23,7 +23,7 @@ archive time:
   never a role-scoped decoy; reliability over 3 indicators; unanchored pair is `role_no_bars`; unresolvable
   `role_code`; project pinning no catalogue revision.
 - **Delivered (arch guard)**: `api/tests/Arch/C9/BarsIndicatorRoleScopeArchTest.php` on api branch
-  `feature/scoring-bars-role-scope-arch-guard`, commit `26b4350`. **That commit is NOT yet on api `develop`.** It
+  `feature/scoring-bars-role-scope-arch-guard`, commit `26b4350`. **Landed on api `develop` afterwards via api PR #142 (merge `42beea2`, 2026-10-08).** It
   scans `app/Services/Conversation`, `app/Services/Scoring`, `app/Actions/Scoring`, `app/Jobs` and
   `AdminEvaluationSerializer.php` (not all of `app/`), with matcher self-tests (flags a competency-only read and a raw
   `framework_bars_indicators` table read; accepts `where`/`whereNull`/`whereIn`/array-key forms; does not borrow a
@@ -90,9 +90,10 @@ change; open a new change only after checking current production data`.
 
 - **Phase 4 purge command (`beai:purge-miscored-evaluations`)**: dropped from this change. It is destructive and the
   production data must be re-checked first; open a new change only after that.
-- **Spec edits**: scoring-engine not merged (above); `interview-conversation/spec.md` still has the Non-Goals line
-  "Refactoring `ScoreEvaluationJob` (C9) — C8 introduces its own `BarsIndicatorLoader`" (line 31) and later
-  `BarsIndicatorLoader::load()` mentions (around line 1053) that the merged requirement contradicts.
+- **Spec edits**: scoring-engine not merged (above); the `interview-conversation/spec.md` Non-Goals line
+  ("Refactoring `ScoreEvaluationJob` (C9) — C8 introduces its own `BarsIndicatorLoader`") was fixed afterwards
+  (after the gga review, 2026-10-08: now "beyond calling the shared `BarsIndicatorLoader`"); the later
+  `BarsIndicatorLoader::load()` mention (around line 1077) is still stale.
 - **Tenancy follow-up recorded in tasks.md** (the `RoleScopedIndicatorsTest` calls `handle()` directly with the
   ambient resolver set, so the `TenantContextScope::runFor()` wrapper is never seen to fail): not addressed.
 - **1b.12 follow-up** (`InterviewController` answers 422 `composition_error` for a `potential` project with no
@@ -106,8 +107,8 @@ change; open a new change only after checking current production data`.
    constraint on `(role_id, competency_id, position)` holds, so not load-bearing).
 3. Relocate the loader to `App\Services\FrameworkCatalog` (pure move; touches `SystemPromptComposer`, which
    `db-driven-conversation-prompts` also owns, so land it after or with that change).
-4. Update the two stale mentions in `openspec/specs/interview-conversation/spec.md` (Non-Goals line, `load()` name).
-5. Land api `26b4350` (arch guard) on `develop` through Git Flow.
+4. Update the remaining stale `load()` mention in `openspec/specs/interview-conversation/spec.md` (the Non-Goals line is fixed).
+5. (Done 2026-10-08) api `26b4350` (arch guard) landed on `develop` through api PR #142.
 
 ## Traceability
 

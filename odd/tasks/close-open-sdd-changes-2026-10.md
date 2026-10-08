@@ -89,7 +89,7 @@ Route per task: C1-C5, C8 delegated writer (multi-file spec merges / test author
 
 ## Progress
 2026-10-08: all local work done and verified. api PR #142 (arch guard) merged into develop (merge 42beea2), branch
-deleted, submodule pins restored. Wrapper PR #87 (16 archives + status notes, CI green) is OPEN and NOT merged: the
+deleted, submodule pins restored. Wrapper PR #87 (14 archives + status notes, CI green) is OPEN and NOT merged: the
 native review is due (assessed high only because an archived spec filename matches "auth": 160 files, 32k lines of
 docs) and the consent envelope (sha256:807e497c..., granted | declined) awaits the owner.
 
