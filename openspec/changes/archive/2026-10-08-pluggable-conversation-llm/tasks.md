@@ -51,11 +51,11 @@ slice's changes in a child diff, retarget/rebase before review.
 
 ## Phase 0 — Branch Hygiene & Blocking Reconciliation (do first)
 
-- [ ] 0.1 Run `git status` in wrapper, `api`, `backoffice`. Confirm no uncommitted work is
-  discarded; stash or commit anything unrelated before branching.
-- [ ] 0.2 Create `feature/pluggable-conversation-llm` off `develop` in `api`, `backoffice`, and the
+- [x] 0.1 Run `git status` in wrapper, `api`, `backoffice`. Confirm no uncommitted work is
+  discarded; stash or commit anything unrelated before branching. — DONE/MOOT (verified 2026-10-08): the work landed on `develop` in `api` and `backoffice`, so the branch-hygiene precondition no longer applies.
+- [x] 0.2 Create `feature/pluggable-conversation-llm` off `develop` in `api`, `backoffice`, and the
   wrapper. **Leave alone**: the pre-existing `.atl/skill-registry.md` drift and the submodule-pointer
-  drift — neither belongs to this change.
+  drift — neither belongs to this change. — DONE/MOOT (verified 2026-10-08): the slices landed on `develop`; no `feature/pluggable-conversation-llm` branch exists any longer in the wrapper, `api` or `backoffice`.
 - [ ] 0.3 **BLOCKING before P4 and P5.** Run `php artisan interview:smoke-check` — the command lives
   in the class `ProviderSmokeCheck` (`api/app/Console/Commands/ProviderSmokeCheck.php`), NOT a file
   named for the command; grepping the command name finds nothing. **A 200 response is NOT
@@ -68,9 +68,9 @@ slice's changes in a child diff, retarget/rebase before review.
     registration must precede the context call, not merely an extra field.
   - (c) Does Tavus retain a previously-submitted `layers.llm.api_key` across PATCHes? This changes
     the expected status set on the 304 no-change path (`TavusPalSync.php:84`).
-  - (d) Is HeyGen's `secret_name` unique per account, and does `/v1/secrets` expose an update verb?
-- [ ] 0.4 Confirm the rate-card verification (proposal AD-8) is resolved — it is, dated 2026-08-26 —
-  and is not re-opened by tasks.
+  - (d) Is HeyGen's `secret_name` unique per account, and does `/v1/secrets` expose an update verb? — NOT DONE (needs live provider credentials / human): `interview:smoke-check` was never run against live HeyGen/Tavus with all four questions recorded. (c) was answered live in P4.0 and (d) in P5.0; (a) placement of `llm_configuration_id` in `POST /v1/sessions/token` and (b) whether `POST /v1/contexts` takes it remain UNVERIFIED.
+- [x] 0.4 Confirm the rate-card verification (proposal AD-8) is resolved — it is, dated 2026-08-26 —
+  and is not re-opened by tasks. — DONE (verified 2026-10-08): `api/database/seeders/data/llm_models.php` rows carry `rate_card_source_url` and `rate_card_verified_at` (2026-08-26; one row re-verified 2026-09-17).
 - [ ] 0.5 Confirm `docs/version-catalog.md` and the stack table are unaffected: no new dependency is
   expected anywhere in this chain. Flag before merge if any PR adds one.
 
@@ -389,7 +389,7 @@ degraded" claim is proven via `LlmBindingResolver::resolveStatus()` (already bui
   addressed by the supplied evidence and remains open; P5.12/P5.13 are therefore deliberately
   left undone rather than guessed (see below). Proceeding past this gate for (a)/(d) was an
   explicit instruction for this batch ("implement as far as the live evidence allows"), not a
-  default practice — do not treat this as license to skip P5.0 on a future PR.
+  default practice — do not treat this as license to skip P5.0 on a future PR. — NOT DONE (needs live provider credentials / human): questions (a) and (b) are still open; the top-level `$providerOwned` placement of `llm_configuration_id` shipped as an UNVERIFIED best guess.
 - [x] P5.1 **RED** `api/tests/Unit/Services/ConversationLlm/HeygenLlmRegistrarTest.php`:
   `ensureConfiguration()` returns the **exact** shape `TavusPalSync.php:40-41` declares
   (`array{status:'skipped'|'synced'|'warning', message?}`) and never throws. (Method named
@@ -422,8 +422,8 @@ degraded" claim is proven via `LlmBindingResolver::resolveStatus()` (already bui
   `/v1/sessions/token` control experiment; nothing established whether `POST /v1/contexts` also
   needs `llm_configuration_id`. Per this task's own instruction ("do not guess either way"),
   `HeygenProvider::buildContextBody()` is UNCHANGED this batch — zero diff, confirmed by the
-  pre-existing L1/L2 `/contexts` fixture tests staying green untouched.
-- [ ] P5.13 **NOT DONE** — depends on P5.12's still-open question (b).
+  pre-existing L1/L2 `/contexts` fixture tests staying green untouched. — NOT DONE (needs live provider credentials / human): question (b) is still unanswered; `HeygenProvider::buildContextBody()` is unchanged. This is the prerequisite of the still-open change `native-duplex-conversation`.
+- [ ] P5.13 **NOT DONE** — depends on P5.12's still-open question (b). — NOT DONE (needs live provider credentials / human): depends on P5.12. Prerequisite of `native-duplex-conversation`.
 - [x] P5.14 **GREEN** persist the sync outcome the same way as Tavus:
   `AvatarTemplateController::recordSync()` now dispatches per-provider (`TavusPalSync` /
   `HeygenLlmRegistrar::ensureConfiguration()`) and writes `llm_sync_status`/`llm_synced_at` via
@@ -691,35 +691,35 @@ routing, not auth:
 
 ## PR P9 — Cost Views + i18n (`backoffice`)
 
-- [ ] P9.1 **RED** `backoffice/tests/unit/components/organisms/SessionReviewPanel.spec.ts`: avatar
-  cost and LLM cost render as two separately labelled estimate lines — no combined total.
-- [ ] P9.2 **GREEN** wire `SessionReviewPanel.vue` to the P6b resource shape.
-- [ ] P9.3 **RED** template-list/forecast spec: the per-template forecast shows reference minutes,
-  reference turns, and one USD figure — no `$/min` value anywhere in that view.
-- [ ] P9.4 **GREEN** wire the template list's Model column + forecast rendering.
-- [ ] P9.5 **RED** test: "Actual" cost renders only when non-null.
-- [ ] P9.6 **GREEN** wire the conditional render.
-- [ ] P9.7 Author `en`/`it` i18n keys for the cost lines and forecast — authored, not
-  machine-translated.
-- [ ] P9.8 `bun run codegen:check && bun run lint && bun run test:unit`.
+- [x] P9.1 **RED** `backoffice/tests/unit/components/organisms/SessionReviewPanel.spec.ts`: avatar
+  cost and LLM cost render as two separately labelled estimate lines — no combined total. — DONE (verified 2026-10-08): `backoffice/tests/unit/components/organisms/SessionReviewPanel.spec.ts` ("never renders one combined avatar + LLM total"), backoffice `c129cb8`.
+- [x] P9.2 **GREEN** wire `SessionReviewPanel.vue` to the P6b resource shape. — DONE (verified 2026-10-08): `SessionReviewPanel.vue` renders the two labelled lines from the P6b resource shape, backoffice `c129cb8`.
+- [x] P9.3 **RED** template-list/forecast spec: the per-template forecast shows reference minutes,
+  reference turns, and one USD figure — no `$/min` value anywhere in that view. — DONE except the Model column (verified 2026-10-08): forecast (reference minutes, turns, one USD figure, no $/min) is pinned in `backoffice/tests/unit/avatar-templates-page.spec.ts` and `tests/e2e/avatar-templates-forecast.spec.ts`. Model column — DROPPED (not required by spec).
+- [ ] P9.4 **GREEN** wire the template list's Model column + forecast rendering. — PARTIAL (verified 2026-10-08): forecast rendering is DONE (`pages/avatar-templates/index.vue`, `forecastLabel()`, backoffice `c129cb8`); the Model column / bound-model label on template rows — DROPPED (not required by spec).
+- [x] P9.5 **RED** test: "Actual" cost renders only when non-null. — DONE (verified 2026-10-08): `SessionReviewPanel.spec.ts` "omits the Actual line entirely while the API reports no actual figure" / "renders the Actual line once the API sends one".
+- [x] P9.6 **GREEN** wire the conditional render. — DONE (verified 2026-10-08): `SessionReviewPanel.vue` `v-if="review.cost.llm !== null && review.cost.llm.actual_usd !== null"`.
+- [x] P9.7 Author `en`/`it` i18n keys for the cost lines and forecast — authored, not
+  machine-translated. — DONE (verified 2026-10-08): `llmForecast*` and `review.cost.llmActual` keys exist in `backoffice/i18n/locales/en.json` and `it.json`.
+- [ ] P9.8 `bun run codegen:check && bun run lint && bun run test:unit`. — NOT RE-RUN at archive time (2026-10-08); the commit message of `c129cb8` records no suite output.
 
 ---
 
 ## Final Verification
 
 - [ ] F.1 Full Pest + Vitest + Playwright suites green across `api`/`backoffice` — Chromium and
-  WebKit desktop, plus the mobile-viewport unsupported-experience gate (unaffected by this change).
+  WebKit desktop, plus the mobile-viewport unsupported-experience gate (unaffected by this change). — NOT RE-RUN at archive time (2026-10-08).
 - [ ] F.2 Coverage ≥85% overall; ~95% on `ConversationLlmUsageEstimator`, the `AvatarTemplate::booted()`
-  binding guards, and `InterviewSessionLlmSnapshot`'s write-once rules.
+  binding guards, and `InterviewSessionLlmSnapshot`'s write-once rules. — NOT RE-RUN at archive time (2026-10-08).
 - [ ] F.3 Confirm diff-free: `AnthropicLLMProvider`, `Contracts/LLMProvider`, `config/scoring.php`,
   `Exceptions/LLM/`, `config/interview.php:34` and `:173-177`, `projects.language`,
   `SystemPromptComposer`, `PurgeExpiredDataCommand`, `SessionCostEstimator`,
-  `avatar_templates.persona`, `frontend/*`.
+  `avatar_templates.persona`, `frontend/*`. — NOT RE-RUN at archive time (2026-10-08).
 - [ ] F.4 Confirm `docs/version-catalog.md` and the stack table are unchanged — no dependency was
-  added by this chain; flag before merge if one was.
+  added by this chain; flag before merge if one was. — NOT RE-RUN at archive time (2026-10-08).
 - [ ] F.5 Deploy runbook recorded, not executed (no deploy unless explicitly requested):
-  `php artisan migrate --force && php artisan beai:sync-llm-registry`.
+  `php artisan migrate --force && php artisan beai:sync-llm-registry`. — NOT RE-RUN at archive time (2026-10-08).
 - [ ] F.6 Confirm the four Phase 0.3 smoke-lane questions are answered and cited by their respective
-  P4/P5 golden-body tests — never guessed.
+  P4/P5 golden-body tests — never guessed. — NOT DONE (needs live provider credentials / human): questions (a) and (b) are unanswered, so the P5 golden bodies cannot cite them.
 - [ ] F.7 Confirm the OpenAPI diffs committed in P3a and P6b are scoped to this change's fields only,
-  with the pre-existing unrelated Scramble drift left untouched in both.
+  with the pre-existing unrelated Scramble drift left untouched in both. — NOT RE-RUN at archive time (2026-10-08).

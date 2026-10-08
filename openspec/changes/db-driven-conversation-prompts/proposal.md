@@ -1,5 +1,16 @@
 # Proposal: Database-Driven Conversation Prompts
 
+> **STATUS (2026-10-08): KEEP OPEN, NOT STARTED, NEEDS RESCOPE BEFORE APPLY.** Verified against `develop`: none of
+> the deliverables exist (no `conversation_prompt_*` tables, no resolver, no golden test). The design is stale:
+> (1) the 17-key section map no longer matches `SystemPromptComposer` (opening/primary-question fragments are now
+> branch-dependent, budget semantics reversed on 2026-09-16); (2) line refs (`InterviewController` `:719-722` is now
+> `composePromptForCompetency()` at about `:876`) and `compose()` signature (`?int $roleId`, `?int $revisionId`)
+> drifted; (3) "revision" now collides with `FrameworkCatalogRevision`, rename to something like `prompt_set`;
+> (4) the golden test must cover budget, nudge, phrase, authored-question, resume and potential (role-less) cases.
+> Size about 1.8-2.2k authored lines, API-only, with migrations. Risk: rewrites the live interview prompt, a one-byte
+> drift changes avatar behaviour and scoring inputs. Needs a human decision (is editing prompts without a deploy
+> worth it?) and a human-authored Italian seed text (task 4.2). Not implemented unattended on purpose.
+
 ## Intent
 
 The competency-agnostic half of the interviewer system prompt is hardcoded PHP heredocs and
