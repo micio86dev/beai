@@ -1,11 +1,18 @@
 # Proposal: Native-Duplex Conversation — Gemini Live
 
-> **STATUS (2026-10-08): KEEP OPEN, NOT STARTED, BLOCKED.** `native_duplex` is still refused with 422
-> `mode_unsupported` (`LlmMode`, `AvatarTemplate`), there is no `gemini_realtime_config` anywhere, and the Live group is
-> still disabled in `LlmModelPicker.vue`. Prerequisite `pluggable-conversation-llm` is archived
-> (`archive/2026-10-08-pluggable-conversation-llm`) but its live-provider questions (P5.12/P5.13: does HeyGen
-> `POST /v1/contexts` accept `llm_configuration_id`, secret placement) are still unanswered and need a human with live
-> HeyGen credentials. Next: answer those, then the proposal's question round, then spike, tasks and implementation.
+> **STATUS (2026-10-08): KEEP OPEN, NOT STARTED, NO LONGER BLOCKED ON HEYGEN.** `native_duplex` is still refused with
+> 422 `mode_unsupported` (`LlmMode`, `AvatarTemplate`), there is no `gemini_realtime_config` anywhere, and the Live
+> group is still disabled in `LlmModelPicker.vue`. Prerequisite `pluggable-conversation-llm` is archived
+> (`archive/2026-10-08-pluggable-conversation-llm`). Its HeyGen live questions were answered on 2026-10-08 against
+> the live LiveAvatar API (see that archive's report). **PROVEN:** the LLM binding is a top-level
+> `llm_configuration_id` on `POST /v1/sessions/token`; `POST /v1/contexts` has no such field (P5.12/P5.13 are not
+> applicable); a well-formed but unknown configuration id passes the token call and is rejected at
+> `POST /v1/sessions/start` with 400; `/v1/sessions/token` requires `avatar_persona`; the secrets API has no update
+> verb. **This proposal must be amended accordingly:** do not expect to bind the LLM on the context (the context
+> keeps only the prompt, per AD-7), and treat a start-time 400 "configuration not found" as a missing configuration,
+> i.e. a degraded state. **Still open:** the proposal's own question round and the Gemini Live specifics (the Live
+> Connector behaviour itself was not exercised by the 2026-10-08 test). Next: amend the proposal, run the question
+> round, then spike, tasks and implementation.
 
 ## Intent
 
