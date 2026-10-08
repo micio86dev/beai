@@ -10,7 +10,7 @@ the subject of this change, is the contract of the state "superadmin with NO act
 1. Operations that need an organization to write into answer a different, illegible error on each route
    (`POST /api/projects` 422/404, `PATCH /api/organization` and the logo upload/delete 404/403,
    `POST /api/m2m/clients` a bespoke `{"error":"no_client_selected"}` 409, `GET /api/m2m/clients` an empty list that
-   reads as "this client has no keys"). The platform already has one legible answer for this state: the
+   reads as "this client has no keys", `POST /api/users/{user}/activate|deactivate` a 404). The platform already has one legible answer for this state: the
    `org.context` middleware (`RequireOrganizationContext`) answering `409 organization_context_required`.
 2. `UserAbilities::for()` still derives the organization from `$user->organization_id`, so a superadmin with no
    acting organization is told they may use org-scoped surfaces that cannot work.
@@ -23,7 +23,8 @@ the subject of this change, is the contract of the state "superadmin with NO act
 
 1. **409 `organization_context_required`** through the existing `org.context` middleware (mechanism:
    `TenantResolver::getOrgId()`), added to: `POST /api/projects`, `PATCH /api/organization`,
-   `POST /api/organization/logo`, `DELETE /api/organization/logo`, `POST /api/m2m/clients`, `GET /api/m2m/clients`.
+   `POST /api/organization/logo`, `DELETE /api/organization/logo`, `POST /api/m2m/clients`, `GET /api/m2m/clients`, and (decision taken during apply, to close the authorization-matrix
+   record KQ-2 completely) `POST /api/users/{user}/activate` and `POST /api/users/{user}/deactivate`.
 2. **`GET /api/organization` keeps answering `200 {"data": null}`** with no acting organization. This is a decision,
    not an omission: the backoffice shell calls it on every authenticated page to paint the brand colour and the
    settings page degrades on `null`. Documented in the spec so it stops reading as an inconsistency.
@@ -100,7 +101,7 @@ is a new response on paths that answered 422/404/403/empty; reverting restores t
 
 ## Success Criteria
 
-- [ ] With no acting organization, the six routes answer 409 `organization_context_required` and write nothing.
+- [ ] With no acting organization, the eight operations answer 409 `organization_context_required` and write nothing.
 - [ ] `GET /api/organization` still answers `200 {"data": null}`.
 - [ ] With an acting organization, a superadmin behaves exactly as an admin of that organization; org A's operator can
       never see or act on org B (tests for both).

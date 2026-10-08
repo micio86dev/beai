@@ -13,8 +13,9 @@ anything and MUST NOT be reported as 404, 403, 422 or 500, and a list endpoint M
 this state, because an empty list reads as "this client has none".
 
 The operations covered today are `POST /api/projects`, `PATCH /api/organization`, `POST /api/organization/logo`,
-`DELETE /api/organization/logo`, `POST /api/m2m/clients` and `GET /api/m2m/clients`, in addition to those that
-already carried the middleware.
+`DELETE /api/organization/logo`, `POST /api/m2m/clients`, `GET /api/m2m/clients`,
+`POST /api/users/{user}/activate` and `POST /api/users/{user}/deactivate`, in addition to those that already
+carried the middleware.
 
 #### Scenario: A superadmin with no acting organization is refused before anything is written
 
