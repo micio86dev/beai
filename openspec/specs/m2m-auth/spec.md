@@ -371,7 +371,8 @@ all conditions including Redis unavailability.
 
 The system MUST expose exactly three credential management endpoints under
 `/api/m2m/clients`, guarded by `auth:api` (human JWT) + `TenantContext` (via the
-global `api` group — NOT added inline) + admin-only policy:
+global `api` group — NOT added inline) + admin-only policy. `POST` and `GET`
+additionally carry the `org.context` middleware:
 
 | Endpoint | Description |
 |---|---|
@@ -383,9 +384,15 @@ There is NO `GET /api/m2m/clients/{id}` show endpoint. The "key never retrievabl
 after creation" invariant is proven by the fact that `index` never returns the key
 and no show endpoint exists.
 
-An admin MUST only manage clients belonging to their own organization. Non-admin
-authenticated users (operator/viewer) MUST receive HTTP 403. An admin from Org A
-MUST NOT be able to list or revoke clients from Org B.
+An admin MUST only manage clients belonging to their own organization. A superadmin
+acting as an organization manages that organization's clients exactly as its admin
+would. Non-admin authenticated users (operator/viewer) MUST receive HTTP 403. An
+admin from Org A MUST NOT be able to list or revoke clients from Org B.
+
+With no organization context (a superadmin with no acting organization), `POST` and
+`GET` MUST answer HTTP 409 `{"message": "organization_context_required"}` like every
+other organization-required operation, and nothing is written. The
+`no_client_selected` error code MUST NOT be returned by any endpoint.
 
 #### Scenario: Admin creates client
 
@@ -432,6 +439,19 @@ MUST NOT be able to list or revoke clients from Org B.
 - NOTE: This scenario catches any accidentally-added show route during the apply
   phase. The absence of a show endpoint is an intentional security property — the
   raw key is never retrievable after the initial 201 response.
+
+#### Scenario: A superadmin acting as an organization lists and creates that organization's clients
+
+- GIVEN a superadmin has organization A as their acting organization, and A has 2 clients while B has 3
+- WHEN they call `GET /api/m2m/clients`, then `POST /api/m2m/clients` with a valid name and abilities
+- THEN exactly A's 2 clients are listed, and the created client's `organization_id` is A
+
+#### Scenario: A superadmin with no acting organization is refused on list and create
+
+- GIVEN a superadmin with no acting organization
+- WHEN they call `GET /api/m2m/clients` or `POST /api/m2m/clients`
+- THEN the response is HTTP 409 `organization_context_required`
+- AND no `ApiClient` row is created, and no other organization's clients are listed
 
 ---
 
