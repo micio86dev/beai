@@ -68,12 +68,14 @@ Notes on the merge:
   `---` between the modified `m2m-auth` requirement and "Machine `whoami` Endpoint" is kept as in the previous text.
   No requirement text was altered by that step.
 - Each delta requirement block was checked to be present verbatim (substring) in the merged main spec and its title
-  to occur exactly once.
+  to occur exactly once, with one exception: the scenario named in the last bullet below, reworded after the merge.
 - `admin-backoffice/spec.md` already contained five duplicated scenario titles before this archive (for example "A
   viewer never sees the action"); none of them come from this change and they were left alone.
-- The merged `superadmin-clients-console` scenario "An org-bound user is never subject to suppression" ends with "the
-  abilities are exactly those they had before this change", copied verbatim from the delta. It is the one phrase that
-  reads as change history; it was not reworded.
+- The merged `superadmin-clients-console` scenario "An org-bound user is never subject to suppression" was merged
+  verbatim from the delta, whose last line read "the abilities are exactly those they had before this change". That
+  is change-history wording, so in the MAIN spec it was reworded (commit `b2b3f06`) to "no ability group is
+  suppressed and the abilities are computed from their role alone". The archived delta intentionally keeps the
+  original text, so this one block no longer matches the main spec verbatim.
 
 ### Not merged - needs human review
 
