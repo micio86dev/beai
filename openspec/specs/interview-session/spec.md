@@ -1890,6 +1890,7 @@ independently of the code path that actually records a start.
 - WHEN that session was never taken through the `in_corso` transition
 - THEN the assertion cannot be satisfied by a fixture-injected start value;
   it MUST exercise the transition that actually records one
+
 ### Requirement: The Finalize Trigger Dedup Is Attempt-Scoped For A Retry
 
 The `finalize:{participant_id}` trigger dedup (FIX-4, TTL 7200 s) MUST NOT suppress the
@@ -1952,6 +1953,7 @@ through the new link MUST therefore never be re-asked a competency whose result 
 - WHEN the retry is authorized
 - THEN the INN session is `pending` with `provider_session_ref`, `ended_reason` and `ended_at` cleared
 - AND its utterances are deleted
+
 ### Requirement: An abandoned interview is ended by the server, not left open forever
 
 The system MUST end interview sessions that are still `in_corso` after a configurable
@@ -2027,6 +2029,7 @@ vendor; the first run in any environment must be able to say what it would do.
 - GIVEN stale sessions
 - WHEN the command runs in report-only mode
 - THEN it names them, and no session, participant or queue is changed
+
 ### Requirement: A session snapshots its LLM binding at issue(), never re-derived
 
 `InterviewSession` MUST carry `avatar_template_id`, `llm_model_key` (the

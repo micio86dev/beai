@@ -2654,6 +2654,7 @@ matching the existing `settings` and `avatar-templates` entries' pattern.
 - WHEN they navigate directly to `/clients`
 - THEN the guard redirects them away, per the existing fail-closed pattern
   used for `settings` and `avatar-templates`
+
 ### Requirement: Platform-Scope Catalogue Pages
 
 A `catalogue.manage` ability MUST gate a Catalogue nav entry and its
@@ -2698,6 +2699,7 @@ replaced by any client-side override.
 - GIVEN a superadmin opens the competencies form of any role
 - WHEN the form renders
 - THEN the potential-competencies note is visible, whatever the role's assignments
+
 ### Requirement: Link Disclosure Never Hard-Codes A Lifetime
 
 Any copy that discloses an entry-link or retry-link expiry MUST render the absolute expiry taken
@@ -2883,6 +2885,7 @@ and the abilities gate.
 - GIVEN the same participant and a viewer session
 - WHEN the detail page opens
 - THEN no authorize action exists
+
 ### Requirement: A Net-New Review-Status Element Renders Per-Indicator Audit Signal — `ScoreChip` Stays Score-Only
 
 The backoffice MUST render a net-new element on `IndicatorEvidence.vue`
@@ -2969,6 +2972,7 @@ active.
   via the session-review view
 - WHEN both are rendered
 - THEN the displayed audit status and support signal are identical
+
 ### Requirement: The avatar template form exposes a grouped conversation-model picker with a disabled Live group
 
 The avatar template form MUST render a conversation-model fieldset built from
@@ -3008,7 +3012,7 @@ the response, rather than a generic failure.
 
 #### Scenario: The secret field never renders a stored value
 
-- GIVEN a credential already stored for the organization
+- GIVEN a platform credential already stored
 - WHEN the panel renders its row
 - THEN `WriteOnlySecretField` shows no stored key value — only `key_last_four`
 

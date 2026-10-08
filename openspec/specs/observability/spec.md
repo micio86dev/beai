@@ -1082,6 +1082,7 @@ from the redeem path.
 - GIVEN the api denied-key list and the two Nuxt `EXPECTED_DENIED_KEYS` lists
 - WHEN the pinning tests run
 - THEN `email` and `display_name` are present in all three
+
 ### Requirement: Audit Token, Cost, and Latency Are a Separate Meter — Never Folded Into `ai_requests` or the Scoring-Cost Dashboard Metric
 
 Every call to the `AuditJudge` implementation MUST have its token counts,
@@ -1111,6 +1112,7 @@ row into `ai_requests` that could be mistaken for that anomaly.
 - WHEN any number of audit runs complete
 - THEN the set of `ai_requests` rows considered by that detection is
   unchanged — the audit introduces no new rows there
+
 ### Requirement: Conversation LLM usage is an append-only, one-row-per-session aggregate carrying a rate-card snapshot
 
 `interview_session_llm_usage` MUST carry a UNIQUE `interview_session_id` (the

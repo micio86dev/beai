@@ -274,6 +274,7 @@ being built, and unratified work that ships is how scope stops meaning anything.
 > `is_superadmin`. The ability is published and tested; consuming it is a
 > follow-up, and until then the inconsistency this requirement describes is
 > only half closed.
+
 ### Requirement: BEAI's own people are managed from the all-clients scope
 
 The system MUST expose a superadmin-only surface for platform users at

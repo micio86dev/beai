@@ -553,6 +553,7 @@ backoffice may additionally offer a picker for it.
 > catalogue actually contains an Italian voice) remains a separate, future
 > decision — this change ships the picker and the honest-empty state for
 > both providers until that secret exists.
+
 ## Out of Scope (C14)
 
 None at present. Items previously deferred here have been delivered or moved into their own changes.
@@ -725,6 +726,7 @@ change that ships this fix.
 - WHEN validation fails
 - THEN the response carries `config.voice_id` alone
 - AND the form places its message under the voice field, not a generic banner
+
 ### Requirement: Provider catalogue is fetchable, cached, admin-only, and never leaks a secret
 
 The system MUST provide a read-only, admin-only endpoint

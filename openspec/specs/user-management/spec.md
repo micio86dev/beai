@@ -296,6 +296,7 @@ exactly as it was.
 - WHEN they `PATCH /api/users/{id}` for another user in org A with an
   allowed field
 - THEN the response is `200`, exactly as before this change
+
 ### Requirement: The Users section follows the selected scope
 
 The backoffice Settings → Users and roles section MUST manage whoever the current scope is
@@ -330,6 +331,7 @@ deactivate the last active superadmin.
 - GIVEN an authenticated org admin
 - WHEN they open Settings → Users and roles
 - THEN the organization variant is shown, whatever the request state
+
 ### Requirement: The org-scoped user surface refuses a missing organization legibly
 
 `POST /api/users` reached without an organization context MUST answer `409` carrying a

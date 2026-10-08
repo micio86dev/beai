@@ -98,6 +98,7 @@ impossible rather than merely filtered.
 - GIVEN org A and org B each have distinct `name` and webhook defaults
 - WHEN org A calls `GET /api/organization`
 - THEN the response contains only org A's values, never any field from org B
+
 ### Requirement: The organization logo is chosen through a framed, previewed upload field
 
 The Appearance section MUST present the logo as a single upload field carrying an explicit

@@ -362,6 +362,7 @@ than replacing it — see the MODIFIED section above.
 - WHEN they `PATCH /api/profile` with a `profile_photo_path` value alongside
   a valid `name`
 - THEN `name` is updated and `profile_photo_path` is unchanged
+
 ### Requirement: The profile photo is framed before it is uploaded
 
 The profile photo control MUST use the same upload field as every other image upload in

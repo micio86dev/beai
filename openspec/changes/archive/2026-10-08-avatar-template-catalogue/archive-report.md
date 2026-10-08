@@ -41,7 +41,7 @@ change". Binding a third-party TTS secret (so each provider's catalogue contains
 separate future decision.
 
 **Resolved post-hoc (2026-10-08).** The stale "An avatar/voice catalogue" bullet was removed from "Out of Scope (C14)" in
-`openspec/specs/avatar-templates/spec.md` (7 lines). The now-empty heading was left in place.
+`openspec/specs/avatar-templates/spec.md` (7 lines). The now-empty heading was kept and given a "None at present" line (2026-10-08, after the gga review).
 
 ## Not delivered / deferred
 

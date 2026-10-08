@@ -952,6 +952,7 @@ which belongs to whoever owns the writer side.
 The last scenario is a standing constraint, not a one-off check: the integrity
 taxonomy is a list of behaviours being counted, and disclosing it to the person
 being measured defeats the measurement.
+
 ### Requirement: Participant Detail Carries The Evaluation Retry State
 
 The participant detail resource (`GET /api/participants/{id}`, internal backoffice surface) MUST
@@ -1017,6 +1018,7 @@ detail remains org-scoped (a participant of another organization is 404).
 - GIVEN an operator of Org A
 - WHEN they read the detail of a participant of Org B
 - THEN HTTP 404 is returned and no retry field is exposed
+
 ### Requirement: Evaluation Read Surface Exposes Per-Indicator Audit Status
 
 Each entry in `AdminEvaluationSerializer::serializeCompetencyResult()`'s

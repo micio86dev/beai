@@ -456,6 +456,7 @@ in place.
 - GIVEN a purge has already run
 - WHEN it runs again with no new expiries
 - THEN nothing further is deleted
+
 ### Requirement: An Audit Row Never Outlives the Indicator It Judges
 
 `indicator_score_audits.indicator_score_id` MUST be `cascadeOnDelete`.

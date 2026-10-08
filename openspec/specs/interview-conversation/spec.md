@@ -28,7 +28,7 @@ manual smoke), never in a unit test.
 - Time-limit/deadline logic (open product decision #5); the domain retry (RT-B, ratified decision #4) is specified in `scoring-engine`, `participant-sso` and the re-interview opening requirement below
 - Per-turn server LLM inference (Option B)
 - Hardcoded per-tenant question or anchor text
-- Refactoring `ScoreEvaluationJob` (C9) — C8 introduces its own `BarsIndicatorLoader`
+- Refactoring `ScoreEvaluationJob` (C9) beyond calling the shared `BarsIndicatorLoader`
 
 ---
 
@@ -795,6 +795,7 @@ door.
 - WHEN an interview entry point is attempted again
 - THEN the project is interviewable and the composer proceeds normally for
   that competency, asking the restored question as its sole primary
+
 ### Requirement: Potential Composes And Starts Through The Same Adaptive Engine
 
 A project whose `assessment_type` is `potential` MUST compose and start its interview through the
@@ -1068,6 +1069,7 @@ greeting. The variant is wording only: it does not change the composed system pr
 - GIVEN a participant with no evaluation retry
 - WHEN any opening is composed
 - THEN the variant is selected exactly as before and is never `reinterview`
+
 ## Coverage Note
 
 The following paths MUST be held to ~95% test coverage (unit / Pest feature tests, no HTTP):

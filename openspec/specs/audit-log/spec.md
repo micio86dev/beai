@@ -213,6 +213,7 @@ them). The rows carry the link's `organization_id` and are readable only inside 
 - WHEN a link is created or disabled
 - THEN the creation still returns 201 (with its URL) or the disable still returns 204, and the
   failure is logged
+
 ### Requirement: An Evaluation Audit Request Is Audited
 
 Every accepted `POST /api/participants/{id}/evaluation/audit` request MUST

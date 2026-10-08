@@ -172,15 +172,6 @@ established for `FakeLLMProvider`.
 - THEN zero HTTP requests reach a TypeSafe endpoint
 - AND every judgment assertion is satisfied by `FakeAuditJudge`
 
-#### Scenario: RED — a raw insert violating the status/probability CHECK is rejected
-
-- GIVEN a raw database insert into `indicator_score_audits` with
-  `status = 'judged'` and `support_probability = NULL`
-- WHEN the insert is attempted
-- THEN the database CHECK constraint rejects it
-- AND a raw insert with `status = 'skipped'` and a non-null
-  `support_probability` is rejected by the same constraint
-
 ### Requirement: Two Dedicated, Tenant-Scoped, Append-Only Tables — `ai_requests` Stays Diff-Free
 
 The system MUST introduce two new tables and MUST NOT add any column to, or
@@ -252,6 +243,15 @@ outcome.
 - WHEN the insert is attempted
 - THEN the database CHECK rejects it, because a `judged` row must not carry
   a non-null `outcome_reason`
+
+#### Scenario: RED — a raw insert violating the status/probability CHECK is rejected
+
+- GIVEN a raw database insert into `indicator_score_audits` with
+  `status = 'judged'` and `support_probability = NULL`
+- WHEN the insert is attempted
+- THEN the database CHECK constraint rejects it
+- AND a raw insert with `status = 'skipped'` and a non-null
+  `support_probability` is rejected by the same constraint
 
 ### Requirement: A Judge Failure Writes an Explicit Degraded Row and Never Throws Out of the Job
 
