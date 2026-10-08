@@ -6,7 +6,8 @@
 **Status**: CLOSED. The `managed`-mode chain (registry, credentials, binding, Tavus wire, HeyGen wire, session
 snapshot, usage estimator, cost views) is on `develop`. At archive time tasks P5.0, P5.12, P5.13, 0.3 and F.6 were
 blocked on live provider evidence; the HeyGen questions were answered live on 2026-10-08 (see "Live evidence,
-2026-10-08"), so only F.6 remains open (and the Tavus equivalents were not re-run). No verify-report existed;
+2026-10-08"), so among the live-evidence items only F.6 remains open (and the Tavus equivalents were not re-run). P9.4, P9.8,
+F.1-F.5 and F.7 are also unchecked (see "Not delivered / deferred"). No verify-report existed;
 verification was not run as an SDD phase and no test suite was run by this archive. `tasks.md` was corrected against
 the code (see below).
 

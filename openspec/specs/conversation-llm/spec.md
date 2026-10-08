@@ -105,7 +105,9 @@ Registering a HeyGen `llm_configuration` MUST happen only at template save
 time when a binding is present, never at candidate session start. The secret
 is created with `POST /v1/secrets` and the configuration with
 `POST /v1/llm-configurations`; the configuration id stored in
-`heygen_llm_configuration_id` is the sole ledger for the configuration. A model
+`heygen_llm_configuration_id` is the sole ledger for the configuration. The
+per-session HeyGen contexts created when a session is issued are outside this
+requirement. A model
 change on a bound template MUST update the stored configuration in place.
 Deleting a bound template, or unbinding it, MUST delete the associated
 `llm_configuration`. HeyGen's secrets API has no update verb (only create,
