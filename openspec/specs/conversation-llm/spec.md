@@ -121,10 +121,10 @@ be sent to `POST /v1/contexts`, which has no such field. The same call MUST
 carry `avatar_persona`, because HeyGen rejects a token request without it.
 
 HeyGen validates the format of `llm_configuration_id` when the token is issued
-but checks that the configuration exists only when the session starts. A
-session start rejected with 400 because the configuration is not found in the
-account MUST be treated as a missing configuration, reported as a degraded
-binding, and never as an applied one.
+but checks that the configuration exists only when the session starts, and the
+session start is performed by the browser with the issued token, not by the API.
+The API therefore cannot observe an unknown configuration at token time, and it
+MUST NOT report a binding as applied on the strength of the token call alone.
 
 #### Scenario: Binding a HeyGen template creates its configuration at save
 
@@ -163,11 +163,11 @@ binding, and never as an applied one.
 - WHEN the token field allowlist environment variable is changed
 - THEN `llm_configuration_id` still appears in the body — it is not gated by that allowlist
 
-#### Scenario: A start-time rejection of an unknown configuration is a degraded binding
+#### Scenario: The token call alone does not prove the configuration exists
 
 - GIVEN a session token issued with a well-formed `llm_configuration_id` that no longer exists in the HeyGen account
-- WHEN the session start is rejected with 400 "LLM configuration ... not found"
-- THEN the binding is reported as degraded and not as applied
+- WHEN the token response is received
+- THEN the API has no evidence that the configuration exists, because HeyGen checks existence only at session start
 
 ### Requirement: Stopping a HeyGen session uses the stop endpoint and a failed stop is reported
 

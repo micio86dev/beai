@@ -88,8 +88,8 @@ Notes on how the merge was done, all of them deviations a reviewer should know a
 **Merged afterwards, 2026-10-08.** After the live test (see "Live evidence, 2026-10-08") this requirement was merged
 into `openspec/specs/conversation-llm/spec.md` as an ADDED requirement, with its text corrected against the evidence:
 top-level placement on `POST /v1/sessions/token` (never under `avatar_persona`, never on `/v1/contexts`),
-`avatar_persona` required on the token call, a start-time 400 for an unknown configuration id treated as a degraded
-binding, and no update verb on secrets (rotation is delete then recreate). The secret-naming paragraph was dropped
+`avatar_persona` required on the token call, the fact that an unknown configuration id is rejected only at session start
+(a call the browser makes, so the API cannot see it at token time), and no update verb on secrets (rotation is delete then recreate). The secret-naming paragraph was dropped
 because `76eb18c` changed it and it was not re-verified. A second ADDED requirement, "Stopping a HeyGen session uses
 the stop endpoint and a failed stop is reported", records the `POST /v1/sessions/stop` semantics found by the same
 test. The spec now holds 8 requirements; the scope note in its Purpose was updated accordingly.

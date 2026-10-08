@@ -9,8 +9,8 @@
 > applicable); a well-formed but unknown configuration id passes the token call and is rejected at
 > `POST /v1/sessions/start` with 400; `/v1/sessions/token` requires `avatar_persona`; the secrets API has no update
 > verb. **This proposal must be amended accordingly:** do not expect to bind the LLM on the context (the context
-> keeps only the prompt, per AD-7), and treat a start-time 400 "configuration not found" as a missing configuration,
-> i.e. a degraded state. **Still open:** the proposal's own question round and the Gemini Live specifics (the Live
+> keeps only the prompt, per AD-7), and decide how a start-time 400 "configuration not found" (seen only by the
+> browser client, not by the API) is surfaced and reported. **Still open:** the proposal's own question round and the Gemini Live specifics (the Live
 > Connector behaviour itself was not exercised by the 2026-10-08 test). Next: amend the proposal, run the question
 > round, then spike, tasks and implementation.
 
