@@ -2,7 +2,7 @@
 
 ## Objective
 The owner wants zero unfinished work: every follow-up left by `close-open-sdd-changes-2026-10` is completed, merged
-into `develop` in every repo, and no work branch is left open ("completa tutto, mergia tutto, nessun branch aperto").
+into `develop` in every repo, and no work branch is left open (complete everything, merge everything, leave no branch open).
 
 ## Scope (owner decisions, 2026-10-08)
 1. `db-driven-conversation-prompts`: implement (text is extracted from the current PHP, output stays byte-identical;

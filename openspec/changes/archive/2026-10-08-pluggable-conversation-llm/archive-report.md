@@ -136,7 +136,7 @@ truth: `https://docs.liveavatar.com/openapi.json` plus live probes. `interview:s
 
 ## Task corrections (tasks.md)
 
-Only checkboxes and trailing notes were edited; line count unchanged (725 before and after). Ticked with evidence:
+Only checkboxes and trailing notes were edited; line count unchanged (725 before and after) AT ARCHIVE TIME. The later 2026-10-08 update (live HeyGen evidence) rewrote P5.12/P5.13 as multi-line blocks, so `tasks.md` now has 727 lines. Ticked with evidence:
 0.1, 0.2 (moot: landed on `develop`, no feature branch remains), 0.4 (rate-card verification dates present in
 `llm_models.php`), P9.1, P9.2, P9.3 (except the Model column), P9.5, P9.6, P9.7. Left unchecked and annotated: 0.3,
 P5.0, P5.12, P5.13, F.6 (`NOT DONE (needs live provider credentials / human)`), P9.4 (partial), P9.8 and F.1-F.5,
@@ -154,5 +154,5 @@ specs. Absent: verify-report, exploration.md.
 ## Copy verification
 
 Moved with `git mv`. Original file counts and line counts are identical after the move (apply-progress.md 1254,
-design.md 1434, proposal.md 661, tasks.md 725, and the six delta specs 78/38/238/306/45/72). The only edit was the
-`tasks.md` checkbox and note change above. This report is additive.
+design.md 1434, proposal.md 661, tasks.md 725 at archive time (727 after the 2026-10-08 evidence update), and the six delta specs 78/38/238/306/45/72). The only edit was the
+`tasks.md` checkbox and note change above (and, on 2026-10-08 afterwards, the P5.12/P5.13 rewrite). This report is additive.
