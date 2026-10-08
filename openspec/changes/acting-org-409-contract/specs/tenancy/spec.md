@@ -4,8 +4,8 @@
 
 ### Requirement: Organization-Required Operations Refuse Legibly Without An Organization Context
 
-An HTTP operation that needs an organization to read from or write into, and that is reachable by a caller who may
-have none (a superadmin with no acting organization), MUST answer HTTP 409 with the machine-readable body
+An HTTP operation that needs an organization to act on (the singular `GET /api/organization` read excepted, see
+below), and that is reachable by a caller who may have none (a superadmin with no acting organization), MUST answer HTTP 409 with the machine-readable body
 `{"message": "organization_context_required"}` through the `org.context` route middleware
 (`RequireOrganizationContext`). The middleware MUST decide from `TenantResolver::getOrgId()` and never from
 `$user->organization_id`, and it MUST run before validation, authorization and any query. A refusal MUST NOT write
@@ -16,6 +16,10 @@ The operations covered today are `POST /api/projects`, `PATCH /api/organization`
 `DELETE /api/organization/logo`, `POST /api/m2m/clients`, `GET /api/m2m/clients`,
 `POST /api/users/{user}/activate` and `POST /api/users/{user}/deactivate`, in addition to those that already
 carried the middleware.
+
+`GET /api/organization` is the deliberate exception: it answers `200 {"data": null}` (see organization-settings).
+`POST /api/users` and `PATCH /api/users/{user}` give the same 409 through `UserController::requireOrgId()` rather
+than through the middleware.
 
 #### Scenario: A superadmin with no acting organization is refused before anything is written
 
