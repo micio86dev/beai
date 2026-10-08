@@ -4,22 +4,23 @@
 
 ### Requirement: Organization-Required Operations Refuse Legibly Without An Organization Context
 
-An HTTP operation that needs an organization to act on (the singular `GET /api/organization` read excepted, see
-below), and that is reachable by a caller who may have none (a superadmin with no acting organization), MUST answer HTTP 409 with the machine-readable body
-`{"message": "organization_context_required"}` through the `org.context` route middleware
-(`RequireOrganizationContext`). The middleware MUST decide from `TenantResolver::getOrgId()` and never from
-`$user->organization_id`, and it MUST run before validation, authorization and any query. A refusal MUST NOT write
-anything and MUST NOT be reported as 404, 403, 422 or 500, and a list endpoint MUST NOT answer an empty list for
-this state, because an empty list reads as "this client has none".
+An HTTP operation that needs an organization to act on, and that is reachable by a caller who may have none (a
+superadmin with no acting organization), MUST answer HTTP 409 with the machine-readable body
+`{"message": "organization_context_required"}`. It MUST do so through the `org.context` route middleware
+(`RequireOrganizationContext`), except `POST /api/users` and `PATCH /api/users/{user}`, which MUST give the same
+answer through `UserController::requireOrgId()`. The only operation that does not refuse is the singular
+`GET /api/organization` read (see below). Both mechanisms MUST decide from `TenantResolver::getOrgId()` and never
+from `$user->organization_id`. The `org.context` middleware MUST run before validation, authorization and any query.
+A refusal MUST NOT write anything and MUST NOT be reported as 404, 403, 422 or 500, and a list endpoint MUST NOT
+answer an empty list for this state, because an empty list reads as "this client has none".
 
 The operations covered today are `POST /api/projects`, `PATCH /api/organization`, `POST /api/organization/logo`,
 `DELETE /api/organization/logo`, `POST /api/m2m/clients`, `GET /api/m2m/clients`,
 `POST /api/users/{user}/activate` and `POST /api/users/{user}/deactivate`, in addition to those that already
-carried the middleware.
+carried the middleware, and to `POST /api/users` and `PATCH /api/users/{user}`, which answer the same 409 through
+`UserController::requireOrgId()`.
 
 `GET /api/organization` is the deliberate exception: it answers `200 {"data": null}` (see organization-settings).
-`POST /api/users` and `PATCH /api/users/{user}` give the same 409 through `UserController::requireOrgId()` rather
-than through the middleware.
 
 #### Scenario: A superadmin with no acting organization is refused before anything is written
 
@@ -34,10 +35,10 @@ than through the middleware.
 - WHEN they call the same operation
 - THEN it is served against organization A exactly as for an admin of organization A
 
-#### Scenario: Another organization's member can never reach the acting organization's data
+#### Scenario: Another organization's admin can never reach the acting organization's data
 
-- GIVEN an operator of organization B and a superadmin acting as organization A
-- WHEN the operator calls the same operations
+- GIVEN an admin of organization B and a superadmin acting as organization A
+- WHEN the admin of B calls the same operations
 - THEN every row read or written belongs to organization B, and nothing of organization A is visible or modifiable
 
 ### Requirement: No New Ambient organization_id Reads Under App\Http

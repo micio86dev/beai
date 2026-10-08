@@ -26,10 +26,8 @@ admin from Org A MUST NOT be able to list or revoke clients from Org B.
 
 With no organization context (a superadmin with no acting organization), `POST` and
 `GET` MUST answer HTTP 409 `{"message": "organization_context_required"}` like every
-other organization-required operation, and nothing is written. Previously `POST`
-answered `{"error": "no_client_selected"}` and `GET` an empty list; **the
-`no_client_selected` error code is removed** (an error-code change on a
-non-public route; the only consumer was the generated TypeScript client).
+other organization-required operation, and nothing is written. The
+`no_client_selected` error code MUST NOT be returned by any endpoint.
 
 #### Scenario: Admin creates client
 

@@ -76,8 +76,10 @@ the `org.context` middleware, and a second accessor would be a second source of 
 - `superadmin-clients-console`: org-scoped abilities are suppressed with no acting organization.
 - `admin-backoffice`: documents that navigation and route guards need no client change (platform sections stay reachable).
 
-`user-management` is unchanged: `UserController::requireOrgId()` already answers 409 `organization_context_required`
-from the resolver and that behaviour is already in the canonical spec.
+`user-management` gets no delta: `UserController::requireOrgId()` already answers 409 `organization_context_required`
+from the resolver for create and update, and that behaviour is already in the canonical spec. The activate/deactivate
+409 (404 before) comes from the `org.context` middleware, not from `requireOrgId()`, and is specified in the
+`tenancy` requirement.
 
 ## Approach
 
@@ -101,11 +103,13 @@ is a new response on paths that answered 422/404/403/empty; reverting restores t
 
 ## Success Criteria
 
-- [ ] With no acting organization, the eight operations answer 409 `organization_context_required` and write nothing.
-- [ ] `GET /api/organization` still answers `200 {"data": null}`.
-- [ ] With an acting organization, a superadmin behaves exactly as an admin of that organization; org A's operator can
+- [x] With no acting organization, the eight operations answer 409 `organization_context_required` and write nothing.
+- [x] `GET /api/organization` still answers `200 {"data": null}`.
+- [x] With an acting organization, a superadmin behaves exactly as an admin of that organization; an admin of org A can
       never see or act on org B (tests for both).
-- [ ] `/auth/me` for a superadmin with no acting organization has `organization`, `apiClients`, `projects`,
+- [x] `/auth/me` for a superadmin with no acting organization has `organization`, `apiClients`, `projects`,
       `participants` all `false`, and every other group exactly as before.
-- [ ] The arch guard fails on a new violation (observed RED) and passes on the tree.
-- [ ] `openapi.json` is fresh, the three copies are identical, `openapi.v1.json` is unchanged.
+- [x] The arch guard fails on a new violation (observed RED) and passes on the tree.
+- [x] `openapi.json` is fresh, the three copies are identical, `openapi.v1.json` is unchanged.
+
+Every criterion above is ticked (verified in tasks.md Observed results).

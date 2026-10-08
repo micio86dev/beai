@@ -21,8 +21,6 @@ With no organization context (a superadmin with no acting organization):
   `organization_context_required` through the `org.context` middleware, never
   HTTP 404 or HTTP 403.
 
-(Previously: "resolves exclusively from the authenticated user's `organization_id`".)
-
 #### Scenario: Route never accepts a foreign organization id
 
 - GIVEN an authenticated user of org A
@@ -56,7 +54,7 @@ With no organization context (a superadmin with no acting organization):
 - THEN the response is HTTP 409 `organization_context_required`
 - AND no organization row and no stored logo is changed
 
-#### Scenario: An organization's operator can never act on another organization
+#### Scenario: An organization's admin can never act on another organization
 
 - GIVEN an admin of organization B and an organization A
 - WHEN the admin calls `PATCH /api/organization` or the logo endpoints
