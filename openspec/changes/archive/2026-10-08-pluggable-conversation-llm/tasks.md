@@ -56,7 +56,7 @@ slice's changes in a child diff, retarget/rebase before review.
 - [x] 0.2 Create `feature/pluggable-conversation-llm` off `develop` in `api`, `backoffice`, and the
   wrapper. **Leave alone**: the pre-existing `.atl/skill-registry.md` drift and the submodule-pointer
   drift — neither belongs to this change. — DONE/MOOT (verified 2026-10-08): the slices landed on `develop`; no `feature/pluggable-conversation-llm` branch exists any longer in the wrapper, `api` or `backoffice`.
-- [ ] 0.3 **BLOCKING before P4 and P5.** Run `php artisan interview:smoke-check` — the command lives
+- [x] 0.3 **BLOCKING before P4 and P5.** Run `php artisan interview:smoke-check` — the command lives
   in the class `ProviderSmokeCheck` (`api/app/Console/Commands/ProviderSmokeCheck.php`), NOT a file
   named for the command; grepping the command name finds nothing. **A 200 response is NOT
   evidence** — `TemplatePayload.php:38-40` records that HeyGen accepts flat keys and silently
@@ -68,7 +68,7 @@ slice's changes in a child diff, retarget/rebase before review.
     registration must precede the context call, not merely an extra field.
   - (c) Does Tavus retain a previously-submitted `layers.llm.api_key` across PATCHes? This changes
     the expected status set on the 304 no-change path (`TavusPalSync.php:84`).
-  - (d) Is HeyGen's `secret_name` unique per account, and does `/v1/secrets` expose an update verb? — NOT DONE (needs live provider credentials / human): `interview:smoke-check` was never run against live HeyGen/Tavus with all four questions recorded. (c) was answered live in P4.0 and (d) in P5.0; (a) placement of `llm_configuration_id` in `POST /v1/sessions/token` and (b) whether `POST /v1/contexts` takes it remain UNVERIFIED.
+  - (d) Is HeyGen's `secret_name` unique per account, and does `/v1/secrets` expose an update verb? — DONE (proven live 2026-10-08 against the HeyGen LiveAvatar API, source of truth `https://docs.liveavatar.com/openapi.json` plus live probes; `interview:smoke-check --provider=heygen` PASSED): (a) `llm_configuration_id` is a TOP-LEVEL field of the `POST /v1/sessions/token` body (`FullSDKSessionTokenConfigDataSchema`, uuid, optional): a top-level `"not-a-uuid"` returns 422 "Input should be a valid UUID" while the same value nested under `avatar_persona` returns 200 and is silently ignored; an unknown but well-formed UUID passes `/sessions/token` and is rejected at `POST /sessions/start` with 400 "LLM configuration with id '...' not found in your space"; a real configuration id gives `/sessions/start` 201. (b) `POST /v1/contexts` does NOT accept `llm_configuration_id` (`CreateContextSchema`/`UpdateContextSchema` carry only `name`, `prompt`, `opening_text`, `links`; unknown fields are dropped). (c) answered live in P4.0 (Tavus). (d) `secret_name` is not unique and `/v1/secrets` has only POST, GET (list) and DELETE (PATCH/PUT return 405). The Tavus equivalents were not re-run on 2026-10-08.
 - [x] 0.4 Confirm the rate-card verification (proposal AD-8) is resolved — it is, dated 2026-08-26 —
   and is not re-opened by tasks. — DONE (verified 2026-10-08): `api/database/seeders/data/llm_models.php` rows carry `rate_card_source_url` and `rate_card_verified_at` (2026-08-26; one row re-verified 2026-09-17).
 - [ ] 0.5 Confirm `docs/version-catalog.md` and the stack table are unaffected: no new dependency is
@@ -374,7 +374,7 @@ degraded" claim is proven via `LlmBindingResolver::resolveStatus()` (already bui
 
 ## PR P5 — HeyGen Wire (`api`)
 
-- [ ] P5.0 **BLOCKING GATE**: confirm Phase 0.3's questions (a), (b), (d) are answered and recorded
+- [x] P5.0 **BLOCKING GATE**: confirm Phase 0.3's questions (a), (b), (d) are answered and recorded
   before writing this PR's golden body. A 200 response is **not** evidence
   (`TemplatePayload.php:38-40`).
   **PARTIALLY RESOLVED (2026-08-26), NOT fully closed.** Live vendor evidence supplied this
@@ -389,7 +389,7 @@ degraded" claim is proven via `LlmBindingResolver::resolveStatus()` (already bui
   addressed by the supplied evidence and remains open; P5.12/P5.13 are therefore deliberately
   left undone rather than guessed (see below). Proceeding past this gate for (a)/(d) was an
   explicit instruction for this batch ("implement as far as the live evidence allows"), not a
-  default practice — do not treat this as license to skip P5.0 on a future PR. — NOT DONE (needs live provider credentials / human): questions (a) and (b) are still open; the top-level `$providerOwned` placement of `llm_configuration_id` shipped as an UNVERIFIED best guess.
+  default practice — do not treat this as license to skip P5.0 on a future PR. — DONE (proven live 2026-10-08, see 0.3): (a) the top-level `$providerOwned` placement of `llm_configuration_id` shipped in this change is the correct one, so the earlier "UNVERIFIED best guess" is now confirmed; (b) the field does not exist on `/v1/contexts`; (d) stands. The shape test of P5.8 was not upgraded to a placement-correctness test by this documentation edit.
 - [x] P5.1 **RED** `api/tests/Unit/Services/ConversationLlm/HeygenLlmRegistrarTest.php`:
   `ensureConfiguration()` returns the **exact** shape `TavusPalSync.php:40-41` declares
   (`array{status:'skipped'|'synced'|'warning', message?}`) and never throws. (Method named
@@ -418,12 +418,14 @@ degraded" claim is proven via `LlmBindingResolver::resolveStatus()` (already bui
 - [x] P5.10 **RED** same file: changing the `TOKEN_FIELD_ALLOWLIST`-governing env var does not
   remove `llm_configuration_id` from the body.
 - [x] P5.11 **GREEN** confirmed by P5.9's `$providerOwned` placement.
-- [ ] P5.12 **NOT DONE — question (b) unanswered.** The supplied live evidence covered only the
-  `/v1/sessions/token` control experiment; nothing established whether `POST /v1/contexts` also
-  needs `llm_configuration_id`. Per this task's own instruction ("do not guess either way"),
-  `HeygenProvider::buildContextBody()` is UNCHANGED this batch — zero diff, confirmed by the
-  pre-existing L1/L2 `/contexts` fixture tests staying green untouched. — NOT DONE (needs live provider credentials / human): question (b) is still unanswered; `HeygenProvider::buildContextBody()` is unchanged. This is the prerequisite of the still-open change `native-duplex-conversation`.
-- [ ] P5.13 **NOT DONE** — depends on P5.12's still-open question (b). — NOT DONE (needs live provider credentials / human): depends on P5.12. Prerequisite of `native-duplex-conversation`.
+- [x] P5.12 **NOT APPLICABLE (proven 2026-10-08)** — question (b) answered: `POST /v1/contexts` does not accept
+  `llm_configuration_id` (`CreateContextSchema`/`UpdateContextSchema` carry only `name`, `prompt`, `opening_text`,
+  `links`; a 200 response drops the field and ignores unknown fields). The LLM binding lives only on
+  `POST /v1/sessions/token`. `HeygenProvider::buildContextBody()` correctly stays UNCHANGED (zero diff, confirmed by the
+  `/contexts` fixture tests staying green). Originally left open because the earlier evidence covered only the
+  `/v1/sessions/token` control experiment.
+- [x] P5.13 **NOT APPLICABLE (proven 2026-10-08)** — depended on question (b), now answered: there is nothing to add
+  to the context body.
 - [x] P5.14 **GREEN** persist the sync outcome the same way as Tavus:
   `AvatarTemplateController::recordSync()` now dispatches per-provider (`TavusPalSync` /
   `HeygenLlmRegistrar::ensureConfiguration()`) and writes `llm_sync_status`/`llm_synced_at` via
@@ -720,6 +722,6 @@ routing, not auth:
 - [ ] F.5 Deploy runbook recorded, not executed (no deploy unless explicitly requested):
   `php artisan migrate --force && php artisan beai:sync-llm-registry`. — NOT RE-RUN at archive time (2026-10-08).
 - [ ] F.6 Confirm the four Phase 0.3 smoke-lane questions are answered and cited by their respective
-  P4/P5 golden-body tests — never guessed. — NOT DONE (needs live provider credentials / human): questions (a) and (b) are unanswered, so the P5 golden bodies cannot cite them.
+  P4/P5 golden-body tests — never guessed. — PARTIAL (2026-10-08): the four answers are now recorded and live-proven for HeyGen ((a), (b), (d); see 0.3) and for Tavus ((c), P4.0). NOT confirmed: that the P4/P5 golden-body tests cite them; P5.8 remains a shape test ("present when bound") and no placement-correctness test was added, and the Tavus answer was not re-run on 2026-10-08. Left unchecked until that citation is verified.
 - [ ] F.7 Confirm the OpenAPI diffs committed in P3a and P6b are scoped to this change's fields only,
   with the pre-existing unrelated Scramble drift left untouched in both. — NOT RE-RUN at archive time (2026-10-08).

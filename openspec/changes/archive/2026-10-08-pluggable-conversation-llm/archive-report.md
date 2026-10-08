@@ -3,11 +3,13 @@
 **Change**: pluggable-conversation-llm
 **Archived to**: `openspec/changes/archive/2026-10-08-pluggable-conversation-llm/`
 **Archive date**: 2026-10-08
-**Status**: CLOSED, DELIVERED WITH LIVE-PROVIDER GATES STILL OPEN. The `managed`-mode chain (registry, credentials,
-binding, Tavus wire, HeyGen wire as far as the evidence allowed, session snapshot, usage estimator, cost views) is
-on `develop`. Tasks P5.0, P5.12, P5.13, 0.3 and F.6 are NOT done and need a human with live HeyGen/Tavus
-credentials. No verify-report existed; verification was not run as an SDD phase and no test suite was run by this
-archive. `tasks.md` was corrected against the code (see below).
+**Status**: CLOSED. The `managed`-mode chain (registry, credentials, binding, Tavus wire, HeyGen wire, session
+snapshot, usage estimator, cost views) is on `develop`. At archive time tasks P5.0, P5.12, P5.13, 0.3 and F.6 were
+blocked on live provider evidence; the HeyGen questions were answered live on 2026-10-08 (see "Live evidence,
+2026-10-08"), so among the live-evidence items only F.6 remains open (and the Tavus equivalents were not re-run). P9.4, P9.8,
+F.1-F.5 and F.7 are also unchecked (see "Not delivered / deferred"). No verify-report existed;
+verification was not run as an SDD phase and no test suite was run by this archive. `tasks.md` was corrected against
+the code (see below).
 
 ## Summary
 
@@ -38,7 +40,7 @@ Composition used `gentle-ai sdd-archive-compose` (exit 0) except where noted.
 | interview-session | 47 -> 48 | 1 added (session snapshots its LLM binding at issue) |
 | observability | 20 -> 22 | 2 added (append-only usage aggregate with rate-card snapshot; actual usage permanently null in managed mode) |
 | avatar-templates | 14 -> 16 | 2 modified (see below), 2 added ("Active template resolution requires an explicit provider and never crosses providers"; "Unbinding a template clears only that template's binding") |
-| conversation-llm (NEW) | 0 -> 6 | 6 of the 10 delta requirements: registry sync via console command; credential in use cannot be deleted; mode derivation and `native_duplex` refusal; Tavus wire merge; usage estimator; per-template forecast |
+| conversation-llm (NEW) | 0 -> 6 at archive time (8 after the 2026-10-08 additions below) | 6 of the 10 delta requirements at archive time: registry sync via console command; credential in use cannot be deleted; mode derivation and `native_duplex` refusal; Tavus wire merge; usage estimator; per-template forecast |
 
 `git diff --stat` of `openspec/specs`: 299 insertions, 45 deletions in the four modified files, plus the new
 `conversation-llm/spec.md` (150 lines).
@@ -78,34 +80,72 @@ Notes on how the merge was done, all of them deviations a reviewer should know a
 | avatar-templates | Portability export and import never carry a credential id or key | says import resolves `credential_name` against "its own credentials" of the importing organization; credentials are platform rows now. Not re-verified otherwise |
 | audit-log | Credential and LLM-binding mutations are audited with the key value always redacted | requires `llm_credential.verified` and a "verifying a credential is audited" scenario: no such action or endpoint exists (`created`, `rotated`, `deleted`, `llm_bound`, `llm_unbound` do exist) |
 
-### Not merged - blocked on live provider evidence
+### Not merged at archive time - blocked on live provider evidence (merged afterwards on 2026-10-08)
 
 | Capability | Requirement | Why not merged |
 |---|---|---|
-| conversation-llm | HeyGen's secret and configuration lifecycle is lazy, synchronous, and leaves no orphan | states as fact that `llm_configuration_id` enters the session-token body at the provider-owned (top-level) position and the secret lifecycle (`/v1/secrets`): open question (a) is UNVERIFIED live (a control experiment returned 200 for a bogus id, so status code cannot discriminate placement); also names secrets `beai-org{orgId}-cred{credId}`, since changed by `76eb18c` |
+| conversation-llm | HeyGen's secret and configuration lifecycle is lazy, synchronous, and leaves no orphan | states as fact that `llm_configuration_id` enters the session-token body at the provider-owned (top-level) position and the secret lifecycle (`/v1/secrets`): open question (a) was UNVERIFIED live (a control experiment returned 200 for a bogus id, so status code cannot discriminate placement); also names secrets `beai-org{orgId}-cred{credId}`, since changed by `76eb18c` |
+
+**Merged afterwards, 2026-10-08.** After the live test (see "Live evidence, 2026-10-08") this requirement was merged
+into `openspec/specs/conversation-llm/spec.md` as an ADDED requirement, with its text corrected against the evidence:
+top-level placement on `POST /v1/sessions/token` (never under `avatar_persona`, never on `/v1/contexts`),
+`avatar_persona` required on the token call, the fact that an unknown configuration id is rejected only at session start
+(a call the browser makes, so the API cannot see it at token time), and no update verb on secrets (rotation is delete then recreate). The secret-naming paragraph was dropped
+because `76eb18c` changed it and it was not re-verified. A second ADDED requirement, "Stopping a HeyGen session uses
+the stop endpoint and a failed stop is reported", records the `POST /v1/sessions/stop` semantics found by the same
+test. The spec now holds 8 requirements; the scope note in its Purpose was updated accordingly.
 
 ## Not delivered / deferred
 
-- **P5.12 and P5.13 remain open.** Whether `POST /v1/contexts` also takes `llm_configuration_id` (open question (b))
-  was never answered; `HeygenProvider::buildContextBody()` is unchanged. **They are the prerequisite of the
-  still-open change `native-duplex-conversation`.**
-- **The live smoke-check remains open**: tasks 0.3, P5.0 and F.6 need `interview:smoke-check` (class
-  `ProviderSmokeCheck`) run against live HeyGen/Tavus with credentials, recording (a) the placement of
-  `llm_configuration_id` in `POST /v1/sessions/token`, (b) the `/v1/contexts` question, and confirming the secrets
-  host and verbs. (c) Tavus not retaining `api_key` was answered live (P4.0); (d) `secret_name` non-unique and
-  `/v1/secrets` immutable was answered partially (P5.0). `apply-progress.md` and P8c record that an earlier "live
-  evidence" claim for `api.heygen.com/v1/secrets` was not reproducible (the real host is `api.liveavatar.com`):
-  recorded smoke evidence is a claim until re-run.
+- **P5.12 and P5.13 are NOT APPLICABLE (proven 2026-10-08).** `POST /v1/contexts` does not accept
+  `llm_configuration_id`, so `HeygenProvider::buildContextBody()` correctly stays unchanged. The still-open change
+  `native-duplex-conversation` must not expect to bind the LLM on the context; the binding lives only on the
+  `POST /v1/sessions/token` call.
+- **The live smoke-check questions were answered for HeyGen on 2026-10-08** (tasks 0.3 and P5.0 are ticked; see
+  "Live evidence, 2026-10-08"). (c) Tavus not retaining `api_key` was answered live earlier (P4.0). `apply-progress.md`
+  and P8c record that an earlier "live evidence" claim for `api.heygen.com/v1/secrets` was not reproducible (the
+  real host is `api.liveavatar.com`): recorded smoke evidence is a claim until re-run.
+- **Still open**: F.6 (not verified that the P4/P5 golden-body tests cite the answers; P5.8 is still a shape test),
+  the Tavus equivalents of the live questions (not re-run on 2026-10-08), and the cleanup of the HeyGen contexts
+  that `issue()` creates and never deletes (about 20 `beai-*` contexts accumulated during testing; a follow-up
+  keyed on `provider_context_ref` is in progress and is NOT done).
 - **P9.4 Model column**: DROPPED (not required by the delta spec); forecast rendering on template rows is done.
 - **Final verification F.1-F.5 and F.7, and P9.8**: NOT RE-RUN at archive time (2026-10-08).
 
+## Live evidence, 2026-10-08
+
+The owner authorized a live test of the HeyGen LiveAvatar API, run from the local `beai_api` container. Source of
+truth: `https://docs.liveavatar.com/openapi.json` plus live probes. `interview:smoke-check --provider=heygen` PASSED.
+
+- **(a) Placement, PROVEN.** `llm_configuration_id` is a top-level, optional uuid field of the
+  `POST /v1/sessions/token` body (`FullSDKSessionTokenConfigDataSchema`). A top-level `"not-a-uuid"` returns 422
+  "Input should be a valid UUID"; the same value nested as `avatar_persona.llm_configuration_id` returns 200 and is
+  silently ignored. A well-formed but unknown UUID passes `/sessions/token` and is rejected at
+  `POST /sessions/start` with 400 "LLM configuration with id '...' not found in your space"; a real configuration
+  id gives `/sessions/start` 201. `/sessions/token` returns 422 without `avatar_persona` ("Provide exactly one of
+  avatar_persona or voice_agent"). This confirms the top-level `$providerOwned` placement shipped by P5.
+- **Lifecycle, PROVEN.** `POST /v1/secrets {secret_type, secret_value, secret_name}` returns 200 `data.id`;
+  `POST /v1/llm-configurations {display_name, model_name, base_url, secret_id}` returns 200 `data.id` (`base_url` is
+  optional per the spec); `GET`, `PATCH` (partial update works) and `DELETE` of a configuration work;
+  `DELETE /v1/secrets/{id}` works; the secrets API has only POST, GET (list) and DELETE (PATCH/PUT return 405).
+- **(b) Contexts, PROVEN NO.** `CreateContextSchema` and `UpdateContextSchema` carry only `name`, `prompt`,
+  `opening_text`, `links`; a 200 response drops an extra `llm_configuration_id` and unknown fields are ignored.
+- **Defect found and fixed outside this change** (api PR #144, merged, `develop` `e215c43`):
+  `HeygenProvider::teardown()` used `DELETE /v1/sessions/{ref}`, which answers 405 (the session was never stopped
+  and the failure was swallowed). The real stop is `POST /v1/sessions/stop {session_id, reason}`; the smoke check now
+  fails when the stop is not confirmed.
+
 ## Task corrections (tasks.md)
 
-Only checkboxes and trailing notes were edited; line count unchanged (725 before and after). Ticked with evidence:
+Only checkboxes and trailing notes were edited; line count unchanged (725 before and after) AT ARCHIVE TIME. The later 2026-10-08 update (live HeyGen evidence) rewrote P5.12/P5.13 as multi-line blocks, so `tasks.md` now has 727 lines. Ticked with evidence:
 0.1, 0.2 (moot: landed on `develop`, no feature branch remains), 0.4 (rate-card verification dates present in
 `llm_models.php`), P9.1, P9.2, P9.3 (except the Model column), P9.5, P9.6, P9.7. Left unchecked and annotated: 0.3,
 P5.0, P5.12, P5.13, F.6 (`NOT DONE (needs live provider credentials / human)`), P9.4 (partial), P9.8 and F.1-F.5,
 F.7 (`NOT RE-RUN at archive time`).
+
+Update 2026-10-08, after the live test: 0.3 and P5.0 are ticked with the proven answers; P5.12 and P5.13 are ticked
+and annotated `NOT APPLICABLE (proven 2026-10-08)`; F.6 stays unchecked with a PARTIAL note; F.1-F.5 and F.7 are
+still NOT RE-RUN.
 
 ## Traceability
 
@@ -115,5 +155,5 @@ specs. Absent: verify-report, exploration.md.
 ## Copy verification
 
 Moved with `git mv`. Original file counts and line counts are identical after the move (apply-progress.md 1254,
-design.md 1434, proposal.md 661, tasks.md 725, and the six delta specs 78/38/238/306/45/72). The only edit was the
-`tasks.md` checkbox and note change above. This report is additive.
+design.md 1434, proposal.md 661, tasks.md 725 at archive time (727 after the 2026-10-08 evidence update), and the six delta specs 78/38/238/306/45/72). The only edit was the
+`tasks.md` checkbox and note change above (and, on 2026-10-08 afterwards, the P5.12/P5.13 rewrite). This report is additive.
