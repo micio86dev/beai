@@ -14,9 +14,10 @@ path) and cost (a billing-evidence path); a gap here is a leaked key or a
 wrong invoice, discovered only when it is too late.
 
 Scope note: this version carries only the requirements that were confirmed
-against the implementation at archive time (2026-10-08). The registry
-contents, credential storage and validation, and HeyGen lifecycle
-requirements of the originating change were not merged; see the archived
+against the implementation at archive time (2026-10-08) and the HeyGen
+requirements proven against the live provider on 2026-10-08. The registry
+contents and the credential storage and validation requirements of the
+originating change were not merged; see the archived
 `pluggable-conversation-llm` report.
 
 ---
@@ -97,6 +98,106 @@ persona-level tuning knob (e.g. `llmTemperature`) in the same request body.
 - GIVEN a Tavus template whose only configuration is the LLM binding
 - WHEN it is saved
 - THEN the PAL PATCH is sent — the sync is not skipped by the empty-layers guard
+
+### Requirement: HeyGen's secret and configuration lifecycle is lazy, synchronous, and leaves no orphan
+
+Registering a HeyGen `llm_configuration` MUST happen only at template save
+time when a binding is present, never at candidate session start. The secret
+is created with `POST /v1/secrets` and the configuration with
+`POST /v1/llm-configurations`; the configuration id stored in
+`heygen_llm_configuration_id` is the sole ledger for the configuration. A model
+change on a bound template MUST update the stored configuration in place.
+Deleting a bound template, or unbinding it, MUST delete the associated
+`llm_configuration`. HeyGen's secrets API has no update verb (only create,
+list and delete), so rotating a credential MUST delete and recreate its HeyGen
+secret, then update every configuration bound to that credential.
+
+`llm_configuration_id` MUST be sent as a top-level field of the
+`POST /v1/sessions/token` body, through the provider-owned position and never
+through the environment-extendable token allowlist. It MUST NOT be nested under
+`avatar_persona` (HeyGen silently ignores it there, so the avatar would answer
+with the provider's default model while the template looks bound) and MUST NOT
+be sent to `POST /v1/contexts`, which has no such field. The same call MUST
+carry `avatar_persona`, because HeyGen rejects a token request without it.
+
+HeyGen validates the format of `llm_configuration_id` when the token is issued
+but checks that the configuration exists only when the session starts. A
+session start rejected with 400 because the configuration is not found in the
+account MUST be treated as a missing configuration, reported as a degraded
+binding, and never as an applied one.
+
+#### Scenario: Binding a HeyGen template creates its configuration at save
+
+- GIVEN an unbound HeyGen-provider template
+- WHEN it is saved with a model and credential
+- THEN a HeyGen secret and a HeyGen `llm_configuration` are created and the configuration id is stored on the template
+
+#### Scenario: Changing the model of a bound template updates its configuration in place
+
+- GIVEN a HeyGen template bound to a configuration
+- WHEN the template is saved with a different model
+- THEN the stored configuration is updated in place and its id is unchanged
+
+#### Scenario: Deleting a bound HeyGen template removes its configuration
+
+- GIVEN a HeyGen template bound to a configuration
+- WHEN the template is deleted
+- THEN the HeyGen `llm_configuration` is deleted and no orphan remains
+
+#### Scenario: Rotating a credential recreates its secret and patches every bound configuration
+
+- GIVEN a credential bound to two HeyGen templates
+- WHEN the credential is rotated
+- THEN the HeyGen secret is deleted and recreated, because the secrets API has no update verb, and both bound configurations are updated to reference it
+
+#### Scenario: The binding is a top-level field of the token request
+
+- GIVEN a HeyGen session-token body being built for a bound template
+- WHEN the body is assembled
+- THEN `llm_configuration_id` appears at the top level of the body, `avatar_persona` is present, and `llm_configuration_id` appears nowhere under `avatar_persona`
+- AND no `POST /v1/contexts` body carries `llm_configuration_id`
+
+#### Scenario: The binding cannot be silently disabled by an environment change
+
+- GIVEN a HeyGen session-token body being built for a bound template
+- WHEN the token field allowlist environment variable is changed
+- THEN `llm_configuration_id` still appears in the body — it is not gated by that allowlist
+
+#### Scenario: A start-time rejection of an unknown configuration is a degraded binding
+
+- GIVEN a session token issued with a well-formed `llm_configuration_id` that no longer exists in the HeyGen account
+- WHEN the session start is rejected with 400 "LLM configuration ... not found"
+- THEN the binding is reported as degraded and not as applied
+
+### Requirement: Stopping a HeyGen session uses the stop endpoint and a failed stop is reported
+
+Tearing down a HeyGen session MUST send `POST /v1/sessions/stop` with the
+session id and a reason; HeyGen offers no other way to end a session, and a
+`DELETE` on the session resource is refused with 405 and leaves the session
+running. The teardown MUST check the response status explicitly and MUST NOT
+treat an unconfirmed stop as a success. A 404 means the session is already gone
+and counts as stopped. Any other non-2xx status, or a transport error, MUST be
+logged with the provider's message redacted and MUST be reported to the caller
+as a failed stop, without throwing.
+
+#### Scenario: A confirmed stop is reported as stopped
+
+- GIVEN a HeyGen session with a provider session reference
+- WHEN teardown is requested and `POST /v1/sessions/stop` answers 2xx
+- THEN the teardown reports the session as stopped
+
+#### Scenario: A session that is already gone counts as stopped
+
+- GIVEN a HeyGen session with a provider session reference
+- WHEN `POST /v1/sessions/stop` answers 404
+- THEN the teardown reports the session as stopped
+
+#### Scenario: An unconfirmed stop is reported, never treated as success
+
+- GIVEN a HeyGen session with a provider session reference
+- WHEN `POST /v1/sessions/stop` answers a non-2xx status other than 404, or the request fails in transport
+- THEN the teardown reports a failed stop and logs the failure with the provider's message redacted
+- AND no exception propagates to the caller
 
 ### Requirement: The usage estimator rejects the naive per-character count in favor of a context-resend formula
 

@@ -79,11 +79,20 @@ Notes on how the merge was done, all of them deviations a reviewer should know a
 | avatar-templates | Portability export and import never carry a credential id or key | says import resolves `credential_name` against "its own credentials" of the importing organization; credentials are platform rows now. Not re-verified otherwise |
 | audit-log | Credential and LLM-binding mutations are audited with the key value always redacted | requires `llm_credential.verified` and a "verifying a credential is audited" scenario: no such action or endpoint exists (`created`, `rotated`, `deleted`, `llm_bound`, `llm_unbound` do exist) |
 
-### Not merged - blocked on live provider evidence
+### Not merged at archive time - blocked on live provider evidence (merged afterwards on 2026-10-08)
 
 | Capability | Requirement | Why not merged |
 |---|---|---|
-| conversation-llm | HeyGen's secret and configuration lifecycle is lazy, synchronous, and leaves no orphan | states as fact that `llm_configuration_id` enters the session-token body at the provider-owned (top-level) position and the secret lifecycle (`/v1/secrets`): open question (a) is UNVERIFIED live (a control experiment returned 200 for a bogus id, so status code cannot discriminate placement); also names secrets `beai-org{orgId}-cred{credId}`, since changed by `76eb18c` |
+| conversation-llm | HeyGen's secret and configuration lifecycle is lazy, synchronous, and leaves no orphan | states as fact that `llm_configuration_id` enters the session-token body at the provider-owned (top-level) position and the secret lifecycle (`/v1/secrets`): open question (a) was UNVERIFIED live (a control experiment returned 200 for a bogus id, so status code cannot discriminate placement); also names secrets `beai-org{orgId}-cred{credId}`, since changed by `76eb18c` |
+
+**Merged afterwards, 2026-10-08.** After the live test (see "Live evidence, 2026-10-08") this requirement was merged
+into `openspec/specs/conversation-llm/spec.md` as an ADDED requirement, with its text corrected against the evidence:
+top-level placement on `POST /v1/sessions/token` (never under `avatar_persona`, never on `/v1/contexts`),
+`avatar_persona` required on the token call, a start-time 400 for an unknown configuration id treated as a degraded
+binding, and no update verb on secrets (rotation is delete then recreate). The secret-naming paragraph was dropped
+because `76eb18c` changed it and it was not re-verified. A second ADDED requirement, "Stopping a HeyGen session uses
+the stop endpoint and a failed stop is reported", records the `POST /v1/sessions/stop` semantics found by the same
+test. The spec now holds 8 requirements; the scope note in its Purpose was updated accordingly.
 
 ## Not delivered / deferred
 
