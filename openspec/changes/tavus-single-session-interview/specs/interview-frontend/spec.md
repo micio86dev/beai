@@ -1,5 +1,8 @@
 # Delta for Interview Frontend
 
+> Rescoped 2026-10-08. MODIFIED requirements keep their main-spec titles exactly and their current full text
+> (the HeyGen-only presentation requirement keeps its "(HeyGen only)" title). Nothing is REMOVED.
+
 ## MODIFIED Requirements
 
 ### Requirement: Interview session loop — endpoint call order
@@ -14,14 +17,17 @@ in the order mandated by the backend contract:
    retry = a fresh attempt sequence, not a continuation of the previous count). After 3 consecutive
    `429` failures the session remains `pending` (backend side); the user can retry from the error
    screen which resets the counter and starts a new attempt sequence.
-   **Tavus advance-on-live-ref branch:** when `POST /start`'s response indicates the existing
-   live Tavus conversation is being reused for the new competency (per `interview-session`'s
-   advance-on-live-ref path) rather than a freshly issued `provider_token`/`conversation_url`,
-   the client MUST NOT tear down or recreate its Tavus call object. Instead it MUST send the
-   competency-boundary interaction over the existing Daily data channel and retarget utterance
-   attribution to the new competency's `session_id` from the `/start` response — no
-   `provider.stop()`/re-`start()` cycle runs for this branch, unlike every other `/start` call
-   in this loop.
+   **Tavus continuation branch (single-session):** the client sends `live_conversation_id`
+   (the conversation id it holds) in the `/start` body ONLY while it holds a live, joined Tavus
+   handle; it sends nothing otherwise. When the `201` response contains a `continuation` object
+   (`conversation_id`, `competency_code`) and null `provider_token`/`conversation_url`, the client
+   MUST NOT create a provider handle, mount a player or transition to `connecting`; it moves the
+   attribution cursor to the new `session_id` and then sends the boundary interaction over the
+   EXISTING Daily data channel (see "Utterance Attribution Retargets At A Competency Boundary
+   Without A Race Window"). A response with a fresh handle and no `continuation` takes today's
+   path unchanged. A response with `continuation` but a missing field, or with `continuation` AND
+   a non-null handle, is malformed and takes the existing retryable error screen. The client
+   acts on the presence of `continuation` only; it never reads a feature flag.
 2. `POST /utterance` — called best-effort on every provider transcript event; a `409`
    response MUST be silently dropped.
 3. `POST /integrity` — called every `FLUSH_INTERVAL_MS` (10 000 ms); also flushed via
@@ -147,22 +153,32 @@ the second re-mount is skipped (prevents concurrent double-start). When re-mount
 - WHEN the client receives the response
 - THEN the candidate is redirected to the terminal screen with a localized completion message
 
-#### Scenario: /start response without a fresh provider handle reuses the live Tavus conversation
+#### Scenario: A continuation response reuses the live Tavus conversation
 
-- GIVEN `POST /start` returns `201` for a competency whose Tavus conversation is already
-  live, with the response indicating reuse (no fresh `conversation_url`)
+- GIVEN `POST /start` returns `201` with `continuation: {conversation_id, competency_code}` and null handles
 - WHEN the client processes the response
-- THEN no new avatar player initialization occurs; the existing call object continues, the
-  boundary interaction is sent, and attribution retargets to the new `session_id`
+- THEN `createProvider` is not called again, no player is mounted, the state does not become `connecting`,
+  the cursor moves to the new `session_id` before the boundary interaction is sent
 
-#### Scenario: Every other /start call in this loop is unaffected by the advance-on-live-ref branch
+#### Scenario: live_conversation_id is sent only while a handle is live
 
-- GIVEN a HeyGen interview, or a Tavus interview's very first competency, or a Tavus
-  competency that requires a genuine new conversation (provider session ceiling)
+- GIVEN a joined Tavus handle, and separately a reload, a pause, a tab-hidden pause or a re-offer
 - WHEN `POST /start` is called
-- THEN the existing full initialization path (provider player init, timer, proctoring, flush
-  intervals) runs exactly as documented above — unchanged by the existence of the
-  advance-on-live-ref branch
+- THEN the body carries `live_conversation_id` only in the first case; in the others the browser holds no
+  live handle and the body has none
+
+#### Scenario: A response without continuation takes today's path
+
+- GIVEN a HeyGen interview, a Tavus first competency, a Tavus interview with the flag off, or a refused continuation
+- WHEN `POST /start` returns a fresh handle and no `continuation`
+- THEN the existing full initialization path (player init, timer, proctoring, flush intervals) runs unchanged,
+  and the HeyGen suites pass unmodified
+
+#### Scenario: A malformed continuation is a retryable error
+
+- GIVEN a `continuation` missing `competency_code`, or present together with a non-null `conversation_url`
+- WHEN the client validates the response
+- THEN the retryable error screen is shown and no cursor move or send occurs
 
 ---
 
@@ -179,8 +195,12 @@ only from a function guarded by `import.meta.client`, so each SDK lands in its o
 chunk and a candidate on one provider never downloads a byte of the other's SDK.
 
 For Tavus specifically, ONE joined Daily call object and its attached `<video>` element
-MUST persist across every competency the live conversation covers — creating a new call
-object per competency is a regression to the old one-session-per-competency model. HeyGen's
+MUST persist across every competency the live conversation covers when the server returns a
+`continuation` — creating a new call object per competency in that case is a regression. The
+context-steering capability is a narrow interface (`SupportsContextSteering`, guarded by
+`canSteerContext()`) implemented by the Tavus provider only; the shared `InterviewProvider`
+interface MUST NOT gain a method that HeyGen would have to stub, and the Tavus provider's
+`sendBoundary(ticket)` MUST be the only call site of `sendAppMessage` in the application. HeyGen's
 per-competency session and crossfade handover are UNCHANGED by this: HeyGen continues to
 obtain a fresh `provider_token` and re-run its existing crossfade for every competency
 exactly as before this change; nothing in this delta removes or narrows that path.
@@ -216,11 +236,10 @@ it is ever received — it is kept because it costs three lines and would be a m
 signal the day Tavus registers the tool, but the spoken-phrase path MUST NOT depend on it: a
 Tavus session that never receives a `tool_call` message MUST still complete on the spoken
 end phrase, exactly as a HeyGen session does. Within a multi-competency conversation, the
-spoken-phrase match at a competency's boundary MUST also be capable of being superseded by
-the mechanical boundary-detection fallback (see "Mechanical Boundary-Detection Fallback
-Independent of LLM Phrase Compliance" below); a competency boundary is not the same event
-as the interview-ending completion signal, but both share the same phrase-matching mechanism
-and the same paraphrase risk.
+spoken-phrase match at a competency's boundary is ONE of three inputs to an idempotent boundary
+assertion (see "Mechanical Boundary Detection Does Not Depend On LLM Phrase Compliance" below); a
+competency boundary is not the same event as the interview-ending completion signal, but both
+share the same phrase-matching mechanism and the same paraphrase risk.
 
 **Tavus media path (provider opacity):** the Tavus provider MUST join the conversation as a
 Daily call object (`Daily.createCallObject({ audioSource: true, videoSource: false })`), NEVER
@@ -325,9 +344,15 @@ Barge-in: `interrupt()`.
 #### Scenario: A second competency within a live Tavus conversation reuses the existing call object
 
 - GIVEN an active Tavus call object already joined for competency CSF
-- WHEN the interview advances to competency INN within the same conversation
+- WHEN `/start` for INN returns a `continuation`
 - THEN no new `Daily.createCallObject()` call is made and no new `<video>` element attachment
-  occurs; the existing call object and its attached element continue serving INN
+  occurs; across three competencies `createProvider` is called once and the number of mounted players never exceeds one
+
+#### Scenario: HeyGen never exposes a context-steering method
+
+- GIVEN the HeyGen provider
+- WHEN `canSteerContext(provider)` is evaluated
+- THEN it is false, and `HeyGenProvider` has no `sendBoundary` stub
 
 #### Scenario: HeyGen's per-competency session and crossfade are unaffected
 
@@ -338,100 +363,244 @@ Barge-in: `interrupt()`.
 
 ---
 
+### Requirement: Continuous avatar presence across a competency handover (HeyGen only)
+
+For a HeyGen-provider interview, the system MUST keep the outgoing avatar mounted, live,
+and visible from the moment one competency ends until the incoming competency's avatar
+reports ready to be seen. The candidate MUST NOT see any empty, skeleton, or panel state
+between two consecutive HeyGen competencies. The outgoing avatar stays live and idling
+during this interval — never a frozen frame. This requirement governs HeyGen only. A Tavus
+interview is unchanged by it when single-session is off; when single-session is on, Tavus
+competency transitions are governed by "Utterance Attribution Retargets At A Competency Boundary
+Without A Race Window" (a continuation shows no transition at all) and "Provider Session Ceiling
+Handover Extends To Tavus" (a fresh conversation crossfades). An interview's first competency has no outgoing session to
+hold and is unaffected — it keeps today's device-check-adjacent connecting presentation.
+
+#### Scenario: No visible break between two HeyGen competencies
+
+- GIVEN a HeyGen interview has just completed a competency and the server directs
+  `next_action = 'continue'`
+- WHEN the incoming competency's session is requested and becomes ready
+- THEN at every point in between, an avatar is visibly mounted on screen — never an
+  empty, skeleton, or panel state
+
+#### Scenario: The first competency keeps today's connecting presentation
+
+- GIVEN a candidate has just passed the device check and no competency has run yet
+- WHEN the first competency's session is requested
+- THEN the existing first-connect presentation is shown, unchanged by this requirement
+  (there is no outgoing session to hold)
+
+#### Scenario: Tavus handover with single-session off is unaffected
+
+- GIVEN a Tavus interview with single-session off completes a competency and `next_action = 'continue'`
+- WHEN the next competency's session is requested and the response has no `continuation`
+- THEN the currently-shipped Tavus connecting presentation is shown exactly as before this change
+
+---
+
 ## ADDED Requirements
 
-### Requirement: Utterance Attribution Retargets at a Competency Boundary Without a Race Window
+### Requirement: Utterance Attribution Retargets At A Competency Boundary Without A Race Window
 
-The client's utterance-to-session attribution (the id closed over by the transcript
-handler and posted with every `/utterance` call) MUST be retargeted to the new
-competency's `InterviewSession` id no later than the moment the avatar begins speaking that
-competency's content. No utterance spoken about the new competency MUST be attributable to
-the prior competency's session, and no utterance still describing the prior competency
-MUST be attributable to the new one. This is an outcome guarantee, not a timing guarantee
-about when retargeting code runs — the boundary-detection signal (verbal, mechanical
-fallback, or both) and the retargeting write MUST be ordered so that no window exists in
-which an utterance can be posted under the wrong session id.
+The client MUST hold a single attribution cursor per interview whose value is the id of the
+`InterviewSession` row currently being discussed. The cursor MUST be the only source of the session id for
+`POST /utterance`, `POST /end`, `POST /suspend`, `POST /snapshot`, `POST /integrity` (including the resize
+and `pagehide` flushes), the composable's exposed `sessionId`, the per-question timer reset and the
+proctoring overlay's `session-id`. The provider handle's own `dbSessionId` MUST identify the player only
+(its keyed slot) and MUST NOT be used for any of those calls once a continuation can retarget the cursor.
+The transcript handler MUST read the cursor at EMIT time, never capture it at wiring time.
 
-#### Scenario: An utterance spoken before the boundary attributes to the outgoing competency
+The cursor's only mutator MUST both move the cursor and mint the capability required to send the boundary
+interaction (an `AdvanceTicket` that cannot be constructed elsewhere), so that the retargeting write is
+ordered strictly BEFORE the interaction that causes the new competency. Unsent integrity events MUST be
+flushed against the outgoing row before the cursor moves. Across the boundary window the client MUST
+`/end` the outgoing row only after every in-flight `/utterance` request has settled (bounded), MUST mute the
+candidate's microphone before `/end` and unmute it after the boundary interaction has been sent, and MUST
+use the outgoing row's id for `/end`.
 
-- GIVEN a live Tavus conversation mid-way through competency CSF, about to advance to INN
-- WHEN the candidate's last CSF-related utterance is ingested
-- THEN it is persisted against CSF's `InterviewSession` row, never INN's
+#### Scenario: The attribution tape posts every utterance under the right row
 
-#### Scenario: An utterance spoken after the boundary attributes to the incoming competency
+- GIVEN a scripted event tape `[u1 (CSF), end phrase, u2 (spoken in the mic-muted window), u3 (INN)]`
+- WHEN the interview advances from CSF to INN through a continuation
+- THEN the multiset of `(session_id, text)` pairs posted is exactly `{(CSF, u1), (INN, u3)}` and `u2` is
+  absent because the microphone was muted; against the pre-change code the same tape posts `u3` under CSF
 
-- GIVEN the boundary from CSF to INN has fired
-- WHEN the candidate's first INN-related utterance is ingested
-- THEN it is persisted against INN's `InterviewSession` row, never CSF's — including the
-  case where it arrives within the same second as the boundary interaction
+#### Scenario: The cursor write precedes the send
 
-#### Scenario: No utterance is ever double-counted or dropped across the boundary
+- GIVEN a continuation response for INN
+- WHEN the boundary path runs
+- THEN the recorded order is `[cursor.advanceTo, sendAppMessage]`; a transcript event fired between the
+  two posts under INN, one fired before the cursor write posts under CSF
 
-- GIVEN a full transcript spanning a CSF→INN boundary
-- WHEN every ingested utterance for that participant's conversation is summed across both
-  sessions
-- THEN the total equals the number of utterances actually spoken; none appear on both
-  sessions and none are missing from both
+#### Scenario: Sending without a ticket does not compile
 
-### Requirement: Mechanical Boundary-Detection Fallback Independent of LLM Phrase Compliance
+- GIVEN `sendBoundary(ticket)`
+- WHEN a caller passes a string or a hand-built ticket literal
+- THEN the TypeScript check fails (pinned by `@ts-expect-error` tests)
 
-Boundary detection MUST NOT depend solely on the avatar reproducing an instructed phrase
-verbatim. A mechanical, server-or-transport-asserted signal MUST also be capable of firing
-the boundary — independent of whether the spoken-phrase match (`matchesEndPhrase`)
-succeeds — so that a paraphrased closing line still advances the interview and still
-triggers attribution retargeting, rather than stalling the conversation on a competency
-that has, in substance, already been answered.
+#### Scenario: Every session-id reader follows the cursor
+
+- GIVEN the cursor has moved from CSF to INN
+- WHEN `/end`, `/suspend`, a snapshot, an integrity flush (including the resize flush), the question-timer
+  reset and the proctor overlay each read their session id
+- THEN each uses INN's id; and `/end` is never POSTed twice for CSF
+
+#### Scenario: The closing utterance is not lost
+
+- GIVEN the avatar's closing sentence and its `complete` state arrive in the same tick
+- WHEN `/end` is about to be called
+- THEN the closing utterance's POST has settled first (the shipped drain), including when one POST rejects
+
+### Requirement: Steering Is Acknowledged By The Next Replica Utterance, Or It Failed
+
+Tavus provides no acknowledgement for a data-channel interaction. After sending the boundary interaction the
+Tavus provider MUST treat the FIRST `conversation.utterance` with `properties.role === 'replica'` observed
+after the send as the acknowledgement. If none arrives within `STEERING_ACK_TIMEOUT_MS` (10 000 ms), or the
+Daily call object reports `left-meeting` or `error`, or the send throws, or the call is not in
+`joined-meeting`, the provider MUST emit `steering_failed` and MUST NOT send into a call that is not joined.
+On `steering_failed` the client MUST unmute the microphone, keep the cursor where it is, and: if the call
+is still joined, resend the same interaction once; otherwise, or after the second failure, end the NEW
+competency as `timeout` through `POST /end` and let the next `/start` issue a fresh conversation (the
+browser then holds no live handle, so the server refuses a continuation). The failure of one competency's
+steering MUST NOT fail the interview.
+
+#### Scenario: A replica utterance acknowledges the steering
+
+- GIVEN a boundary interaction was sent
+- WHEN a `role: 'replica'` utterance arrives within the window
+- THEN no `steering_failed` is emitted and the ack timer is cleared
+
+#### Scenario: No replica utterance triggers one retry then a timeout
+
+- GIVEN a boundary interaction was sent and the call is still joined
+- WHEN no replica utterance arrives within `STEERING_ACK_TIMEOUT_MS`
+- THEN `steering_failed` is emitted, the same interaction is resent once, and if the second window also
+  expires the new competency ends with `ended_reason = 'timeout'` and the interview continues
+
+#### Scenario: A left meeting fails the steering immediately without a send
+
+- GIVEN the Daily call object reports `left-meeting`
+- WHEN the boundary path would send
+- THEN no `sendAppMessage` call is made and `steering_failed` is emitted
+
+#### Scenario: A send that throws fails the steering
+
+- GIVEN `sendAppMessage` throws
+- WHEN the boundary path sends
+- THEN `steering_failed` is emitted, the microphone is unmuted and the cursor is unchanged
+
+### Requirement: The Client Drops Its Own Steering Echo
+
+If the boundary interaction includes a `conversation.respond` trigger, the Tavus provider MUST remember the
+exact trigger text it sent and MUST drop, once, the first user-role `conversation.utterance` whose
+normalised text equals it, so the platform's own steering text is never emitted on the `transcript` stream
+and never posted to `/utterance` as candidate speech. Genuine candidate speech MUST be unaffected. The real
+shape of any echo (role, `inference_id`) is verified only by the authorized live spike (L4).
+
+#### Scenario: An echoed steering text is not posted
+
+- GIVEN the provider sent the fixed `respond` text
+- WHEN a user-role utterance with identical text arrives
+- THEN no `transcript` event is emitted for it and no `/utterance` call is made
+
+#### Scenario: Candidate speech that merely resembles the trigger is kept after the first match
+
+- GIVEN the echo has already been dropped once
+- WHEN a later user-role utterance with the same text arrives
+- THEN it is emitted as candidate speech
+
+### Requirement: Mechanical Boundary Detection Does Not Depend On LLM Phrase Compliance
+
+Boundary detection MUST NOT depend solely on the avatar reproducing an instructed phrase verbatim. The
+client MUST assert the boundary through ONE idempotent function with three inputs: (1) the end/final phrase
+spoken by the avatar (`matchesEndPhrase`, a hint); (2) `boundary_due: true` in the `/utterance` 202 body (the
+mechanical, server-asserted signal; see `interview-session`); (3) the 300 s per-question timer (the floor,
+ending the competency as `timeout`). The function MUST be guarded so a second entrant returns immediately,
+a losing concurrent `/end` (`409`) is a no-op, and the boundary ticket is minted at most once per boundary.
+The Tavus `continue` directive MUST be routed off `confirmDevices()` onto the boundary path only when the
+`/start` response contains `continuation`; with no `continuation` the existing teardown-and-start path
+runs. The `end_interview` tool call remains a redundant fourth path. The `matchesEndPhrase` function itself
+is unchanged.
 
 #### Scenario: A paraphrased closing line still advances the interview
 
-- GIVEN the avatar concludes a competency with wording that does not literally match the
-  instructed end phrase
-- WHEN the mechanical fallback signal fires
-- THEN the interview advances to the next competency and utterance attribution retargets,
-  exactly as it would on a literal phrase match
+- GIVEN the avatar concludes a competency with wording that does not match the end phrase
+- WHEN a `/utterance` response carries `boundary_due: true`
+- THEN `/end` is called, the next `/start` is requested, and the cursor retargets, exactly as on a phrase match
 
-#### Scenario: The literal phrase match still fires the boundary when it succeeds
+#### Scenario: The literal phrase still fires the boundary
 
 - GIVEN the avatar speaks the instructed end phrase verbatim
 - WHEN boundary detection runs
-- THEN the boundary fires via the phrase match; the mechanical fallback is not needed to
-  force it
+- THEN the boundary fires via the phrase match without needing `boundary_due`
 
-#### Scenario: A stalled boundary with no mechanical fallback would misattribute every later utterance (the defect this closes)
+#### Scenario: Two inputs racing cause one boundary
 
-- GIVEN a hypothetical boundary-detection path with no mechanical fallback and a
-  paraphrased closing line
-- WHEN later utterances about the next competency are spoken
-- THEN — absent this requirement — they would continue attributing to the stale
-  competency; this requirement exists specifically to make that outcome impossible
+- GIVEN the phrase match and `boundary_due` both fire in the same tick
+- WHEN the boundary is asserted
+- THEN `/end` is called once, one ticket is minted, and a `409` from a losing call is a no-op
 
-### Requirement: Provider Session Ceiling Handover Extends to Tavus
+#### Scenario: The 300 s timer is still the floor
 
-When a live Tavus conversation approaches `TAVUS_MAX_SECONDS`, the client MUST hand over to
-a genuinely new Tavus conversation using the same crossfade mechanism already shipped for
-HeyGen's per-competency handover, ungated from the `handle.providerName === 'heygen'`
-check. The candidate MUST NOT perceive a break in the interview across this handover: the
-avatar view crossfades exactly as it does for a HeyGen transition, and the competency in
-progress at the moment of handover continues without losing its place, its utterances, or
-its accumulated attribution.
+- GIVEN neither the phrase nor `boundary_due` ever fires
+- WHEN the per-question timer expires
+- THEN the competency ends with `ended_reason = 'timeout'` and the interview continues
 
-#### Scenario: Approaching the ceiling triggers a crossfade handover for Tavus
+### Requirement: Re-Entry Paths Never Claim A Continuation
 
-- GIVEN a live Tavus conversation approaching `TAVUS_MAX_SECONDS`
-- WHEN the ceiling is approached mid-interview
-- THEN the client crossfades to a new Tavus conversation using the existing handover
-  mechanism, not a hard cut or a visible reconnect
+Every path on which the browser no longer holds a live, joined Tavus handle MUST start the next competency
+without `live_conversation_id`, so the server issues a fresh conversation: a page reload or remount, a
+manual pause and resume, the tab-hidden and network-drop guards, a scheduled pause (SA-04), device
+re-check, `retry()`, a bounded re-offer, and embed/public-API mode. A resume MUST NOT assume the conversation
+survived the browser leaving the room.
 
-#### Scenario: The competency in progress survives the ceiling handover
+#### Scenario: Reload mid-interview issues fresh
 
-- GIVEN the ceiling handover fires while competency DRV is in progress
-- WHEN the new conversation takes over
-- THEN DRV's `InterviewSession` row, its utterances so far, and its progress are preserved —
-  the handover creates a new provider ref, not a new competency
+- GIVEN a reload during competency INN of a shared conversation
+- WHEN the page re-enters and calls `/start`
+- THEN the body has no `live_conversation_id`, the server resumes INN on a fresh ref, and the interview continues
 
-#### Scenario: HeyGen's existing ceiling/crossfade behavior is unaffected
+#### Scenario: Pause and resume issue fresh
 
-- GIVEN a HeyGen session reaching its own session-length limit
+- GIVEN a manual or scheduled pause
+- WHEN the candidate resumes
+- THEN no `live_conversation_id` is sent and the response has a fresh handle
+
+### Requirement: Provider Session Ceiling Handover Extends To Tavus
+
+When the `/start` response returns a FRESH handle while a live handle exists, the client MUST run the
+shipped crossfade handover regardless of the provider's name; the HeyGen-only gate
+(`handle.providerName === 'heygen'`) MUST be removed in favour of that response-shaped predicate, so HeyGen
+is unchanged by construction and Tavus crossfades at a ceiling. The Tavus handover bound is armed when the
+fresh handle is published as the incoming session (the server fact is only known on the `/start`
+response). The client MUST also run a conversation-age timer, armed when the conversation is created,
+whose duration is the `conversation_ttl_seconds` returned by the creating `/start` minus a fixed
+handover lead (120 s), and, when it fires mid-competency, call `/start` on the still-`in_corso` row
+(resume path: fresh ref on the same row) while preserving the remaining question time. If the handover
+exceeds its bound it degrades to the existing `transition-panel`, never an error. The candidate MUST NOT lose
+the competency in progress, its utterances or its attribution.
+
+#### Scenario: A fresh handle while a live one exists crossfades for Tavus
+
+- GIVEN a live Tavus handle and a `/start` response with a fresh handle and no `continuation`
+- WHEN the response is processed
+- THEN an incoming handle is published, the bound is armed, and the shipped crossfade runs
+
+#### Scenario: A mid-competency expiry preserves the competency
+
+- GIVEN the conversation ages out while DRV is being answered
+- WHEN the age timer fires
+- THEN `/start` is called on the `in_corso` DRV row, DRV's row and utterances are preserved on a fresh ref, and the question clock is preserved
+
+#### Scenario: The flag flipped off mid-interview crossfades
+
+- GIVEN a live shared conversation and the server's gate switched off
+- WHEN the next `/start` returns a fresh handle
+- THEN the client crossfades to it
+
+#### Scenario: HeyGen's own crossfade is unaffected
+
+- GIVEN a HeyGen interview reaching its session limit
 - WHEN its crossfade handover fires
-- THEN it behaves exactly as before this change — the ungating adds a new eligible
-  provider, it does not alter HeyGen's own path
+- THEN it behaves exactly as before, and the HeyGen handover suites pass unmodified
