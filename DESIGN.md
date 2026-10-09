@@ -1421,8 +1421,8 @@ All text against its background MUST achieve:
 
 | Text color | Background | Ratio | Pass |
 |------------|------------|-------|------|
-| `--color-neutral-800` (`#1e293b`) | `--color-neutral-50` (`#f8fafc`) | 16.4:1 | ✓ |
-| `--color-neutral-900` (`#0f172a`) | white | 19.2:1 | ✓ |
+| `--color-neutral-800` (`#1e293b`) | `--color-neutral-50` (`#f8fafc`) | 14.0:1 | ✓ |
+| `--color-neutral-900` (`#0f172a`) | white | 17.9:1 | ✓ |
 | white | `--color-primary` (`#771aaf`) | 8.2:1 | ✓ AA (normal text) |
 | white | `--color-accent` (`#e45526`) | 3.7:1 | ✗ FAILS 4.5:1 AA for normal text; passes 3:1 large-text/UI |
 | white | `--color-accent-dark` (`#431695`, aliased to `--color-primary-dark`) | 11.75:1 | ✓ AA (valid text-sized accent alternative) |
