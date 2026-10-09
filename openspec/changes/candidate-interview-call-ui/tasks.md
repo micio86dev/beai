@@ -47,7 +47,7 @@ UI-00 (wrapper, DESIGN.md)
   -> UI-13 remove the old screen (needs UI-12 released)
   -> UI-14 consolidate and archive
 
-T-BUG-1, T-BUG-2: open until design.md Appendix A exists; independent of UI-01 .. UI-11; closed before UI-12.
+T-BUG-1, T-BUG-2: Appendix A of design.md now exists (2026-10-09); independent of UI-01 .. UI-11; closed before UI-12.
 ```
 
 - UI-02 to UI-08 are independent of each other and may be done in any order after UI-00; UI-01 is only needed by UI-09.

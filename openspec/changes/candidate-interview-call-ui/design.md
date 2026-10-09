@@ -434,7 +434,64 @@ test and E2E), R7 (D5, numeric test), R8 (flag split, D14), R9 (D2 numbers, view
 
 ## Appendix A. Tester findings: root cause and fix design
 
-Reserved. The orchestrator appends the root-cause analysis and the fix design for `T-BUG-1` (smooth handover) and
-`T-BUG-2` (no second greeting) here. The acceptance criteria are already fixed as behaviour in
-`specs/interview-frontend/spec.md` and do not depend on the cause. The two slots in `tasks.md` stay open until this
-appendix exists; no other slice waits on it.
+Filled 2026-10-09 from a read-only code investigation (evidence: file and line references below were read on
+`develop`; nothing here was observed live except where stated).
+
+### A.1 Finding (a): audio/video stop and a jerky move to question 2
+
+**Root cause (HeyGen, confirmed in code): a regression introduced on 2026-10-08.** `InterviewController::end()` released the
+provider session synchronously (`ReleaseProviderSession`, added by the HeyGen context cleanup). Before that day the
+HeyGen `teardown()` used `DELETE /v1/sessions/{ref}`, which answers 405 and never stopped anything. The release now
+really stops the outgoing HeyGen session (`POST /v1/sessions/stop`) while the frontend handover
+(`useInterviewSession.ts`, archived change `invisible-competency-handover`, D5 "outgoing stays live") keeps the
+outgoing stream alive until the INCOMING one has painted, then crossfades. The SDK reports a server stop as a
+disconnect; with no incoming session yet the live handle's `error` branch went to the error state, nulled the active
+session and turned the next start into a hard cut with the connecting panel. Candidate-visible result: the avatar
+freezes or goes black at the end of question 1 and question 2 appears abruptly.
+
+**Fix design (two parts, both merged as separate PRs):**
+1. api: a HeyGen competency that ends `completed` with `next_action === 'continue'` queues a delayed
+   `ReleaseEndedProviderSessionJob` (`interview.provider_release_delay_seconds`, default 45 s = handover bound 10 s +
+   connecting ceiling 20 s + 15 s margin) instead of releasing at once; every other end still releases immediately.
+2. frontend: an outgoing session that emits `error 'disconnected'` during a handover (`handoverActive`, no incoming yet)
+   no longer moves the interview to `error`; the pending `/end` still reaches `startNextSession`.
+
+**Tavus (not a regression, by design today):** there is no crossfade for Tavus (the handover is gated on HeyGen), so
+every competency boundary is a hard cut with the connecting panel. It is removed only by the Tavus single-session
+change (FE-06 of `tavus-single-session-interview`); until then the acceptance criterion of `T-BUG-1` is scoped to HeyGen.
+
+**Tests that pin it:** Pest (`EndReleasesProviderContextTest`: deferred release for completed+continue, immediate for
+every other end, the job releases exactly the refs captured at dispatch); Vitest (`use-interview-session.spec.ts`:
+outgoing death during a handover does not reach `error`; the same error outside a handover still does; the mid-crossfade
+race test stays unmodified). A Playwright frame-sampling test of the boundary remains part of `T-BUG-1.1`.
+
+### A.2 Finding (b): the avatar greets again at the start of question 2
+
+**Root cause (partly established).** For competency N > 1 the backend builds no greeting: `OpeningTextComposer` returns
+the authored primary question verbatim for `first`, `next` and `resume`, and `lang/*/interview.php` has no greeting
+string. But every `/start` creates a NEW provider session (a new conversation on Tavus) whose language model has no
+memory of question 1, and the prompt's `OPENING` section never says this is a continuation or forbids a welcome. So a
+greeting comes from (1) an operator-authored primary question that is itself a greeting (the composer comments cite
+"Ciao! Come ti chiami?" as a legitimate primary), or (2) the provider model or persona adding a courtesy opening in a
+fresh context. Which one the testers hit is not determined (it needs the second session's first avatar utterance rows,
+the project's `project_questions`, and for Tavus the persona prompt).
+
+**Fix design.** Add an explicit continuation clause to the `OPENING` section when the competency is not the first and
+the opening is not a resume: "This is not the start of the interview. The candidate has already been welcomed and has
+answered earlier questions. Do NOT greet, welcome or introduce yourself again." The spoken opening text stays verbatim.
+Implementation: a continuation flag on `SpokenOpening::primary()`, set by `InterviewController` for `!$isFirst`, a new
+optional prompt fragment key with an English baseline and a fallback so provided template sets lacking it stay valid,
+rendered by `SystemPromptComposer::buildOpeningSection`. If the greeting is inside the authored question, only the
+operator can change it; the backend must not strip text. The Tavus single-session change removes the per-competency
+`custom_greeting` for Tavus once it ships, but not for HeyGen nor for the flag-off path, so the clause is needed anyway.
+Tests: `SpokenOpeningTest`, `PromptFragmentKeyTest`, `BaselinePromptFragmentsTest`, `SystemPromptComposerTemplatesTest`,
+`SystemPromptComposerTest` (clause present for competency 2, absent for competency 1 and on resume),
+`InterviewStartCompositionTest` (the second `/start` prompt contains the clause, the first does not) and new goldens for
+the continuation case; the existing goldens stay byte-identical (the flag defaults to false).
+
+### A.3 Additional finding recorded here: Tavus `pal` duplicate utterances
+
+A live Tavus test on 2026-10-09 showed every avatar utterance arriving twice (`role: "replica"` and `role: "pal"`,
+same `inference_id`); the old provider code emitted each `pal` copy as candidate speech. Fixed separately in
+`fix/tavus-pal-duplicate` (the `pal` role is the avatar and the duplicate is dropped). It affects the transcript the
+call UI renders and the candidate's utterance rows, so the call UI must not re-introduce a role mapping of its own.
