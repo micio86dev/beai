@@ -87,124 +87,140 @@ Depends on: nothing. DESIGN.md forbids implementing a decision it does not descr
 
 ## UI-01: Flag, config and the wide canvas (about 150 lines)
 
+Done: merged as `frontend` PR #70 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00. Files: `nuxt.config.ts`, `app/composables/useCandidateCallUi.ts`, `app/components/organisms/BrandCanvas.vue`.
 
-- [ ] UI-01.1 RED `tests/unit/use-candidate-call-ui.spec.ts`: true only for the string `'true'`; false for `''`, `'1'`, `'yes'`,
+- [x] UI-01.1 RED `tests/unit/use-candidate-call-ui.spec.ts`: true only for the string `'true'`; false for `''`, `'1'`, `'yes'`,
       `'false'`, undefined.
-- [ ] UI-01.2 RED `tests/unit/brand-canvas.spec.ts` (extend): without `wide` the header and main container classes are
+- [x] UI-01.2 RED `tests/unit/brand-canvas.spec.ts` (extend): without `wide` the header and main container classes are
       byte-identical to today's; with `wide` both use `max-w-[96rem]`.
-- [ ] UI-01.3 RED `tests/unit/nuxt-config.spec.ts` (extend): `runtimeConfig.public.candidateCallUi` exists and defaults to `''`.
-- [ ] UI-01.4 GREEN the composable, the config entry and the `wide` prop (default `false`).
-- [ ] UI-01.5 Verify: the three specs green; the full unit suite unchanged; typecheck; lint. Commit:
+- [x] UI-01.3 RED `tests/unit/nuxt-config.spec.ts` (extend): `runtimeConfig.public.candidateCallUi` exists and defaults to `''`.
+- [x] UI-01.4 GREEN the composable, the config entry and the `wide` prop (default `false`).
+- [x] UI-01.5 Verify: the three specs green; the full unit suite unchanged; typecheck; lint. Commit:
       `feat(frontend): add the candidateCallUi flag and a wide canvas option`.
 
 ## UI-02: Speaker signal (about 330 lines)
 
+Done: merged as `frontend` PR #71 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00. Files: `app/composables/useSpeakerTurn.ts`, `app/components/AvatarPlayer.client.vue`.
 
-- [ ] UI-02.1 RED `tests/unit/use-speaker-turn.spec.ts`, one case per rule of design D4, with fake timers and a fake analyser:
+- [x] UI-02.1 RED `tests/unit/use-speaker-turn.spec.ts`, one case per rule of design D4, with fake timers and a fake analyser:
       provider `speaking` alone lights `avatar`; avatar audio above the gate for 120 ms lights `avatar` with no provider event
       and holds 600 ms; mic above `MIC_SPEAK_THRESHOLD` for 200 ms lights `candidate` and holds 800 ms; the candidate is
       suppressed while the avatar is active and for 500 ms after; `none` in every non-`live` state; a `speaking -> ready`
       event does not clear `avatar` while the audio gate is active.
-- [ ] UI-02.2 RED `tests/unit/avatar-player.spec.ts` (extend): `AvatarPlayer` emits `stream` once with the `MediaStream` when
+- [x] UI-02.2 RED `tests/unit/avatar-player.spec.ts` (extend): `AvatarPlayer` emits `stream` once with the `MediaStream` when
       `painted` fires and with `null` on unmount; existing assertions unchanged.
-- [ ] UI-02.3 GREEN `useSpeakerTurn(options)` exporting the constants (`AVATAR_AUDIO_GATE`, holds, delays); the `stream` emit.
-- [ ] UI-02.4 Verify: both specs green; the whole `avatar-player.spec.ts` and `voice-visualizer.spec.ts` unchanged and green.
+- [x] UI-02.3 GREEN `useSpeakerTurn(options)` exporting the constants (`AVATAR_AUDIO_GATE`, holds, delays); the `stream` emit.
+- [x] UI-02.4 Verify: both specs green; the whole `avatar-player.spec.ts` and `voice-visualizer.spec.ts` unchanged and green.
       Commit: `feat(frontend): derive who is speaking from provider state and audio level`.
 
 ## UI-03: Tile and ring (about 260 lines)
 
+Done: merged as `frontend` PR #72 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00. Files: `app/components/molecules/CallTile.vue`, `app/assets/css/main.css`.
 
-- [ ] UI-03.1 RED `tests/unit/call-tile.spec.ts`: resting class list; `data-speaking="true"` adds the ring; the name chip shows
+- [x] UI-03.1 RED `tests/unit/call-tile.spec.ts`: resting class list; `data-speaking="true"` adds the ring; the name chip shows
       the microphone icon and the visually hidden text only when speaking; the hidden text has no `aria-live`; no `animate-*`
       or `infinite` in the class list; the transition class exists only under the `motion-safe` variant.
-- [ ] UI-03.2 RED `tests/unit/call-tile-contrast.spec.ts` (pattern: `brand-canvas-contrast.spec.ts`): the contrast of
+- [x] UI-03.2 RED `tests/unit/call-tile-contrast.spec.ts` (pattern: `brand-canvas-contrast.spec.ts`): the contrast of
       `--color-speaking-ring` against `--color-avatar-bg` is at least 3:1 (expected about 17.9:1) for the brand matrix
       `#ffd400`, `#771aaf`, `#2f6fed`, none; the ring uses no brand token; the `forced-colors` rule exists in `main.css`.
-- [ ] UI-03.3 GREEN the molecule and the CSS (token, ring, `forced-colors` outline).
-- [ ] UI-03.4 Verify: both specs green; `canvas-brand-fallbacks.spec.ts` and `theme.spec.ts` still green. Commit:
+- [x] UI-03.3 GREEN the molecule and the CSS (token, ring, `forced-colors` outline).
+- [x] UI-03.4 Verify: both specs green; `canvas-brand-fallbacks.spec.ts` and `theme.spec.ts` still green. Commit:
       `feat(frontend): add the call tile with its speaking ring`.
 
 ## UI-04: Written question band (about 280 lines)
 
+Done: merged as `frontend` PR #73 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00. Files: `app/components/molecules/CallQuestion.vue`, `app/components/InterviewSession.vue` (filter only), locale files.
 
-- [ ] UI-04.1 RED `tests/unit/call-question.spec.ts`: shows avatar text; keeps it until replaced; shows the listen hint when
+- [x] UI-04.1 RED `tests/unit/call-question.spec.ts`: shows avatar text; keeps it until replaced; shows the listen hint when
       empty; one persistent `aria-live="polite"` `aria-atomic="true"` region labelled by `interview.call.question_region`;
       `tabindex="0"`; `focusOnBoundary` focuses it once per boundary and never on a text update; does not steal focus when a
       dialog is open.
-- [ ] UI-04.2 RED `tests/unit/interview-session-call-ui.spec.ts` (new file, first cases): with the flag mocked on, a `role:
+- [x] UI-04.2 RED `tests/unit/interview-session-call-ui.spec.ts` (new file, first cases): with the flag mocked on, a `role:
       'user'` transcript entry never changes the displayed text but still reaches `POST /utterance` with `speaker =
       'candidate'`; a new `sessionId` clears the band to the hint.
-- [ ] UI-04.3 GREEN the molecule and the avatar-role filter in `onTranscriptFromPlayer` (the legacy caption path keeps its
+- [x] UI-04.3 GREEN the molecule and the avatar-role filter in `onTranscriptFromPlayer` (the legacy caption path keeps its
       current behaviour while the flag is off); keys `interview.call.question_region` in `it` and `en`.
-- [ ] UI-04.4 Verify: specs green; `interview-session-page.spec.ts` untouched and green. Commit:
+- [x] UI-04.4 Verify: specs green; `interview-session-page.spec.ts` untouched and green. Commit:
       `feat(frontend): show the avatar's question in a persistent band and drop the candidate transcript`.
 
 ## UI-05: Own-camera tile (about 220 lines)
 
+Done: merged as `frontend` PR #74 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00, UI-03 (uses `CallTile`). Files: `app/components/molecules/CallSelfView.client.vue`, locale files.
 
-- [ ] UI-05.1 RED `tests/unit/call-self-view.spec.ts`: `srcObject` is the provided stream; `muted`, `playsinline`, no `controls`;
+- [x] UI-05.1 RED `tests/unit/call-self-view.spec.ts`: `srcObject` is the provided stream; `muted`, `playsinline`, no `controls`;
       `tabindex="-1"` and `pointer-events: none`; mirrored by CSS only; accessible name from `interview.call.self_view`; with a
       stream whose video track is `ended` it shows the placeholder named `interview.call.self_view_off`; `getUserMedia` is
       never called.
-- [ ] UI-05.2 GREEN the molecule and keys `interview.call.you`, `self_view`, `self_view_off`, `interviewer_name`.
-- [ ] UI-05.3 Verify: spec green; `i18n-interview-keys.spec.ts` green. Commit:
+- [x] UI-05.2 GREEN the molecule and keys `interview.call.you`, `self_view`, `self_view_off`, `interviewer_name`.
+- [x] UI-05.3 Verify: spec green; `i18n-interview-keys.spec.ts` green. Commit:
       `feat(frontend): add the candidate's own-camera tile`.
 
 ## UI-06: Side panel, elapsed clock and counter timer (about 380 lines)
 
+Done: merged as `frontend` PR #75 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00. Files: `app/composables/useInterviewClock.ts`, `app/components/organisms/CallPanel.vue`,
 `app/components/ProgressBar.vue`, `app/components/InterviewTimer.vue`, locale files.
 
-- [ ] UI-06.1 RED `tests/unit/use-interview-clock.spec.ts`: accumulates whole seconds only while `isRunning()`; unchanged across a
+- [x] UI-06.1 RED `tests/unit/use-interview-clock.spec.ts`: accumulates whole seconds only while `isRunning()`; unchanged across a
       pause and resume; based on timestamps so a skipped interval does not lose time.
-- [ ] UI-06.2 RED `tests/unit/call-panel.spec.ts`: "Domanda 2 di 5" for `ended = 1`, `total = 5`; `n` never above `total`;
+- [x] UI-06.2 RED `tests/unit/call-panel.spec.ts`: "Domanda 2 di 5" for `ended = 1`, `total = 5`; `n` never above `total`;
       `aria-valuenow/max/valuetext`; duration "03:12 / 25:00" and 90:00 for 18 competencies; hidden until a total exists;
       with a store holding a competency code, no element, attribute or accessible name contains it; DOM order Exit before help.
-- [ ] UI-06.3 RED `tests/unit/interview-components.spec.ts` (extend, additive): `ProgressBar` default output unchanged;
+- [x] UI-06.3 RED `tests/unit/interview-components.spec.ts` (extend, additive): `ProgressBar` default output unchanged;
       `hideCounts` and `valueText` work; `InterviewTimer` keeps its props and `tick`/`expired` contract, still red and assertive
       at 10 s or less, and accepts an optional `label`.
-- [ ] UI-06.4 GREEN the composable, the organism (slots for Exit and help) and the additive props; keys `panel_label`,
+- [x] UI-06.4 GREEN the composable, the organism (slots for Exit and help) and the additive props; keys `panel_label`,
       `progress`, `duration_label`, `duration_value`, `duration_sr`, `question_timer_label`.
-- [ ] UI-06.5 Verify: specs green; existing `interview-components.spec.ts` cases untouched and green. Commit:
+- [x] UI-06.5 Verify: specs green; existing `interview-components.spec.ts` cases untouched and green. Commit:
       `feat(frontend): add the call side panel with progress, duration and the counter timer`.
 
 ## UI-07: Exit dialog and the suspended screen (about 380 lines)
 
+Done: merged as `frontend` PR #76 (see the PR for the review outcome and the decisions taken).
+
 Depends on: UI-00. Files: `app/components/molecules/CallExitDialog.vue`, `app/components/InterviewSession.vue`, locale files.
 
-- [ ] UI-07.1 RED `tests/unit/call-exit.spec.ts`: the button label is `interview.call.exit.label`; click opens the dialog; Escape and
+- [x] UI-07.1 RED `tests/unit/call-exit.spec.ts`: the button label is `interview.call.exit.label`; click opens the dialog; Escape and
       "Stay" close it and focus returns to the button; confirm emits once; the deadline text is formatted from
       `useCandidateSession().read().exp` in the active locale; with `read()` null the `_no_deadline` copy is used; disabled and
       loading while `handoverInFlight`.
-- [ ] UI-07.2 RED `tests/unit/interview-session-call-ui.spec.ts` (extend): confirming calls `session.pause()` exactly once with
+- [x] UI-07.2 RED `tests/unit/interview-session-call-ui.spec.ts` (extend): confirming calls `session.pause()` exactly once with
       `pauseReason = 'exit'`; `useExitRedirect().redirect` is never called; `useCandidateSession().clear` is never called; the
       paused branch renders the "Colloquio sospeso" variant only for `exit`, and the existing copy for `tab_hidden` and
       `network`; focus moves to the suspended heading; Resume calls `session.resume()`.
-- [ ] UI-07.3 GREEN the dialog molecule (existing `ui/dialog`), `PauseReason` gains `'exit'`, the suspended variant, keys
+- [x] UI-07.3 GREEN the dialog molecule (existing `ui/dialog`), `PauseReason` gains `'exit'`, the suspended variant, keys
       `exit.*`, `suspended.*`.
-- [ ] UI-07.4 Verify: specs green; the existing paused-panel cases in `interview-session-page.spec.ts` untouched and green.
+- [x] UI-07.4 Verify: specs green; the existing paused-panel cases in `interview-session-page.spec.ts` untouched and green.
       Commit: `feat(frontend): let the candidate exit and resume through the existing suspend`.
 
 ## UI-08: Help link and the support URL (about 260 lines)
+
+Done: merged as `frontend` PR #77 (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/utils/support-url.ts`, `app/composables/useSupportUrl.ts`,
 `app/components/molecules/CallHelpLink.vue`, `app/pages/interview/terminal.vue`, `app/components/InterviewSession.vue`
 (the three `mailto:` sites), `nuxt.config.ts`, locale files.
 
-- [ ] UI-08.1 RED `tests/unit/support-url.spec.ts`: `https:` and `mailto:` accepted; empty, `http:`, `javascript:`, `data:`,
+- [x] UI-08.1 RED `tests/unit/support-url.spec.ts`: `https:` and `mailto:` accepted; empty, `http:`, `javascript:`, `data:`,
       relative and malformed values fall back to `mailto:support@beai.app`.
-- [ ] UI-08.2 RED `tests/unit/call-help-link.spec.ts`: label `interview.call.help.label`; `https:` renders `target="_blank"`,
+- [x] UI-08.2 RED `tests/unit/call-help-link.spec.ts`: label `interview.call.help.label`; `https:` renders `target="_blank"`,
       `rel="noopener noreferrer"` and the hidden "(opens in a new tab)"; `mailto:` renders neither; focus ring class and the
       44 px height class present.
-- [ ] UI-08.3 RED `tests/unit/interview-session-page.spec.ts` (extend, additive): with `supportUrl` unset the four existing
+- [x] UI-08.3 RED `tests/unit/interview-session-page.spec.ts` (extend, additive): with `supportUrl` unset the four existing
       terminal links still resolve to `mailto:support@beai.app`; with a configured value all four follow it.
-- [ ] UI-08.4 GREEN the util, the composable, the link molecule, `public.supportUrl: ''` in `nuxt.config.ts`, and the four sites.
-- [ ] UI-08.5 Verify: specs green; `terminal-page.spec.ts` unchanged and green. Commit:
+- [x] UI-08.4 GREEN the util, the composable, the link molecule, `public.supportUrl: ''` in `nuxt.config.ts`, and the four sites.
+- [x] UI-08.5 Verify: specs green; `terminal-page.spec.ts` unchanged and green. Commit:
       `feat(frontend): add a configurable support URL and the audio/video help link`.
 
 ## UI-09: Assemble the stage under the flag (about 400 lines)
