@@ -308,7 +308,7 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
 | `--z-modal` | `400` | Modal / dialog content |
 | `--z-toast` | `500` | Toast notifications |
 | `--z-tooltip` | `600` | Tooltips |
-| `--z-recording-indicator` | `700` | Live recording indicator (always on top) |
+| `--z-recording-indicator` | `700` | Live recording indicator (always on top); specified, not rendered by the live screen today (see §7.3) |
 
 ---
 
@@ -437,7 +437,7 @@ components/
     BaseIcon.vue
     BaseSpinner.vue
     BaseAvatar.vue        (avatar image/fallback)
-    RecordingIndicator.vue
+    RecordingIndicator.vue   # specified, not shipped (see §7.3)
   molecules/      # Composed from atoms, one concern
     FormField.vue         (label + input + error)
     ToastNotification.vue
