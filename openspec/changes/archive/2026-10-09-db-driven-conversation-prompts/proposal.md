@@ -1,8 +1,14 @@
 # Proposal: Database-Driven Conversation Prompts
 
-> **STATUS (2026-10-08): RESCOPED, READY FOR APPLY.** Rewritten against `develop` (wrapper `321db94`; api
-> `origin/develop` `e215c43`, whose `SystemPromptComposer` is byte-identical to the one pinned by the wrapper).
-> Nothing is implemented yet: no `conversation_prompt_*` table, resolver or golden test exists. The 2026-09-11 version
+> **STATUS (2026-10-09): DELIVERED, reconciled for archive.** Every slice (PR0 to PR9) is merged into the `api`
+> `develop` branch, together with one slice that was not in the plan (the 32nd fragment key, api #155); see the
+> "Delivery record" in `tasks.md` for the pull request numbers and merge commits. Not delivered, by decision: the
+> release and the deploy, and the cleanup PR that deletes the baseline PHP after a soak (see `archive-report.md`).
+> The text below describes the plan; where the delivered system differs, the difference is marked
+> "Delivered:" or listed in `design.md` ("Amendments 2026-10-09").
+>
+> Original status note (2026-10-08): rescoped, rewritten against `develop` (wrapper `321db94`; api `origin/develop`
+> `e215c43`, whose `SystemPromptComposer` was byte-identical to the one pinned by the wrapper). The 2026-09-11 version
 > of this change was stale in eleven places, listed with evidence in `design.md` (section "Amendments 2026-10-08");
 > the old design is kept below that section as history, with every superseded decision marked. This change is a
 > living SDD change delivered as ten numbered slices, twelve PRs because PR4 and PR6 are each split in two (PR0 to PR9, see `tasks.md`); PR0 is this documentation slice.
@@ -31,8 +37,10 @@ change's gate, not a nicety.
    (nullable `varchar(255)`), written once through `InterviewSessionLlmSnapshot::stamp()` at its two call sites.
    Nothing else in this change is traceable without it, and it has no dependency on the rest.
 2. **Byte-identity goldens, captured on the pre-change tree** before any text moves: 17 composer cases through
-   `compose()` directly and 3 HTTP cases through `POST /api/candidate/interview/start`.
-3. **A fragment vocabulary** of 31 leaf keys (`PromptFragmentKey`), a `{{token}}` placeholder contract, and a
+   `compose()` directly and 3 HTTP cases through `POST /api/candidate/interview/start`. Delivered: those 20, plus
+   G18 and G19 (the continuation clause, api #155), H4 (the second competency over HTTP, api #155) and G20 (a
+   per-competency override, api #158), so 20 composer cases and 4 HTTP cases.
+3. **A fragment vocabulary** of 32 leaf keys (`PromptFragmentKey`; 31 when planned and when PR4a merged, `opening.continuation` was added as the 32nd by api #155), a `{{token}}` placeholder contract, and a
    single-pass renderer. Branch selection, the minimum clamp, joins, numbering and the coverage line format stay in
    PHP; only prose moves.
 4. **The composer reads fragments** through a trailing nullable `?PromptTemplateSet $templates = null`; `null`
@@ -48,9 +56,15 @@ change's gate, not a nicety.
 8. **Cut-over, isolated.** `/start` resolves the active set inside the existing `try` of
    `composePromptForCompetency()`. A missing or unusable active set is a hard failure: the existing 422
    `composition_error`, no new API code, no OpenAPI change. A break-glass switch
-   `CONVERSATION_PROMPT_SOURCE=baseline` recomposes from the baseline PHP without a code revert.
+   `CONVERSATION_PROMPT_SOURCE=baseline` recomposes from the baseline PHP without a code revert. Delivered (api #157):
+   the flag defaults to `db` and is validated strictly (an unknown, empty or differently-cased value fails with
+   reason `invalid_source` and chooses neither source); there is no fallback from `db` to the baseline; a failure of
+   the infrastructure while resolving (a database error) is a 500, not a 422; `beai:deploy` refuses to deploy with
+   `db` unless exactly one active set verifies for every supported locale.
 9. **Per-role and per-competency overrides, keyed by CODE** (`role_code` nullable, `competency_code`), APPEND-only,
-   rendered after COVERAGE TOPICS and before the STAR protocol.
+   rendered after COVERAGE TOPICS and before the STAR protocol. Delivered (api #158): `compose(..., ?string $override)`;
+   a blank override (whitespace or zero-width spaces only) or a body that is not valid UTF-8 counts as no override;
+   the `baseline` source never prints one; overrides are console-published only (no backoffice UI).
 10. Spec deltas for `conversation-prompt-templates` (new), `interview-conversation` and `framework-catalog`;
     Pint, PHPStan and coverage as usual (about 95% on the composition path).
 
@@ -74,7 +88,7 @@ change's gate, not a nicety.
 
 ### New Capabilities
 
-- `conversation-prompt-templates`: global, immutable, locale-keyed prompt sets of 31 fragments, per-code overrides,
+- `conversation-prompt-templates`: global, immutable, locale-keyed prompt sets of 32 fragments, per-code overrides,
   the placeholder contract, resolution, activation, the hash seal and bootstrap.
 
 ### Modified Capabilities
@@ -124,7 +138,7 @@ them; PR8 is the only slice that changes what the live system does.
 | Area | Impact | Description |
 |---|---|---|
 | `api/database/migrations/` | New | Stamp column; three tables, triggers, partial indexes; bootstrap data migration |
-| `api/app/Enums/PromptFragmentKey.php` | New | The 31 keys |
+| `api/app/Enums/PromptFragmentKey.php` | New | The 32 keys (31 planned) |
 | `api/app/DTOs/Conversation/PromptTemplateSet.php` | New | Immutable value object; `render()` |
 | `api/app/Support/Conversation/` | New | `PromptFragmentContract`, `PromptSetSeal`, `BaselinePromptFragments` |
 | `api/app/Services/Conversation/SystemPromptComposer.php` | Modified | Builders read `$templates`; trailing nullable parameter |
@@ -170,22 +184,33 @@ them; PR8 is the only slice that changes what the live system does.
 
 ## Success Criteria
 
-- [ ] Every golden (G01 to G17 and H1 to H3) passes against the database-resolved set with ZERO diff to the
-      fixtures directory, and the pinned directory hash is unchanged.
-- [ ] `SystemPromptComposerTest`, `StandardPromptCharacterizationTest` and `EndPhraseInPromptTest` pass without any
-      assertion weakened.
-- [ ] A fragment missing a required token is refused at publish AND at composition; a test proves both.
-- [ ] All 31 keys except `label.override` are rendered across G01 to G17 (recording `PromptTemplateSet` double).
-- [ ] An UPDATE or DELETE on a fragment or override, and any UPDATE of a set other than its activation columns, is
+- [x] Every golden (G01 to G17 and H1 to H3) passes against the database-resolved set with ZERO diff to the
+      fixtures directory, and the pinned directory hash is unchanged. Met for the original 20 fixtures (api #157
+      runs them on both sources). The directory hash constant was re-pinned twice, by ADDITIONS only: G18, G19 and H4
+      (api #155) and G20 (api #158); no original fixture changed.
+- [x] `SystemPromptComposerTest`, `StandardPromptCharacterizationTest` and `EndPhraseInPromptTest` pass without any
+      assertion weakened. As reported by the PR descriptions (golden gate green, fixtures untouched); the archive did not
+      diff those three files across the chain. Two OTHER tests were edited in api #157: `InterviewStartCompositionTest` (the stamp format) and
+      the `fr` language-fallback test of `InterviewStartPhrasesTest` (it now selects the `baseline` source).
+- [x] A fragment missing a required token is refused at publish AND at composition; a test proves both
+      (`PublishPromptSetTest`, `SystemPromptComposerTemplatesTest`).
+- [x] All 32 keys are rendered by the golden and template tests: the 31 consumable keys (all but `label.override`) across the case matrix of `SystemPromptComposerTemplatesTest` (a marker template set, not a recording double and not G01 to G17), and `label.override` by the override tests and G20.
+- [x] An UPDATE or DELETE on a fragment or override, and any UPDATE of a set other than its activation columns, is
       refused by the database; two active sets, a duplicate fragment and a duplicate override each raise `23505`.
-- [ ] No active set, a missing or unknown key, a missing locale or a tampered hash each make `/start` answer 422
-      `composition_error` with no `InterviewSession` row created and no new provider session issued.
-- [ ] Activating a new set does not alter an already-stamped session; the stamp holds the first set.
-- [ ] `CONVERSATION_PROMPT_SOURCE=baseline` composes the baseline text and stamps the bare config string.
-- [ ] With no override the prompt is byte-identical; with one, only the override section differs and the ADVANCE
-      RULE bytes are unchanged.
+- [x] No active set, a missing or unknown key, a missing locale or a tampered hash each make `/start` answer 422
+      `composition_error` with no `InterviewSession` row created and no new provider session issued
+      (`PromptCutoverTest`; also an ambiguous active set).
+- [x] Activating a new set does not alter an already-stamped session; the stamp holds the first set
+      (`PromptCutoverTest`).
+- [x] `CONVERSATION_PROMPT_SOURCE=baseline` composes the baseline text and stamps the bare config string
+      (`PromptCutoverTest`).
+- [x] With no override the prompt is byte-identical; with one, only the override section differs and the ADVANCE
+      RULE bytes are unchanged (`PromptOverrideRenderingTest`, golden G20).
 - [ ] Coverage at least 85% overall, about 95% on the composition path; Pint and PHPStan clean; each slice at most
-      about 400 authored changed lines (generated fixtures and JSON excluded and stated).
+      about 400 authored changed lines (generated fixtures and JSON excluded and stated). PARTLY EVIDENCED: Pint and
+      PHPStan are reported clean in every PR description and the CI job `Lint · Analyse · Test · OpenAPI · Docker`
+      concluded `SUCCESS` on every PR; no coverage percentage is recorded anywhere and the slice sizes were not
+      audited (PR3 reported 178 lines, PR4b-ii 328), so this box stays open.
 
 ## Owner defaults taken (2026-10-08)
 

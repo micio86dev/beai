@@ -3,7 +3,7 @@
 ## Purpose
 
 Platform-level, immutable, locale-keyed storage for the prose `SystemPromptComposer` renders (Layer 1: the global
-prompt set of 31 fragments) and for per-role and per-competency prompt overrides appended into the composed prompt
+prompt set of 32 fragments) and for per-role and per-competency prompt overrides appended into the composed prompt
 (Layer 2). This capability governs storage, the placeholder contract, resolution, activation, the content seal and
 the bootstrap; composition itself, the byte-identity gate and the durable stamp belong to `interview-conversation`.
 
@@ -23,10 +23,10 @@ The word **prompt set** is used everywhere. "Revision" is reserved for `Framewor
 ### Requirement: A Prompt Set Holds Exactly The Fragment Key Set, For Every Locale It Serves
 
 A prompt set MUST hold one fragment row per (`fragment_key`, `locale`) for EVERY key of `PromptFragmentKey`, for each
-locale it serves. The key set is these 31 keys: `header`; `label.opening`, `label.coverage`, `label.override`,
+locale it serves. The key set is these 32 keys: `header`; `label.opening`, `label.coverage`, `label.override`,
 `label.star`, `label.follow_up`, `label.nudge`, `label.primary`, `label.advance`; `star`, `budget`, `nudge`;
 `opening.resumed_notice`, `opening.fallback`, `opening.quoted`, `opening.spoken_reask_all`, `opening.spoken_resumed`,
-`opening.spoken_fresh`, `opening.closing`; `primary.none`, `primary.intro`, `primary.asked_before_one`,
+`opening.spoken_fresh`, `opening.closing`, `opening.continuation`; `primary.none`, `primary.intro`, `primary.asked_before_one`,
 `primary.asked_before_many`, `primary.progress_all_asked`, `primary.progress_last`, `primary.progress_next`;
 `advance.floor_one`, `advance.floor_many`, `advance.floor_with_primaries`, `advance.with_phrase`,
 `advance.without_phrase`. A set with a missing key, or with a key outside this set, MUST be refused at publish and
@@ -38,9 +38,9 @@ English in every locale by decision (see `interview-conversation`, "i18n - Compo
 
 #### Scenario: A complete set is publishable
 
-- GIVEN a payload with all 31 keys for `en` and for `it`, each passing the placeholder contract
+- GIVEN a payload with all 32 keys for `en` and for `it`, each passing the placeholder contract
 - WHEN it is published
-- THEN the set, 62 fragment rows and a content seal are stored in one transaction
+- THEN the set, 64 fragment rows and a content seal are stored in one transaction, inactive
 
 #### Scenario: A set with a missing key is refused at publish
 
@@ -121,8 +121,9 @@ closing phrase, completion detection never fires, and the provider session dies 
 ### Requirement: Exactly One Active Prompt Set, Activated Atomically
 
 At most one prompt set MUST be active, enforced by the database (a partial unique index on `is_active`). Activating a
-set MUST deactivate the incumbent first and activate the new set in the same transaction, and MUST record
-`activated_at`. Activation affects only the NEXT composition; a session already composed keeps the set it was
+set MUST first verify it with the checks a composition runs (seal, key set and placeholder contract for every locale it
+holds, and every override body), MUST deactivate the incumbent first and activate the new set in the same transaction,
+and MUST record `activated_at`. Activating the already active set changes nothing. Activation affects only the NEXT composition; a session already composed keeps the set it was
 stamped with (see `interview-conversation`, "Durable Conversation Prompt Stamp").
 
 #### Scenario: A second active set is refused by the database
@@ -136,6 +137,12 @@ stamped with (see `interview-conversation`, "Durable Conversation Prompt Stamp")
 - GIVEN S1 is active
 - WHEN S2 is activated
 - THEN S2 is the only active set, `activated_at` of S2 is set, and S1 is no longer active
+
+#### Scenario: A set that does not verify is not activated
+
+- GIVEN S1 is active and S2 was altered out-of-band so that its seal no longer matches
+- WHEN S2 is activated
+- THEN the activation is refused and S1 is still active
 
 #### Scenario: A failed activation leaves the incumbent active
 
@@ -245,8 +252,11 @@ override: a role-specific row wins over a role-less row, and they are never conc
 
 `PromptSetResolver::resolveActive(locale, competencyCode, roleCode)` MUST throw
 `PromptTemplateUnresolvableException` (a `CompositionException`) when there is no active set, when a key is missing or
-unknown, when the active set has no rows for the locale, or when the seal does not match. It MUST NOT fall back to
-another set, another locale or the baseline text. The active set MUST be read with one indexed query on every
+unknown, when the active set has no rows for the locale, when the seal does not match, when more than one set is active, when a
+set holds two rows for one identity or no rows at all, or when an override body breaks its contract. It MUST NOT fall
+back to another set, another locale or the baseline text. Each failure MUST carry one machine-readable reason and a
+message that names sets, keys and locales and never a template body. A failure of the infrastructure (for example a
+database error) is not a resolution failure and MUST NOT be reported as one. The active set MUST be read with one indexed query on every
 resolution; its fragments MAY be cached by (set id, locale) with no invalidation, because a set is immutable.
 
 #### Scenario: No active set
@@ -261,6 +271,18 @@ resolution; its fragments MAY be cached by (set id, locale) with no invalidation
 - WHEN the resolver runs for `it`
 - THEN it throws; no `en` fragment is used instead
 
+#### Scenario: Two active sets
+
+- GIVEN two sets are active because the one-active index was bypassed
+- WHEN the resolver runs
+- THEN it throws and picks neither
+
+#### Scenario: A duplicated row
+
+- GIVEN the active set holds two rows for one (key, locale), or two overrides for one identity, inserted around the unique indexes
+- WHEN the resolver runs
+- THEN it throws
+
 #### Scenario: Activating another set takes effect without clearing a cache
 
 - GIVEN a resolution under S1 filled the cache and S2 is then activated
@@ -271,10 +293,14 @@ resolution; its fragments MAY be cached by (set id, locale) with no invalidation
 
 ### Requirement: Publishing And Activation Are Console Operations
 
-A prompt set MUST be published with `beai:prompt-set:publish` and activated with `beai:prompt-set:activate`; both MUST
-run the placeholder contract and the completeness check, and no HTTP route MUST exist for either in this change.
+A prompt set MUST be published with `beai:prompt-set:publish <file>` (options `--label`, `--notes`, `--dry-run`) and
+activated with `beai:prompt-set:activate <label>`; both MUST run the placeholder contract and the completeness check,
+and no HTTP route MUST exist for either in this change. Publishing MUST store the set inactive and MUST NOT activate
+it; after inserting the set and its children it MUST read them back and verify them like a composition does, rolling
+the transaction back on a mismatch. Console output MUST NOT print a template body.
 `beai:prompt-set:dump-baseline` MUST write the baseline set as `database/prompt-sets/<label>.json` from
-`BaselinePromptFragments`.
+`BaselinePromptFragments`, deterministically, and MUST refuse to overwrite a file whose content differs: a stored set
+is immutable, so a changed baseline is dumped under a new label.
 
 #### Scenario: Publish refuses an invalid payload without side effects
 
@@ -286,9 +312,12 @@ run the placeholder contract and the completeness check, and no HTTP route MUST 
 
 ### Requirement: The Baseline Set Is Bootstrapped By A Data Migration
 
-A migration MUST insert the baseline set, its fragments and its seal, and activate it, so that every environment
-(including every `RefreshDatabase` test database) has an active set after `migrate`. The migration MUST be idempotent
-keyed on the unique `label`: when the set exists it verifies the seal and writes nothing. It MUST NOT depend on a
+A migration MUST insert the baseline set (label `baseline-1`), its fragments and its seal, and activate it when no
+other set is active, so that every environment (including every `RefreshDatabase` test database) has an active set
+after `migrate`; when another set is already active it MUST insert the baseline inactive and leave the incumbent
+active. The migration MUST be idempotent keyed on the unique `label`: when the set exists it checks the stored seal
+against the file and the stored rows, throws on any mismatch, and otherwise writes nothing. It MUST refuse a baseline
+file that carries overrides, because the seal it freezes covers fragments only. It MUST NOT depend on a
 seeder, because production never runs `DatabaseSeeder`. The baseline set MUST equal `BaselinePromptFragments` for `en`
 and `it`, and the seal algorithm frozen in the migration MUST equal `PromptSetSeal`.
 
@@ -304,11 +333,52 @@ and `it`, and the seal algorithm frozen in the migration MUST equal `PromptSetSe
 - WHEN the migration logic runs again
 - THEN no row is inserted or changed and the seal is verified
 
+#### Scenario: An operator's active set is not replaced by the migration
+
+- GIVEN a set other than the baseline is already active
+- WHEN the bootstrap migration runs
+- THEN the baseline set is inserted inactive and the incumbent stays active
+
 #### Scenario: The migrated set equals the baseline text
 
 - GIVEN the migrated active set
 - WHEN its fragments are compared with `BaselinePromptFragments`
 - THEN they are equal for `en` and `it`
+
+---
+
+### Requirement: A Deploy Is Refused Without An Intact Active Prompt Set
+
+`beai:deploy` MUST, right after its migrations and before any seeder, verify the active prompt set when
+`conversation.prompt_source` is `db`, and MUST fail the deploy (fatal, non-zero exit) when the check fails. The check
+MUST run the resolution `/start` runs for every locale in `app.supported_locales` and then verify the single active set
+(seal, key set, placeholder contract, every override body). It MUST be skipped, with a warning, when the source is
+`baseline`, and an unknown source value MUST fail the deploy. Adding a supported locale without publishing its
+fragments therefore fails the deploy.
+
+#### Scenario: A deploy with no active set is refused
+
+- GIVEN the source is `db` and no set is active
+- WHEN `beai:deploy` runs
+- THEN it exits non-zero after the migrations and none of the seeders that follow runs
+
+#### Scenario: A deploy with a tampered or incomplete set is refused
+
+- GIVEN the active set fails its seal, lacks a supported locale, is active twice, or holds a broken override body
+- WHEN `beai:deploy` runs
+- THEN it exits non-zero and the output names the reason without printing a template body
+
+#### Scenario: The baseline source skips the check
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=baseline` and no stored set
+- WHEN `beai:deploy` runs
+- THEN the prompt set check is skipped with a warning and the deploy continues
+
+#### Scenario: An unknown source value refuses the deploy
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE` holds a value that is neither `db` nor `baseline`
+- WHEN `beai:deploy` runs
+- THEN it exits non-zero rather than choosing a source
 
 ---
 

@@ -14,7 +14,7 @@
 | # | The old artifacts said | What is true, and what this change does | Evidence |
 |---|---|---|---|
 | A-1 | Everything is a "revision" (`conversation_prompt_revisions`, `revision_id`, `r{id}`) | "Revision" already means `FrameworkCatalogRevision`, and catalogue rows are cloned per revision. Use **`prompt_set`** everywhere (`conversation_prompt_sets`, `prompt_set_id`, `s{id}`) | `OpenDraftRevision`; `FrameworkCatalogRevision` in `TenantModelArchTest` |
-| A-2 | 17 section keys, each a whole paragraph | **31 leaf fragment keys.** The opening and primary-question prose is branch-dependent (fresh, resumed, re-ask of an asked primary, fallback, last, next), the labels are separate lines, and the advance floor has three pieces. Branch selection stays in PHP; only prose moves | `buildOpeningSection()`, `buildPrimaryQuestionsSection()`, `buildAdvanceSection()` |
+| A-2 | 17 section keys, each a whole paragraph | **31 leaf fragment keys (32 since api #155, see "Amendments 2026-10-09").** The opening and primary-question prose is branch-dependent (fresh, resumed, re-ask of an asked primary, fallback, last, next), the labels are separate lines, and the advance floor has three pieces. Branch selection stays in PHP; only prose moves | `buildOpeningSection()`, `buildPrimaryQuestionsSection()`, `buildAdvanceSection()` |
 | A-3 | The seeder needs human-authored Italian (task 4.2, human-blocking), and a missing `it` row is a reason to author | The composer emits English directives for every locale by documented decision; only the coverage section is localised. The `it` rows are **verbatim copies of `en`**. No Italian authoring, nothing human-blocking | `SystemPromptComposer` class docblock; main spec "i18n - Composed Prompt in Project Language"; `StandardPromptCharacterizationTest` pins the `it` output at 4323 bytes |
 | A-4 | Overrides keyed by `role_id` / `competency_id` foreign keys | Catalogue roles and competencies are cloned per catalogue revision with new ids, so an id-keyed override silently stops matching after the next revision. Overrides are keyed by **`role_code` (nullable) and `competency_code`** | `OpenDraftRevision`; `composePromptForCompetency()` already resolves ids per revision |
 | A-5 | `:token` placeholders plus a post-interpolation sweep that throws on any surviving `/:[a-z_]{2,}/` | The sweep would answer 422 for legitimate operator text (a primary question or advance phrase containing `:budget` or `Re:think`). Delimiter is **`{{token}}`**, rendering is one `strtr()` pass (a value containing `{{budget}}` renders literally), and the contract validates TEMPLATES only, never rendered output | G14 injection case; `buildAdvanceSection()` history |
@@ -36,18 +36,18 @@ Two further statements of the old artifacts are corrected by the same evidence, 
 
 ### New decisions
 
-**N-1 - Fragment grain: 31 leaf keys, each for `en` and `it`.**
+**N-1 - Fragment grain: 31 leaf keys when planned, 32 as delivered (`opening.continuation` was added by api #155), each for `en` and `it`.**
 
 | Group | Keys | Tokens |
 |---|---|---|
 | Frame (1) | `header` | `{{competency_code}}` |
 | Labels (8) | `label.opening`, `label.coverage`, `label.override`, `label.star`, `label.follow_up`, `label.nudge`, `label.primary`, `label.advance` | none. `label.override` is reserved and unused until PR9 |
 | Bodies (3) | `star` (nowdoc; 3 interior blank lines; 6-space continuation indent on `not what the team did.`), `budget`, `nudge` | `budget`: `{{budget}}`; `nudge`: `{{nudge_min_chars}}` |
-| Opening (7) | `opening.resumed_notice`, `opening.fallback`, `opening.quoted`, `opening.spoken_reask_all`, `opening.spoken_resumed`, `opening.spoken_fresh`, `opening.closing` | `quoted`: `{{number}}`, `{{question}}`; `spoken_reask_all`, `spoken_resumed`, `spoken_fresh`: `{{quoted}}`; others none |
+| Opening (7; 8 as delivered) | `opening.resumed_notice`, `opening.fallback`, `opening.quoted`, `opening.spoken_reask_all`, `opening.spoken_resumed`, `opening.spoken_fresh`, `opening.closing`, and, as delivered, `opening.continuation` (no tokens) | `quoted`: `{{number}}`, `{{question}}`; `spoken_reask_all`, `spoken_resumed`, `spoken_fresh`: `{{quoted}}`; others none |
 | Primary (7) | `primary.none`, `primary.intro`, `primary.asked_before_one`, `primary.asked_before_many`, `primary.progress_all_asked`, `primary.progress_last`, `primary.progress_next` | `asked_before_many`: `{{count}}`; `progress_last`: `{{spoken}}`; `progress_next`: `{{spoken}}`, `{{next}}`; others none |
 | Advance (5) | `advance.floor_one`, `advance.floor_many`, `advance.floor_with_primaries`, `advance.with_phrase`, `advance.without_phrase` | `floor_many`: `{{min_questions}}`; `floor_with_primaries`: `{{floor}}`; `with_phrase`: `{{floor}}` and `{{advance_phrase}}` (its surrounding double quotes live in the template); `without_phrase`: `{{floor}}` |
 
-Total 1 + 8 + 3 + 7 + 7 + 5 = 31. A fragment body is stored **trimmed**: every space join, `implode("\n")`, blank
+Total 1 + 8 + 3 + 7 + 7 + 5 = 31 as planned; 32 as delivered with `opening.continuation`. A fragment body is stored **trimmed**: every space join, `implode("\n")`, blank
 separator part, `N. question` numbering, the `buildCoverageSection()` line format and its Excellent / Adequate /
 Insufficient labels, `effectiveMinimum()` (`max(1, min(configured, primaries + budget))`),
 `normalizePrimaryQuestions()` and `resolveSpokenOpening()` stay in PHP. The raw budget is substituted, never
@@ -172,7 +172,7 @@ three indicators in `en` and `it`, `compose()` called directly.
 HTTP level, `tests/Feature/C8/InterviewStartPromptGoldenTest.php`, capturing the `prompt` field of the provider
 `/contexts` call (helper pattern of `EndPhraseInPromptTest`): H1 standard `en` fresh; H2 standard `it` resume; H3
 potential `it` last competency (final phrase, not the intermediate one). A recording `PromptTemplateSet` double
-asserts that all 31 keys except `label.override` are rendered across G01 to G17. From PR3 on, CI checks that
+asserts that all 31 keys except `label.override` are rendered across G01 to G17 (as delivered: a marker template set over its own case matrix in `SystemPromptComposerTemplatesTest`, 31 consumable keys of the 32). From PR3 on, CI checks that
 `git diff --stat origin/develop -- api/tests/Fixtures/Conversation/prompts` is empty.
 
 **N-12 - Overrides.** Keyed by code. One append section after COVERAGE TOPICS and before the STAR protocol, headed
@@ -219,6 +219,29 @@ POST /api/candidate/interview/start
   `DatabaseSeeder`, so the conclusion stands: the baseline set must come from a migration.
 - **Test count.** 37 test files contain the literal route `/api/candidate/interview/start`; the notes said about 46.
   The extra files, if any, reach it through helpers. PR8's full-suite run is the real measure.
+
+
+## Amendments 2026-10-09 (delivery)
+
+> Written when the change was archived. It records where the delivered system differs from the 2026-10-08 plan above,
+> read from api `origin/develop` `cf1d82a` (the merge of api #158) and the pull request descriptions. Where this section
+> and the text above disagree, this section describes what shipped. The decision log itself is not rewritten.
+
+| # | Plan said | What shipped | Evidence |
+|---|---|---|---|
+| D-1 | 31 fragment keys; the opening prose has no "continuation" case | **32 keys.** `opening.continuation` (no tokens) was added after a tester reported that the avatar greeted the candidate again at the start of the second competency: every `/start` opens a NEW provider session whose model has no memory of the welcome. `SpokenOpening::primary(n, continuation: true)`; `InterviewController` sets it for a FRESH start of a competency whose ordinal in the project order is greater than 1 (not for a resume, not for the fallback opening, and keyed on the ordinal, not on `$isFirst`, because `started_at` also reads false for a candidate redoing competency 1 after an error). The composer appends the clause as the last sentence of the OPENING paragraph, joined by one space, only when the flag is set. Goldens G18 (en), G19 (it) and H4 (HTTP, second competency) were added; G01 to G17 and H1 to H3 are byte-identical | api #155 (`2cb0d03`); `PromptFragmentKeyTest` pins 32 |
+| D-2 | `it` rows are verbatim copies of `en` | Unchanged and confirmed: `BaselinePromptFragments` serves the `en` map for `it`, and also for any other locale; `baseline-1.json` holds 32 keys for `en` and the same 32 for `it`. On the `db` source a project language with no rows (anything but `en` and `it`) is refused with the 422; a test that relied on the `fr` fallback now selects the `baseline` source | api #149, #156, #157 |
+| D-3 | Bootstrap label unspecified | Label **`baseline-1`**; N counts baseline snapshots, and `database/prompt-sets/baseline-1.json` is a frozen artefact: `beai:prompt-set:dump-baseline` refuses to overwrite a file whose content differs, so a changed baseline is dumped under a new label with its own migration or publish. The migration (`2026_10_09_100000_bootstrap_baseline_conversation_prompt_set`) activates the set only when NO set is active (otherwise it inserts it inactive and leaves the incumbent alone), checks the stored hash against the file and the stored rows for an existing label (any mismatch throws), and refuses a baseline file that carries overrides because its frozen seal covers fragments only | api #156 (`61aac71`, `c7923d7`) |
+| D-4 | Resolver cache keyed by (set id, locale); failures: no set, missing key, unknown key, missing locale, tampered hash | Cache keyed by (set id, content hash, locale), never filled on failure. The seal is verified over ALL rows of the set (every locale and the overrides). `PromptTemplateUnresolvableException` carries a machine-readable `reason`: `no_active_set`, `ambiguous_active_set` (more than one active), `locale_missing`, `keys_incomplete`, `contract_violated`, `seal_mismatch`, `override_invalid`, `duplicate_row`, `empty_set`, `invalid_source`. A public `verify()` runs the same checks across every locale the set holds, plus every override body, without caching, and is used by publish (read-back), activation and the deploy gate | api #152, #153, #157 |
+| D-5 | `beai:prompt-set:publish --file=<json>` | `beai:prompt-set:publish {file} {--label=} {--notes=} {--dry-run}` (positional file). Publish stores the set INACTIVE, never activates, computes the seal before the insert, then reads the stored rows back and verifies them with `verify()` inside the transaction. `beai:prompt-set:activate {label}` locks the target, verifies it, deactivates the incumbent first, activates, is idempotent, and flushes the resolver cache after commit | api #153 (`616d465`) |
+| D-6 | Hard failure through the existing `catch (CompositionException)`; flag `db` or `baseline` | As planned, plus: the flag defaults to `db` and `App\Enums\PromptSource::configured()` validates it strictly (an unknown, empty or differently-cased value is `invalid_source`; neither source is chosen); there is no fallback from `db` to the baseline; the exception is reported, because every candidate hits it; a failure of the infrastructure while resolving (for example a database error) is a 500, never a 422 and never the baseline. The durable stamp is `{conversation.prompt_version}+s{id}.{sha12}` for `db` (built from `QuestionContext::stampedPromptVersion()`) and the bare config string for `baseline`; `ComposedPrompt::version` and `question_context.prompt_version` stay the bare config string. `ResolvedPromptSet::ref()` (`{label}+s{id}.{sha12}`) is a human-facing reference and is not what the stamp stores | api #157 (`70def97`) |
+| D-7 | `beai:deploy` gains a fatal check "that an active set exists and its seal verifies" | The gate runs right after the migrations and before every seeder, only when the source is `db`: it flushes the resolver cache, runs the resolution `/start` runs for every locale in `config(app.supported_locales)` (placeholder competency code `DEPLOY-CHECK`, no role), then `verify()` on the single active set (seal, key set, placeholder contract, every override body). It refuses no active set, two active sets, a seal mismatch, a supported locale without rows and a broken override body, and prints reasons (set labels, keys, locales), never a template body. With `baseline` it is skipped with a warning; an unknown source is fatal. Consequence: adding a locale to `app.supported_locales` without publishing its fragments fails the deploy | api #157; `DeployCommandTest` |
+| D-8 | Override section rendered when a row exists | `compose(..., ?PromptTemplateSet $templates = null, ?string $override = null)`. The override is appended verbatim AFTER every other section is rendered, so no token in it is ever substituted; it renders as one section headed by `label.override`, after COVERAGE TOPICS and before the STAR protocol, only when the body has at least one character that is neither whitespace nor U+200B; a blank body, or bytes that are not valid UTF-8, count as no override (fail closed). The `baseline` source never prints an override. The resolver hands over at most one override, already checked against the override contract. Golden G20 pins the section | api #158 (`cf1d82a`) |
+| D-9 | Goldens G01 to G17 and H1 to H3 | 20 composer goldens and 4 HTTP goldens: G18, G19, H4 (api #155) and G20 (api #158) were added. The pinned directory hash constant was re-pinned in exactly one place each time, by additions only; no original fixture changed. The HTTP goldens run on `db` by default and are also asserted on `baseline` | api #155, #158 |
+| D-10 | Ten numbered slices delivered as twelve PRs | Twelve api pull requests in all: eleven carry the numbered slices (PR1 and PR2 together in #146; PR4b as the two pre-declared halves #149 and #150) and #155 is the 32nd key. api #154 merged inside the chain and is unrelated | `tasks.md` "Delivery record" |
+
+Not delivered, and why, is in `archive-report.md` ("Deferred and open items"): the release and deploy, the cleanup PR that
+deletes the baseline PHP, independently authored Italian directives, and any backoffice authoring UI.
 
 ---
 
@@ -305,7 +328,7 @@ matches the neighbour. Locale hard-fails, no fallback (user decision 4).
 
 ### D-3 — Section-key enumeration: PHP enum **and** a DB CHECK constraint
 
-> **SUPERSEDED by Amendments (A-2, N-1, N-3).** The enum is `PromptFragmentKey` with 31 cases, and there is no DB CHECK on the key: membership is enforced at publish and by the resolver.
+> **SUPERSEDED by Amendments (A-2, N-1, N-3).** The enum is `PromptFragmentKey` with 31 cases (32 as delivered), and there is no DB CHECK on the key: membership is enforced at publish and by the resolver.
 
 **Choice**: backed enum `App\Enums\PromptSectionKey` cast on the model, plus raw-DDL
 `CHECK (section_key IN (...))`.
@@ -429,7 +452,7 @@ composition was rejected as inventing a session-spanning lifetime nothing else i
 
 ### D-10 — Placeholder contract, enforced at save AND at composition
 
-> **SUPERSEDED by Amendments (A-5, N-1, N-2).** The two-sided enforcement (publish and composition) is RETAINED. The `:token` syntax, the 17-key table, the post-interpolation sweep and `strtr()` longest-key-first are SUPERSEDED by `{{token}}`, the 31-key table and a single `strtr()` pass over templates only.
+> **SUPERSEDED by Amendments (A-5, N-1, N-2).** The two-sided enforcement (publish and composition) is RETAINED. The `:token` syntax, the 17-key table, the post-interpolation sweep and `strtr()` longest-key-first are SUPERSEDED by `{{token}}`, the 31-key table (32 as delivered) and a single `strtr()` pass over templates only.
 
 Save-time alone is insufficient: seeders and raw SQL bypass it. This is the guard that
 replaces the code-review gate `is_active` removes, and it is the mitigation for the defect
@@ -795,7 +818,7 @@ previous.
 
 ## Deviations from the proposal (flagged, not smuggled)
 
-> **SUPERSEDED by Amendments.** Δ1 is reversed (row per locale, as the proposal said). Δ2 is replaced by the 31-key grain. Δ3 is accepted and moved ahead of the schema and cut-over slices (PR3).
+> **SUPERSEDED by Amendments.** Δ1 is reversed (row per locale, as the proposal said). Δ2 is replaced by the 31-key grain (32 as delivered). Δ3 is accepted and moved ahead of the schema and cut-over slices (PR3).
 
 - **Δ1** — locale storage is a translatable JSON column, not one row per locale (D-2). The
   proposal said row-per-locale.
