@@ -3,8 +3,8 @@
 Strict TDD: every behaviour task is a RED step (a failing test, observed failing for the stated reason) followed by a
 GREEN step (the smallest change that makes it pass), then REFACTOR with the suite green. A box is ticked only for an
 observed outcome, with the commit sha next to it. Inputs: `proposal.md`, `design.md`, `specs/interview-frontend/spec.md`.
-Created 2026-10-09 from the code at `frontend` `f1769a7` (release 0.24.0) and wrapper `develop` `4c5b72e`. Nothing here is
-implemented.
+Created 2026-10-09 from the code at `frontend` `f1769a7` (release 0.24.0) and wrapper `develop` `4c5b72e`. Slices UI-00 to
+UI-08 are merged (see the `Done:` line of each); the rest is not implemented yet.
 
 ## Rules for every slice
 
@@ -87,7 +87,7 @@ Depends on: nothing. DESIGN.md forbids implementing a decision it does not descr
 
 ## UI-01: Flag, config and the wide canvas (about 150 lines)
 
-Done: merged as `frontend` PR #70 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #70, merge commit `2518ba0` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `nuxt.config.ts`, `app/composables/useCandidateCallUi.ts`, `app/components/organisms/BrandCanvas.vue`.
 
@@ -102,7 +102,7 @@ Depends on: UI-00. Files: `nuxt.config.ts`, `app/composables/useCandidateCallUi.
 
 ## UI-02: Speaker signal (about 330 lines)
 
-Done: merged as `frontend` PR #71 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #71, merge commit `4e7e330` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/composables/useSpeakerTurn.ts`, `app/components/AvatarPlayer.client.vue`.
 
@@ -119,7 +119,7 @@ Depends on: UI-00. Files: `app/composables/useSpeakerTurn.ts`, `app/components/A
 
 ## UI-03: Tile and ring (about 260 lines)
 
-Done: merged as `frontend` PR #72 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #72, merge commit `b0d9ade` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/components/molecules/CallTile.vue`, `app/assets/css/main.css`.
 
@@ -135,7 +135,7 @@ Depends on: UI-00. Files: `app/components/molecules/CallTile.vue`, `app/assets/c
 
 ## UI-04: Written question band (about 280 lines)
 
-Done: merged as `frontend` PR #73 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #73, merge commit `7d15fd1` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/components/molecules/CallQuestion.vue`, `app/components/InterviewSession.vue` (filter only), locale files.
 
@@ -153,7 +153,7 @@ Depends on: UI-00. Files: `app/components/molecules/CallQuestion.vue`, `app/comp
 
 ## UI-05: Own-camera tile (about 220 lines)
 
-Done: merged as `frontend` PR #74 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #74, merge commit `268d7ef` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00, UI-03 (uses `CallTile`). Files: `app/components/molecules/CallSelfView.client.vue`, locale files.
 
@@ -167,7 +167,7 @@ Depends on: UI-00, UI-03 (uses `CallTile`). Files: `app/components/molecules/Cal
 
 ## UI-06: Side panel, elapsed clock and counter timer (about 380 lines)
 
-Done: merged as `frontend` PR #75 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #75, merge commit `dc005e7` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/composables/useInterviewClock.ts`, `app/components/organisms/CallPanel.vue`,
 `app/components/ProgressBar.vue`, `app/components/InterviewTimer.vue`, locale files.
@@ -187,7 +187,7 @@ Depends on: UI-00. Files: `app/composables/useInterviewClock.ts`, `app/component
 
 ## UI-07: Exit dialog and the suspended screen (about 380 lines)
 
-Done: merged as `frontend` PR #76 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #76, merge commit `df53128` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/components/molecules/CallExitDialog.vue`, `app/components/InterviewSession.vue`, locale files.
 
@@ -206,7 +206,7 @@ Depends on: UI-00. Files: `app/components/molecules/CallExitDialog.vue`, `app/co
 
 ## UI-08: Help link and the support URL (about 260 lines)
 
-Done: merged as `frontend` PR #77 (see the PR for the review outcome and the decisions taken).
+Done: merged as `frontend` PR #77, merge commit `d6e51a2` (see the PR for the review outcome and the decisions taken).
 
 Depends on: UI-00. Files: `app/utils/support-url.ts`, `app/composables/useSupportUrl.ts`,
 `app/components/molecules/CallHelpLink.vue`, `app/pages/interview/terminal.vue`, `app/components/InterviewSession.vue`
