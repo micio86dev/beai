@@ -242,6 +242,6 @@ Branch `feature/db-driven-prompts-pr9-overrides`. Focused tests: `PromptOverride
 
 ## After PR9 (not slices)
 
-- [ ] AFTER.1 Archive this change with the SDD archive flow: merge the three deltas into `openspec/specs/` (`conversation-prompt-templates` new; `interview-conversation` and `framework-catalog` modified). Done by the archive commit that moves this folder (see `archive-report.md`); ticked there.
+- [x] AFTER.1 Archive this change with the SDD archive flow: merge the three deltas into `openspec/specs/` (`conversation-prompt-templates` new; `interview-conversation` and `framework-catalog` modified). Done on 2026-10-09 by the commit that moves this folder (see `archive-report.md`); ticked after the move, as the only post-move edit to this file.
 - [ ] AFTER.2 Bump the wrapper's `api` pointer and run the Git Flow release only on explicit request; no deploy otherwise. NOT DONE (2026-10-09): no release was requested. The wrapper still pins api `30a18b6`/release 0.68.0 on `develop`, which does not contain any slice of this chain; nothing was deployed.
 - [ ] AFTER.3 After a soak, one cleanup PR deletes the baseline PHP and the break-glass flag; the tests then compose from the migrated set. NOT DONE, deliberately: it needs a soak that has not happened (nothing is released). `BaselinePromptFragments`, `CONVERSATION_PROMPT_SOURCE=baseline` and `PromptSource::Baseline` are still in api `develop`.
