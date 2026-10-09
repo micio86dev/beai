@@ -123,7 +123,7 @@ not deferred, for four reasons:
 2. **The 1542-line `interview-flow.spec.ts` and several other specs (listed in `design.md` "Existing tests affected") target today's DOM** (`/^pause$/` button, header
    `timer`, live dock). Leaving them on the old path until the flip keeps CI green slice by slice instead of one big-bang
    migration.
-3. **Rollback is a variable change and a restart, not a code revert.** Railway redeploys on a variable change.
+3. **Rollback is a variable change and a restart, not a code revert.** (Railway applying a variable change with a redeploy is the expected behaviour; it was not verified for this change.)
 4. **Precedent**: the in-flight `tavus-single-session-interview` ships dark the same way.
 
 The cost is two screens coexisting for a bounded time. It is bounded by tasks `UI-12` (flip and migrate specs) and `UI-13`

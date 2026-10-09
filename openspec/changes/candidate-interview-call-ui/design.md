@@ -327,9 +327,9 @@ all, which is deliberate (R7). The integrity toaster moves to `position="top-lef
 | `call-exit.spec.ts` | Dialog open/cancel/confirm, focus return, deadline from `exp`, null session drops the sentence, `pause()` called once, `redirect()` and `clear()` never called, disabled during a handover. |
 | `support-url.spec.ts` | `https:` and `mailto:` accepted, `javascript:`/`http:`/garbage/empty fall back, attributes per scheme. |
 | `interview-session-call-ui.spec.ts` | Flag on: stage renders, no status pill, no Pause button, no `interview-status`; flag off: tree equals today's (the existing `interview-session-page.spec.ts` stays green untouched); one mount and one stop per player across `connecting`, `live`, `paused`, handover (R1). |
-| `call-ui-arch.spec.ts` | No `vh`/`dvh`/`svh` in `components/call` or its molecules (embedded rule), no competency fields imported by the panel, no literal user-visible strings. |
+| `arch/call-ui-arch.spec.ts` | No `vh`/`dvh`/`svh` in the Call* components (embedded rule), no competency fields imported by the panel, no literal user-visible strings. |
 | `i18n-interview-keys.spec.ts` (extended) | Every new key exists in `it.json` and `en.json`. |
-| `integrity-toaster` spec (extended) | Default position unchanged; `top-left` honoured. |
+| `integrity-toast.spec.ts` (extended) | Default position unchanged; `top-left` honoured. |
 
 **Playwright (chromium AND webkit; mobile project unchanged):** a new `interview-call.spec.ts` runs against a **third
 server instance** of the same build on port 4177 with `NUXT_PUBLIC_CANDIDATE_CALL_UI=true`, selected by two new projects
