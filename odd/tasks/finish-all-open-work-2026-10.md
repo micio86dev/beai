@@ -45,10 +45,25 @@ into `develop` in every repo, and no work branch is left open (complete everythi
       `DELETE /v1/sessions/{ref}` (405); the real stop is `POST /v1/sessions/stop` (api PR #144, merged, `develop`
       `e215c43`). Archive docs, the merged requirements and the native-duplex status are updated in the wrapper.
       Follow-up F2c (HeyGen context cleanup, about 20 `beai-*` contexts left by `issue()`) is in progress and NOT done.
-- [ ] F2c HeyGen context cleanup: `provider_context_ref` column, `DELETE /v1/contexts/{id}` after a confirmed stop, plus the
-      two non-blocking test warnings of the F2b review (branch `feature/heygen-context-cleanup`, in progress)
-- [ ] F3 `db-driven-conversation-prompts`: rescope design to the current composer, tasks, golden test, tables,
+- [x] F2c HeyGen context cleanup: `provider_context_ref` column, `DELETE /v1/contexts/{id}` after a confirmed stop, plus the
+      two non-blocking test warnings of the F2b review (branch `feature/heygen-context-cleanup`)
+      Evidence: merged into api `develop` as PR #145 (`6c78b77`, 2026-10-08), CI check `Lint · Analyse · Test ·
+      OpenAPI · Docker` SUCCESS; the migration `2026_10_08_100000_add_provider_context_ref_to_interview_sessions_table`
+      is on `origin/develop`. Per the PR description: full suite 8458 tests, 0 failed, Pint and PHPStan clean; the native
+      review lineage ended in `recover` / `scope_changed`, so no native approval exists for it (compensated by an
+      independent read-only review and `gga`).
+- [x] F3 `db-driven-conversation-prompts`: rescope design to the current composer, tasks, golden test, tables,
       resolver, composer cut-over, `conversation_prompt_version` stamp (chained PRs, each under the review budget)
+      Evidence (2026-10-09): rescoped in wrapper PR #90 (`852ec65`); delivered in api `develop` as PRs #146 (goldens),
+      #147 (stamp), #148 (vocabulary), #149 and #150 (composer reads fragments), #151 (tables), #152 (resolver), #153
+      (publish and activate), #155 (32nd key `opening.continuation`, no second greeting), #156 (bootstrap,
+      `baseline-1`), #157 (cut-over, `CONVERSATION_PROMPT_SOURCE=db|baseline`, deploy gate) and #158 (overrides), merge
+      commits `c494d31` to `cf1d82a`; each PR's `Lint · Analyse · Test · OpenAPI · Docker` check is SUCCESS (the
+      `develop` run for `cf1d82a` was still in progress when this was written). Archived as
+      `openspec/changes/archive/2026-10-09-db-driven-conversation-prompts/` with the specs merged
+      (`conversation-prompt-templates` new; `interview-conversation` and `framework-catalog` composed). NOT part of
+      this tick: no release and no deploy, and the cleanup PR that deletes the baseline PHP after a soak (both listed
+      in its `archive-report.md`).
 - [ ] F4 `tavus-single-session-interview`: tasks.md, api session model + `ReleaseProviderConversation`, frontend
       Tavus data-channel boundary path, 3600 s ceiling handover
 - [ ] F5 `native-duplex-conversation`: only if F2 proves it is feasible; otherwise record the proven blocker
@@ -60,10 +75,13 @@ into `develop` in every repo, and no work branch is left open (complete everythi
 - All suites green per repo; gga PASSED on each slice.
 
 ## Progress
-F0, F1 and F2 done. F2c (HeyGen context cleanup keyed on `provider_context_ref`) is in progress in `api/`. F3
-(`db-driven-conversation-prompts`) and F4 (`tavus-single-session-interview`) are pending. F5 is re-scoped: the HeyGen
+F0, F1, F2, F2c and F3 done (2026-10-09). F2c (HeyGen context cleanup keyed on `provider_context_ref`) is api PR #145,
+merged. F3 (`db-driven-conversation-prompts`) is merged in api as #146 to #158 and archived in the wrapper; the
+wrapper `api` pointer still pins release 0.68.0 and nothing was released or deployed. F4
+(`tavus-single-session-interview`) is pending. F5 is re-scoped: the HeyGen
 questions are proven, so `native-duplex-conversation` is no longer blocked on them and needs its proposal amended and
 its own question round. F6 is pending.
 
 ## Next step
-Finish F2c, then F3 and F4; amend the `native-duplex-conversation` proposal (F5).
+Do F4; amend the `native-duplex-conversation` proposal (F5); then F6 (merge, branch cleanup, submodule pins, final
+status). No release, tag or deploy unless the owner asks.
