@@ -44,7 +44,7 @@ into `develop` in every repo, and no work branch is left open (complete everythi
       the secrets API has no update verb. Bug found and fixed: `HeygenProvider::teardown()` used
       `DELETE /v1/sessions/{ref}` (405); the real stop is `POST /v1/sessions/stop` (api PR #144, merged, `develop`
       `e215c43`). Archive docs, the merged requirements and the native-duplex status are updated in the wrapper.
-      Follow-up F2c (HeyGen context cleanup, about 20 `beai-*` contexts left by `issue()`) is in progress and NOT done.
+      Follow-up F2c (HeyGen context cleanup, about 20 `beai-*` contexts left by `issue()`) was still open when this was written; it is ticked below (api #145).
 - [x] F2c HeyGen context cleanup: `provider_context_ref` column, `DELETE /v1/contexts/{id}` after a confirmed stop, plus the
       two non-blocking test warnings of the F2b review (branch `feature/heygen-context-cleanup`)
       Evidence: merged into api `develop` as PR #145 (`6c78b77`, 2026-10-08), CI check `Lint · Analyse · Test ·

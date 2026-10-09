@@ -1142,7 +1142,7 @@ fail: mutating one byte of a fixture makes the comparison fail. Across the templ
 
 - GIVEN any later slice
 - WHEN `git diff origin/develop -- api/tests/Fixtures/Conversation/prompts` is taken
-- THEN it is empty
+- THEN no existing fixture is modified: a new case is added through the capture mechanism (it never overwrites), and the pinned directory hash is re-pinned in one place with the justification in the commit message
 
 #### Scenario: Existing characterization and phrase tests pass unmodified
 
@@ -1361,6 +1361,7 @@ primary question) MUST NOT be modified.
 - GIVEN a resumed session of the second competency
 - WHEN `/start` composes
 - THEN the prompt contains no continuation clause
+
 ## Coverage Note
 
 The following paths MUST be held to ~95% test coverage (unit / Pest feature tests, no HTTP):

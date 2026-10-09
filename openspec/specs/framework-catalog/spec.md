@@ -895,6 +895,7 @@ the same versioning limits as the anchors they sit beside.
 - GIVEN an override for role FLL and competency INN and a draft revision opened from the baseline
 - WHEN the draft is opened, edited and published
 - THEN the override rows are unchanged and still resolve for the cloned FLL and INN
+
 ## Non-Goals (Explicit)
 
 The following are OUT OF SCOPE for C3 and MUST NOT be implemented here:

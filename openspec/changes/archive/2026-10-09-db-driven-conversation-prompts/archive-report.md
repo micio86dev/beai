@@ -100,7 +100,7 @@ Not available:
 
 Native review (receipt-driven development) record, as written in the PR descriptions: #149 ended with the native
 lineage answering `stop: corrupted_or_unverifiable_authority`, so no native approval exists for that slice (compensated
-by an independent read-only differential review, the golden gate and `gga`); #147 and #150 were assessed medium and under
+by an independent read-only differential review, the golden gate and `gga`). That lineage was later recovered and re-reviewed after the merge (2026-10-09): the native reviewer raised one BLOCKER, claiming the regex `/[\s\x{200B}]+/u` leaves NBSP and U+3000 unstripped. It was refuted by running the real regex (all four cases reduce to the empty string, because PHP's `/u` flag enables UCP) and by the guard's tests, and the lineage was abandoned with the reason `operator_disposition`; #147 and #150 were assessed medium and under
 the review budget, so no native review was due; the other descriptions record no native review outcome.
 
 ## Decisions taken (the delivered shape; full detail in `design.md`, "Amendments 2026-10-08" and "Amendments 2026-10-09")
