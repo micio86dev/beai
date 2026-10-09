@@ -72,16 +72,18 @@ provider credits or a person's time.
 
 Depends on: nothing. DESIGN.md forbids implementing a decision it does not describe, so this lands first.
 
-- [ ] UI-00.1 Add to §3.1 Interview-specific the token `--color-speaking-ring: #ffffff`; to §3.3 `--spacing-call-panel: 18rem`;
-      to §3.5 the tile-ring composite (resting 2 px; active 2 + 3 + 2 px bands plus halo).
-- [ ] UI-00.2 §7.0.1: document the `BrandCanvas` option `wide` (header and main column `max-w-[96rem]`).
-- [ ] UI-00.3 §7.3: replace the live diagram, header-chrome and live-dock bullets with the call stage (tiles, question band,
-      side panel, Exit, help); keep the flag-off description marked "until the call screen is the default".
-- [ ] UI-00.4 §7.3 end: restate the urgent-timer contrast pair for the white panel and drop the amber-under-30-s sentence
+- [x] UI-00.1 Add to §3.1 Interview-specific the token `--color-speaking-ring: #ffffff`; to §3.3 `--spacing-call-panel: 18rem`;
+      to §3.5 the tile-ring composite (resting 2 px; active 2 + 3 + 2 px bands plus halo). Done `0055c20`; both tokens are also
+      mirrored in the §4 `@theme` block (frontend only), so each name appears more than once.
+- [x] UI-00.2 §7.0.1: document the `BrandCanvas` option `wide` (header and main column `max-w-[96rem]`). Done `0055c20`.
+- [x] UI-00.3 §7.3: replace the live diagram, header-chrome and live-dock bullets with the call stage (tiles, question band,
+      side panel, Exit, help); keep the flag-off description marked "until the call screen is the default". Done `0055c20`.
+- [x] UI-00.4 §7.3 end: restate the urgent-timer contrast pair for the white panel and drop the amber-under-30-s sentence
       (never shipped); §9.2 note the question band as the boundary focus target; §10 add the ring (150 ms under
-      `no-preference`, none under `reduce`, never looping).
-- [ ] UI-00.5 Verify: `rg -n 'speaking-ring|spacing-call-panel' DESIGN.md` finds the new tokens once each; the tables still
-      render (no broken pipes). Commit: `docs(design): describe the candidate call screen`.
+      `no-preference`, none under `reduce`, never looping). Done `0055c20`. The recording-indicator mismatch (V15) is also
+      annotated in §7.3, §10 and §12 as not shipped; no indicator is added (open question 4).
+- [x] UI-00.5 Verify: `rg -n 'speaking-ring|spacing-call-panel' DESIGN.md` finds the new tokens once each; the tables still
+      render (no broken pipes). Commit: `docs(design): describe the candidate call stage tokens and components` `0055c20`.
 
 ## UI-01: Flag, config and the wide canvas (about 150 lines)
 
