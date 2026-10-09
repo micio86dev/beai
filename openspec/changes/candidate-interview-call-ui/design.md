@@ -81,7 +81,7 @@ contrast (DESIGN §3.1 rule 2); the tiles carry their own dark frames.
 ```
 
 - **Columns.** `grid-template-columns: minmax(0, 1fr) var(--spacing-call-panel)` with `--spacing-call-panel: 18rem`
-  (new token, section 6). Below `xl` the grid is one column and the panel is a flex-wrapped strip. DESIGN §6 already
+  (new token, documented under D11 and UI-00). Below `xl` the grid is one column and the panel is a flex-wrapped strip. DESIGN §6 already
   says `xl` is where "side-by-side layouts unlock".
 - **Interviewer tile.** The existing player layer. `aspect-video`, `rounded-surface`, `shadow-avatar`, its dark
   `--color-avatar-bg` surface unchanged. In hosted mode its width is capped so the whole stage fits the viewport height:
@@ -268,7 +268,7 @@ No new colour is introduced except one frontend-only constant. Amendments to `DE
 | §3.3 Spacing | Add `--spacing-call-panel: 18rem` (side panel width). |
 | §3.5 Shadows | Document the speaking-ring composite (resting 2 px, active 2+3+2 px bands plus halo) as the one "tile ring" elevation; it nests no raised card inside a raised card (the tiles are not cards). |
 | §7.0.1 | `BrandCanvas` option `wide` (header and main column `max-w-[96rem]`) used by the live call only. |
-| §7.3 | Replace the live diagram, header-chrome bullet, "Live dock" bullet with the call stage (tiles, question band, side panel, exit, help); state that the status pill is superseded; keep the flag-off description until `UI-13`. |
+| §7.3 | Replace the live diagram, header-chrome bullet, "Live dock" bullet with the call stage (tiles, question band, side panel, exit, help); state that the status pill is superseded; keep the flag-off description until `UI-14`. |
 | §7.3 (end) | Restate the urgent-timer contrast pair for the white panel; the amber-under-30-s sentence is removed as it never shipped (V8). |
 | §9.2 | Note that the question band is the focus target at a competency boundary. |
 | §10 | Add the speaking ring: 150 ms box-shadow transition under `no-preference`, none under `reduce`, never looping. |
