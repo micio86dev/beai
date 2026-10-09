@@ -157,8 +157,12 @@ surface carries the same signal. Enforced by a test, not by convention.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--color-recording` | `#dc2626` | Recording indicator (live red dot) |
-| `--color-avatar-bg` | `#0f172a` | Avatar panel background (dark, immersive) |
+| `--color-recording` | `#dc2626` | The urgent question timer (last 10 seconds, §7.3). It also names the recording indicator (live red dot), which the shipped live screen does **not** render (§7.3 "Status elements of the live screen, as shipped") |
+| `--color-avatar-bg` | `#0f172a` | Avatar panel and call tile background (dark, immersive); also the dark bands either side of the speaking ring |
+| `--color-speaking-ring` | `#ffffff` | `frontend` only: the white band of the call tile's speaking ring (§3.5, §7.3). Always drawn between two `--color-avatar-bg` bands, about 17.9:1 against it, so it holds on any brand colour and any video content. Not derived from the brand and never tinted |
+
+`--color-speaking-ring` is a `frontend`-only constant like the canvas tokens below, so §17's
+mirror rule does not apply to it.
 
 #### Candidate brand canvas (`frontend` only)
 
@@ -244,6 +248,7 @@ tokens below supplement Tailwind's built-in scale for BEAI-specific layout needs
 | `--spacing-avatar-panel` | `2rem` (32 px) | Avatar panel internal padding |
 | `--spacing-nav` | `4rem` (64 px) | Navigation bar height |
 | `--spacing-sidebar` | `16rem` (256 px) | Backoffice sidebar width |
+| `--spacing-call-panel` | `18rem` (288 px) | `frontend` only: width of the call screen's side panel at `xl` and up (§7.3). Below `xl` the panel is a strip and the token is unused |
 
 ---
 
@@ -270,6 +275,22 @@ tokens below supplement Tailwind's built-in scale for BEAI-specific layout needs
 | `--shadow-avatar` | `0 25px 50px -12px rgb(0 0 0 / 0.5)` | Avatar panel elevation |
 | `--shadow-surface` | `0 1px 2px rgb(15 23 42 / 0.08), 0 24px 56px -20px rgb(15 23 42 / 0.45)` | `frontend` only: the content surface lifted off the brand canvas (§7.0.1) |
 
+**Tile ring (`frontend` only, call screen).** A call tile (§7.3) signals who is speaking with a
+box-shadow ring, not a token of its own, built from `--color-avatar-bg` and
+`--color-speaking-ring` (§3.1):
+
+| State | Composite (outside in) |
+|-------|------------------------|
+| Resting | 2 px `--color-avatar-bg` |
+| Active (that tile's party is speaking) | 2 px `--color-avatar-bg`, 3 px `--color-speaking-ring`, 2 px `--color-avatar-bg` keyline, then a soft 32 px halo of white at 30% |
+
+Reference declaration (first shadow paints on top, so the rings step outward):
+`0 0 0 2px avatar-bg, 0 0 0 5px speaking-ring, 0 0 0 7px avatar-bg, 0 0 32px rgb(255 255 255 / 0.3)`.
+The halo is decoration; the measured indicator is the white band between the two dark bands.
+The ring is a state indicator drawn on a tile, not a fourth elevation level: the tiles are not
+cards, so it nests no raised card inside a raised card. Under `forced-colors: active` the shadows
+are dropped, so the active state becomes a 4 px `Highlight` outline. Motion: §10.
+
 **Elevation on the brand canvas** has exactly three levels: the canvas (0), the content surface
 and the logo plate (1, `--shadow-surface` / `--shadow-sm`), and floating chrome such as the
 analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside a raised card.
@@ -287,7 +308,7 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
 | `--z-modal` | `400` | Modal / dialog content |
 | `--z-toast` | `500` | Toast notifications |
 | `--z-tooltip` | `600` | Tooltips |
-| `--z-recording-indicator` | `700` | Live recording indicator (always on top) |
+| `--z-recording-indicator` | `700` | Live recording indicator (always on top); specified, not rendered by the live screen today (see §7.3) |
 
 ---
 
@@ -348,6 +369,9 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
   --color-primary-ink: #771aaf;
   --color-canvas-tone: #410e60;
 
+  /* frontend only — the call tile speaking ring (§3.1, §3.5, §7.3) */
+  --color-speaking-ring: #ffffff;
+
   /* === Typography === */
   /* Open Sans loaded via @fontsource/open-sans (self-hosted, GDPR-safe) */
   --font-sans: "Open Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -359,6 +383,8 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
   --spacing-avatar-panel: 2rem;
   --spacing-nav: 4rem;
   --spacing-sidebar: 16rem;
+  /* frontend only — the call screen side panel (§7.3) */
+  --spacing-call-panel: 18rem;
 
   /* === Border radius === */
   --radius-sm: 0.25rem;
@@ -411,7 +437,7 @@ components/
     BaseIcon.vue
     BaseSpinner.vue
     BaseAvatar.vue        (avatar image/fallback)
-    RecordingIndicator.vue
+    RecordingIndicator.vue   # specified, not shipped (see §7.3)
   molecules/      # Composed from atoms, one concern
     FormField.vue         (label + input + error)
     ToastNotification.vue
@@ -419,11 +445,18 @@ components/
     ConfirmDialog.vue
     ConsentBanner.vue     (GDPR consent — frontend only)
     TimerDisplay.vue      (interview countdown)
+    CallTile.vue          (frontend — call screen: dark tile frame, name chip, speaking ring)
+    CallQuestion.vue      (frontend — call screen: the written question band)
+    CallSelfView.client.vue (frontend — call screen: the candidate's own camera tile)
+    CallExitDialog.vue    (frontend — call screen: confirm-and-suspend dialog)
+    CallHelpLink.vue      (frontend — call screen: «Problemi con audio o video?» link)
   organisms/      # Feature-level, may have local state
     NavBar.vue
     SidebarNav.vue        (backoffice only)
     AvatarPanel.vue       (frontend — interview view)
     QuestionCard.vue      (frontend — current question display)
+    CallStage.vue         (frontend — call screen grid around the avatar player layer, §7.3)
+    CallPanel.vue         (frontend — call screen side panel: progress, duration, timer, exit, help)
     EvaluationReport.vue  (backoffice — BARS report viewer)
     CandidateTable.vue    (backoffice — candidate list)
   layouts/        # Nuxt layouts (app.vue + named layouts)
@@ -550,7 +583,7 @@ header.
   name in `text-on-primary` at `--text-sm`/semibold, separated by a short vertical hairline.
   Never nothing (CLAUDE.md ruling 9). The logo is `alt=""`: the name beside it is the
   accessible text. The header's trailing end (`header-end` slot) holds the where-am-I chrome of
-  the interview (§7.3), right aligned.
+  the interview (§7.3), right aligned; it is empty while the call stage is live.
 - **Surface.** One centred `bg-card` surface, `--radius-surface`, `--shadow-surface`,
   `max-w-[34rem]`. Padding `2.25rem` (`p-9`) on desktop, `1.5rem` below `lg`.
 - **Interview screens.** REVISED 2026-10-06: every state of `InterviewSession` (consent, device
@@ -561,6 +594,10 @@ header.
   ink focus outline and the entrance). The avatar panel keeps its dark `--color-avatar-bg`
   surface. The session renders no tagline footer: the device check and the avatar already fill
   a 1440×900 viewport. Details in §7.3.
+- **Wide mode (`wide`).** A boolean option, default false, used by the live call screen only
+  (§7.3). When set, the header column and the main container widen from `max-w-6xl` to
+  `max-w-[96rem]` (1536 px, `2xl`), so the logo plate stays aligned with the stage's left edge.
+  Nothing else about the canvas changes: colours, logo plate, bare mode and focus are as above.
 - **Footer.** On the canvas: the product tagline in `text-on-primary-muted`, `--text-sm`. While
   the analytics consent banner is open it publishes its height as
   `--consent-banner-clearance`, which the canvas reserves as bottom padding, so the banner never
@@ -605,7 +642,8 @@ with the canvas tone at any opacity ≥ the unblended ratio; primary-ink on whit
 on-primary-surface on primary-surface ≥ 4.5:1; card text tokens on `bg-card` unchanged from
 §9.1; the primary-ink edge on white ≥ 3:1; the progress fill (primary-ink) on its
 `--secondary` track ≥ 3:1; the current-step numeral (primary on an on-primary disc) ≥ 4.5:1;
-the urgent timer (`--color-recording`) on the white status pill ≥ 4.5:1.
+the urgent timer (`--color-recording`) on its white surface ≥ 4.5:1 (the status pill of the flag-off
+screen, the call panel's `bg-card` on the call screen; 4.83:1 measured on white).
 
 **Screenshot matrix.** Any change to the canvas, the shell or a candidate page is reviewed in
 screenshots at 1440×900 for four brands: light `#ffd400` (black on-primary), dark `#771aaf`
@@ -668,6 +706,123 @@ page background is the client colour, no longer `--color-avatar-bg`. There is no
 Submit control: the timer is the only client-side early end, and a competency cannot be
 skipped.
 
+REVISED 2026-10-09 (`candidate-interview-call-ui`): the live state becomes a work video call
+(the call stage below). It is specified here before it is built and ships behind the
+`candidateCallUi` flag, default off. The flag-off description stays in this section, marked,
+until the call screen is the default; the consent, device-check and other-state rules apply
+to both.
+
+**Call stage (flag on).** Hierarchy, in the order the eye should find it: the interviewer
+tile, the written question, the candidate's own tile, the side panel.
+
+```
+>= 1280 px (xl): two columns, wide canvas, gap-6
+┌──────────────────────────────────────────────────────────────────────────┐
+│ [logo plate] │ Organization                                              │  header, on canvas
+│                                                                          │  (no status pill)
+│ ┌────────────────────────────────────────┐ ┌───────────────────────────┐ │
+│ │                                        │ │ Domanda 2 di 5            │ │
+│ │   INTERVIEWER TILE (16:9, dark)        │ │ ▬▬▬▭▭                     │ │  side panel = bg-card,
+│ │                        ┌────────────┐  │ │ 03:12 / 25:00             │ │  --spacing-call-panel
+│ │                        │ own camera │  │ │ Tempo rimanente  04:12    │ │
+│ │                        └────────────┘  │ │ [ Esci, riprenderai dopo ]│ │
+│ └────────────────────────────────────────┘ │ Problemi con audio o video│ │
+│ ┌────────────────────────────────────────┐ └───────────────────────────┘ │
+│ │ Written question (white band, live)    │                               │  question band = bg-card
+│ └────────────────────────────────────────┘                               │
+└──────────────────────────────────────────────────────────────────────────┘
+1024–1279 px (lg) and a narrower embed container: one column; the panel is a strip under the question band
+```
+
+The Italian strings in the diagram are copy examples; every string is i18n-keyed in `it` and `en`.
+
+- **Canvas and header.** `BrandCanvas` in bare mode with `wide` (§7.0.1). The header's trailing
+  end is empty while live: the **status pill is superseded** (progress, duration and timer
+  moved into the side panel), and so is the in-header question label.
+- **Grid.** At `xl` and up: `minmax(0, 1fr)` beside `--spacing-call-panel` (§3.3), container
+  `max-w-[96rem]`, `px-10`, `gap-6`. Below `xl` (`lg`, and any embedded container narrower than
+  that, down to 480 px): one column, with the panel as a wrapped strip under the question band.
+  The avatar player layer is never re-parented; only its classes change between states.
+- **Interviewer tile.** The avatar player: `aspect-video`, `--radius-surface`, `--shadow-avatar`,
+  its dark `--color-avatar-bg` surface and internals unchanged. In the hosted app its width is
+  capped so the whole stage fits the viewport height (no vertical scroll at 1280×800,
+  1440×900 or 1920×1080); embedded, no viewport-height unit is used and the tile is
+  width-driven only. The first connect still shows a still dark panel of the same aspect ratio
+  with the loading line under it, so the page does not jump when the avatar paints.
+- **Speaking ring.** Each tile (`CallTile`: a frame, a name chip, the ring) shows who is speaking:
+  the ring composite of §3.5 on the interviewer tile while the avatar speaks, on the candidate
+  tile while the candidate speaks, on neither otherwise and in every non-live state. The
+  interviewer name is the generic "Intervistatore AI" / "AI interviewer" label: no avatar
+  template carries a name that is safe to show (a product default, to be confirmed).
+  **Not colour alone:** the name chip shows a filled microphone icon while active, and carries
+  visually hidden text ("L'intervistatore sta parlando", "Stai parlando"). That text is NOT a
+  live region; announcing every turn would bury the question, the same argument §7.3.1 makes
+  for the voice visualizer. Motion: §10.
+- **Self-view tile.** The candidate's own camera, inside the interviewer tile's cell, bottom
+  right, 16:9, `width: clamp(9rem, 18%, 14rem)`. It shows the device-check stream (no second
+  camera request), muted and mirrored (a visual flip only), has no controls, takes no focus
+  and no pointer events, and falls back to a static camera-off placeholder when the stream
+  has no live video track. It is drawn only while the interview is live.
+- **Question band.** A white `bg-card` surface under the interviewer tile, `text-xl`
+  `leading-8` `font-medium` `text-card-foreground`, `min-h-24`, `max-h-44`, scrolling when
+  longer, `tabindex="0"` (a scrollable region must be keyboard reachable). It is one persistent
+  `aria-live="polite"` `aria-atomic` region labelled "Domanda corrente". It shows the latest
+  utterance of the **avatar only** (the candidate's own words never replace it) and keeps it
+  until the next avatar utterance; it never fades out. Until the first question of a competency
+  arrives it holds the muted listen hint, and it clears back to the hint at a competency
+  boundary so the previous closing phrase is not read as the new question. The text can appear
+  after the voice has started (providers deliver a finished utterance); the hint covers the gap
+  and the design does not promise text-before-speech.
+- **Side panel** (`<aside>`, `bg-card`, `--radius-surface`, labelled "Avanzamento del colloquio"),
+  top to bottom:
+  1. **Progress.** "Domanda {n} di {total}" and a thin `ProgressBar` (`--color-primary-ink`
+     fill) whose `aria-valuetext` equals the visible text. Both numbers come from the server's
+     progress fields; the competency code and name are never shown, and the heuristic "Q1.2"
+     label is dropped. Hidden until the server has stated a total.
+  2. **Duration.** "03:12 / 25:00": live seconds elapsed in this page session over a maximum of
+     5 minutes per competency, labelled as a maximum. Elapsed counts only while the interview is
+     live and restarts on a full reload (a documented limitation, not a silent inaccuracy).
+  3. **Question timer.** The existing countdown as a counter, "Tempo rimanente per questa
+     domanda  04:12" in `font-mono` `tabular-nums` `text-base` `font-semibold`, a `<time
+     role="timer">`. Its only threshold is the last 10 seconds: `--color-recording` and
+     `aria-live="assertive"` (4.83:1 on the white panel). There is no amber state and no
+     minimum/ideal/maximum band.
+  4. **Exit** and 5. **help link**, at the bottom, in that DOM order.
+- **Exit.** An outline 44 px button "Esci, riprenderai dopo" opens a dialog (focus trapped, Esc
+  closes, focus returns to the button): "Vuoi uscire dal colloquio?" with the stored session's
+  real deadline. Confirming suspends the interview (stops the provider, reports the suspension,
+  unmounts the live block and the camera tile) and shows the paused panel in its "suspended"
+  wording, with focus on its heading and a Resume action. Exit is never the exit redirect: that
+  clears the stored session and would make "riprenderai" false; `exit_redirect_url` keeps its
+  one meaning, "the interview is complete". During a competency handover the button is
+  disabled and shows its loading state, never hidden. Automatic pauses (tab hidden, offline)
+  keep today's wording.
+- **Help link.** «Problemi con audio o video?», `text-primary-ink` underlined, 44 px target
+  height (`--spacing-control`), a visible 2 px ink focus ring. It points at the configurable
+  support URL (`https:` or `mailto:` only; anything else falls back to the default mailbox);
+  `https:` opens in a new tab with `rel="noopener noreferrer"` and a hidden "opens in a new
+  tab" note.
+- **Integrity toasts** move from top right to top left under the header when the call stage is
+  live (§10): the right-hand panel owns the progress readout the toast would cover.
+- **Proctoring** is unchanged and invisible: the overlay stays mounted in the live state and
+  consumes the same device-check stream as the self-view tile.
+
+**All screens.**
+
+- **Step indicator.** On consent and the device check the header's trailing end shows the
+  three-step indicator (`InterviewSteps`: Consent, Devices, Interview), an `<ol>` with
+  `aria-current="step"`, drawn with on-primary tokens only: the current step is an on-primary
+  disc with the numeral in the primary, steps ahead `text-on-primary-muted`, steps behind a
+  check plus a screen-reader "completed".
+- **Other states** (pause, scheduled pause, done, error, terminal, session expired, the
+  between-competencies transition) are one canvas surface each, `max-w-[34rem]`, primary action
+  44px. The scheduled pause shows the server progress bar (primary-ink fill) once; support links
+  are `text-primary-ink`.
+
+**Flag-off screen — until the call screen is the default.** The description below is the
+shipped live screen while `candidateCallUi` is off. It is removed when the call screen becomes
+the only screen; until then it is frozen and its tests pass unchanged.
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ [logo plate] │ Organization           ( Q1.2 │ ▬▬▬▭ 2 / 5 │ 04:12 )   │  header, on canvas
@@ -683,11 +838,7 @@ skipped.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Header chrome.** On consent and the device check the header's trailing end shows the
-  three-step indicator (`InterviewSteps`: Consent, Devices, Interview), an `<ol>` with
-  `aria-current="step"`, drawn with on-primary tokens only: the current step is an on-primary
-  disc with the numeral in the primary, steps ahead `text-on-primary-muted`, steps behind a
-  check plus a screen-reader "completed". While live it shows a white **status pill**
+- **Header chrome.** While live, the header's trailing end shows a white **status pill**
   (`bg-card`, `rounded-full`, `h-11`): the question label, the server's progress
   (`ProgressBar compact`, only once the server has stated a total) and the timer. The pill is
   white so the timer's last-ten-seconds red (`--color-recording`) has a measured contrast.
@@ -698,10 +849,6 @@ skipped.
   `aria-live` region that stays mounted) and the single Pause control (outline, 44px). Until the
   first question arrives a muted hint ("Listen to the question, then answer out loud.") sits in
   the caption's place.
-- **Other states** (pause, scheduled pause, done, error, terminal, session expired, the
-  between-competencies transition) are one canvas surface each, `max-w-[34rem]`, primary action
-  44px. The scheduled pause shows the server progress bar (primary-ink fill) once; support links
-  are `text-primary-ink`.
 
 #### 7.3.1 Voice-only variant
 
@@ -808,10 +955,17 @@ to stop reporting whether anyone is talking.
 
 **Accessibility.** `role="img"` with a static label, never a live region: the
 interviewer's speech already reaches assistive technology as live text through
-`<InterviewCaption>` (WCAG 1.2.4), and announcing every amplitude change would
+`<InterviewCaption>` (flag off) or the call stage's question band (WCAG 1.2.4), and announcing every amplitude change would
 bury it.
-- Recording indicator: pulsing red dot (`--color-recording`), always visible.
-- Timer: amber warning when < 30 s (`--color-warning`), red when < 10 s (`--color-error`).
+**Status elements of the live screen, as shipped.**
+- Recording indicator: **not rendered.** A pulsing red dot (`--color-recording`), always
+  visible, was specified here and §12 still lists it, but no live screen has ever drawn one
+  (call screen included). Whether to add one is a consent and legal decision, not a styling
+  one (`candidate-interview-call-ui`, open question 4); until it is ruled on, no UI, test or
+  copy may claim that a recording indicator exists.
+- Timer: red (`--color-recording`) with `aria-live="assertive"` in the last 10 s, and no other
+  threshold. The amber warning under 30 s that this line used to describe never shipped and is
+  not part of the design.
 - All text i18n-keyed, zero hardcoded strings.
 
 ### 7.4 End Screen
@@ -1267,8 +1421,8 @@ All text against its background MUST achieve:
 
 | Text color | Background | Ratio | Pass |
 |------------|------------|-------|------|
-| `--color-neutral-800` (`#1e293b`) | `--color-neutral-50` (`#f8fafc`) | 16.4:1 | ✓ |
-| `--color-neutral-900` (`#0f172a`) | white | 19.2:1 | ✓ |
+| `--color-neutral-800` (`#1e293b`) | `--color-neutral-50` (`#f8fafc`) | 14.0:1 | ✓ |
+| `--color-neutral-900` (`#0f172a`) | white | 17.9:1 | ✓ |
 | white | `--color-primary` (`#771aaf`) | 8.2:1 | ✓ AA (normal text) |
 | white | `--color-accent` (`#e45526`) | 3.7:1 | ✗ FAILS 4.5:1 AA for normal text; passes 3:1 large-text/UI |
 | white | `--color-accent-dark` (`#431695`, aliased to `--color-primary-dark`) | 11.75:1 | ✓ AA (valid text-sized accent alternative) |
@@ -1301,7 +1455,9 @@ All text against its background MUST achieve:
 - Every interactive element MUST have a visible focus indicator (Tailwind's `ring` utilities).
 - Focus order MUST follow DOM reading order (no `tabindex` gymnastics).
 - Modals and dialogs MUST trap focus while open and restore it on close.
-- After interview question transitions, focus MUST move to the new question element.
+- After interview question transitions, focus MUST move to the new question element. On the
+  call screen (§7.3) that element is the question band (`tabindex="0"`): focus moves there once
+  per competency boundary, never per utterance, and not while focus is inside an open dialog.
 
 ### 9.3 ARIA Patterns
 
@@ -1329,7 +1485,11 @@ No keyboard shortcut may conflict with browser or OS reserved shortcuts.
 - **Default**: no animation (prefers-reduced-motion compliant).
 - **When animations are enabled** (`@media (prefers-reduced-motion: no-preference)`):
   - Page transitions: fade (200 ms ease-in-out).
-  - Recording indicator: pulse (1 s infinite ease-in-out).
+  - Recording indicator: pulse (1 s infinite ease-in-out). Specified only: no live screen
+    renders one today (§7.3 "Status elements of the live screen, as shipped").
+  - Speaking ring (`frontend` call tiles, §3.5): a 150 ms `ease-out` box-shadow transition
+    when a tile's speaking state changes. Under `reduce` the ring switches instantly. It never
+    pulses or loops: the ring is state, not animation.
   - Toast entry: slide-in from bottom (300 ms ease-out). Integrity toasts in the candidate app
     (below) use an 8 px upward slide with fade, 300 ms ease-out.
   - Modal entry: scale from 95% + fade (200 ms ease-out).
@@ -1345,7 +1505,8 @@ No keyboard shortcut may conflict with browser or OS reserved shortcuts.
   e2e run fail one test in three. Enforced by `tests/unit/arch/no-backdrop-filter.spec.ts` in
   `backoffice` and `frontend`.
 - **Integrity toasts (`frontend`).** One Toaster per interview (`IntegrityToaster`), top right
-  under the header, flush with the header column and inside the safe area, at `--z-toast` set on
+  under the header (top left on the call stage, §7.3, where the right-hand panel sits), flush
+  with the header column and inside the safe area, at `--z-toast` set on
   its fixed wrapper. Each toast is an opaque `--card` surface with `--card-foreground` text and
   a 4 px `--color-error-dark` edge and icon, never a brand token, so it keeps 4.5:1 on any
   client colour. Copy is a localized title plus one instruction per integrity kind (13 kinds,
@@ -1378,7 +1539,7 @@ No keyboard shortcut may conflict with browser or OS reserved shortcuts.
 |---------|-------------|
 | Consent screen | Shown before camera/mic access is requested; explicit binary choice |
 | Privacy notice | Inline (not behind a link); covers data categories, controller, retention, rights |
-| Recording indicator | Visible throughout interview (live red dot + `aria-live` status) |
+| Recording indicator | Visible throughout interview (live red dot + `aria-live` status). **Not yet shipped:** no live screen renders it; adding it is an open consent and legal decision (§7.3 "Status elements of the live screen, as shipped") |
 | Data deletion | Backoffice "Request deletion" button on candidate record; triggers a traceable server-side event |
 | Cookie notice | Only if analytics cookies are set (none by default in C1); implement via a future consent manager |
 | Data portability | Backoffice can export candidate evaluation as JSON/PDF (C11/C12 concern) |
