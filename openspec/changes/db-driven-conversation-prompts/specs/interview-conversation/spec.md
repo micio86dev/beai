@@ -17,7 +17,7 @@ deterministic, side-effect-free function of the following inputs:
 | `min_questions` (floor, opening question included) | Platform config `conversation.min_questions`; default 4, CLAMPED by the composer |
 | `nudge_min_chars` | `Project.nudge_min_chars` |
 | `prompt_version` | `config/conversation.php`; unchanged, returned as `question_context.prompt_version` |
-| **fragment set** (31 prose fragments, plus an optional per-code override) | Resolved at the CALL SITE from the active `conversation-prompt-templates` prompt set for `project_language` and passed into `compose()` as an immutable value object; absent (`null`) means the baseline text |
+| **fragment set** (32 prose fragments, plus an optional per-code override) | Resolved at the CALL SITE from the active `conversation-prompt-templates` prompt set for `project_language` and passed into `compose()` as an immutable value object; absent (`null`) means the baseline text |
 
 The composition MUST:
 - Require NO LLM inference call.
@@ -145,10 +145,13 @@ set MUST be byte-for-byte identical to the prompt composed by the pre-change com
 composer-level cases (G01 to G17: budget, nudge and phrase variants, the clamp at 0, authored primaries from 0 to 6,
 resumed openings, the fallback opening, a role-less `potential` case with the final phrase, an injection case, and
 configured minimums of 99 and -3) and 3 HTTP-level cases (H1 standard `en` fresh, H2 standard `it` resume, H3
-`potential` `it` on the last competency). Fixtures MUST be captured once on the pre-change tree, MUST NOT be
-overwritten by the capture tool, and MUST be pinned by a directory hash in the test. The harness MUST prove it can
-fail: mutating one byte of a fixture makes the comparison fail. Across the cases, every fragment key except
-`label.override` MUST be rendered at least once.
+`potential` `it` on the last competency), captured on the pre-change tree; later additions are new fixtures and never
+change an existing one: G18 and G19 (the continuation clause, `en` and `it`) and H4 (the second competency over HTTP)
+for "A Later Competency Does Not Greet Again", and G20 (a prompt with an override). Fixtures MUST be captured once, MUST
+NOT be overwritten by the capture tool, and MUST be pinned by a directory hash in the test; adding a fixture re-pins
+that hash in one place and changes no existing fixture. The goldens MUST pass against both prompt sources. The harness MUST prove it can
+fail: mutating one byte of a fixture makes the comparison fail. Across the template test matrix, every fragment key except
+`label.override` MUST be rendered at least once, and `label.override` MUST be rendered only when an override is composed.
 
 #### Scenario: Every golden case matches its fixture
 
@@ -213,11 +216,14 @@ advance fragment MUST always yield the quoted closing phrase and the question fl
 
 ### Requirement: An Unresolvable Prompt Set Fails Composition With The Existing 422
 
-When the fragment set cannot be resolved (no active set, a missing or unknown key, a missing locale, a seal
-mismatch, or a template that violates the placeholder contract), `/start` MUST answer HTTP 422 with the existing
+When the fragment set cannot be resolved (no active set, more than one active set, a missing or unknown key, a missing
+locale, a seal mismatch, or a template or override that violates its contract), `/start` MUST answer HTTP 422 with the existing
 `composition_error` code. Resolution MUST run inside the existing composition `try`, before the session row is
 created and before any new provider session is issued, so a failure creates no `InterviewSession` row and issues no
-new provider session. No new API error code and no OpenAPI change are introduced. On the resume path the existing
+new provider session. The `db` source MUST NOT fall back to the baseline text, another set or another locale. The failure MUST be reported
+(it affects every candidate). A failure of the infrastructure while resolving, such as a database error, is not a
+resolution failure: it MUST surface as a server error (500), never as a 422 and never as the baseline text. No new API
+error code and no OpenAPI change are introduced. On the resume path the existing
 behaviour for any composition failure is unchanged: the outgoing provider session is released exactly once.
 
 #### Scenario: No active set
@@ -238,6 +244,18 @@ behaviour for any composition failure is unchanged: the outgoing provider sessio
 - WHEN `/start` is called
 - THEN HTTP 422 `composition_error` is returned
 
+#### Scenario: Two active sets block composition
+
+- GIVEN two prompt sets are active because the one-active index was bypassed
+- WHEN `/start` is called
+- THEN HTTP 422 `composition_error` is returned and neither set is used
+
+#### Scenario: A failing database is not a composition error
+
+- GIVEN the database fails while the active set is being resolved
+- WHEN `/start` is called
+- THEN the response is a server error (500) and no baseline text is composed
+
 #### Scenario: A resumed interview that fails composition releases the outgoing session once
 
 - GIVEN a live `in_corso` session and an unresolvable active set
@@ -250,8 +268,9 @@ behaviour for any composition failure is unchanged: the outgoing provider sessio
 
 `config('conversation.prompt_source')` (environment variable `CONVERSATION_PROMPT_SOURCE`) MUST accept `db` and
 `baseline`. With `db` the active prompt set composes the prompt. With `baseline` the call site MUST pass no fragment
-set and the composer MUST render the baseline text, without a code change or a database read of the prompt set. Any other value MUST fail composition with the same 422
-`composition_error` rather than silently choosing a source. The default MUST be `db` once the cut-over lands.
+set and the composer MUST render the baseline text, without a code change or a database read of the prompt set. Any other value, including an empty value and a
+differently-cased `db` or `baseline`, MUST fail composition with the same 422 `composition_error` rather than silently
+choosing a source. The default MUST be `db`.
 
 #### Scenario: baseline source composes the baseline text
 
@@ -310,7 +329,10 @@ When an override exists for the resolved (role code, competency code, locale), i
 section headed by `label.override`, placed after COVERAGE TOPICS and before the STAR COVERAGE PROTOCOL section, and
 MUST change nothing else in the composed prompt. With no override the output MUST be byte-identical to composing
 without the override step; with one, the ADVANCE RULE bytes MUST be unchanged. At most one override applies (the
-role-specific row wins over the role-less row).
+role-specific row wins over the role-less row). The override MUST be appended verbatim after every other section is
+rendered, so no token in it is ever substituted. A body with no visible character (only whitespace or zero-width
+spaces), or whose bytes are not valid UTF-8, MUST count as no override. The `baseline` source MUST NOT print an
+override.
 
 #### Scenario: An override appears at the specified position only
 
@@ -324,8 +346,51 @@ role-specific row wins over the role-less row).
 - WHEN the prompt is composed
 - THEN the output is identical to the golden fixture for the same inputs
 
+#### Scenario: A blank override is no override
+
+- GIVEN an override body that contains only whitespace or zero-width spaces
+- WHEN the prompt is composed
+- THEN the output is identical to the output composed without an override and no `label.override` heading appears
+
+#### Scenario: The baseline source never prints an override
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=baseline` and an active set carrying an override for the competency
+- WHEN `/start` composes
+- THEN the prompt contains no override section
+
 #### Scenario: The advance rule is unaffected by an override
 
 - GIVEN a competency with an override
 - WHEN the prompt is composed
 - THEN the text from `ADVANCE RULE:` to the end equals the text composed without the override
+
+---
+
+### Requirement: A Later Competency Does Not Greet Again
+
+Every `/start` opens a NEW provider session whose model has no memory of an earlier welcome. For a FRESH start of a
+competency whose ordinal in the project's order is greater than 1, the OPENING paragraph MUST end with the
+`opening.continuation` fragment (no tokens) as its last sentence, joined to the preceding text by one space, telling the
+avatar that the candidate has already been welcomed and must not be greeted, welcomed or introduced to again. The flag
+MUST be keyed on the competency's ordinal, not on whether the participant has started before (a candidate redoing
+competency 1 after an error is not on a later competency). A resumed opening, the fallback opening and every opening of
+competency 1 MUST be byte-identical to what they were before the clause existed. The spoken opening (the authored
+primary question) MUST NOT be modified.
+
+#### Scenario: The second competency carries the clause
+
+- GIVEN a standard project with two competencies and a fresh start of the second
+- WHEN `/start` composes
+- THEN the OPENING paragraph ends with the `opening.continuation` text and nothing else in the prompt moves
+
+#### Scenario: The first competency never carries the clause
+
+- GIVEN a fresh start of the first competency, including for a candidate recovered from an error
+- WHEN `/start` composes
+- THEN the prompt contains no continuation clause
+
+#### Scenario: A resume of a later competency never carries the clause
+
+- GIVEN a resumed session of the second competency
+- WHEN `/start` composes
+- THEN the prompt contains no continuation clause
