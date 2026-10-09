@@ -11,6 +11,15 @@ Inputs: `proposal.md`, `specs/interview-session/spec.md`, `specs/interview-conve
 > with the changes named), **SUPERSEDED by Amendments** (do not implement; the replacement is named),
 > **RESOLVED** (the problem is solved or no longer exists). Where the old text and the Amendments disagree,
 > the Amendments win. `tasks.md` owns slicing, ordering and the test list.
+>
+> **Two amendment layers.** "Amendments 2026-10-08" (A1-A13, N1-N11) corrected the 2026-08-21 design
+> against the code. "Amendments 2026-10-09" (S1-S6, C1-C5, N12-N17) records what the authorized live
+> spike of 2026-10-09 settled (Appendix A) and what `develop` changed after the first rescope
+> (`heygen-context-cleanup` and the now-archived `db-driven-conversation-prompts`). **Where the two layers
+> disagree, 2026-10-09 wins.** Specifically: A3's "probably needs a `respond`" is now a verified MUST (S1);
+> A5 ("overstated", "any browser drop ends the conversation") is SUPERSEDED (S3); N5's echo rule is
+> replaced by N15; N8's new release job is replaced by N12 and the existing
+> `ReleaseEndedProviderSessionJob`. A traceability table for A1-A13 is under "Amendments 2026-10-09".
 
 ---
 
@@ -19,8 +28,9 @@ Inputs: `proposal.md`, `specs/interview-session/spec.md`, `specs/interview-conve
 Evidence base: wrapper `develop` at `321db94`; `api` read from `origin/develop` (`e215c43`, the local api
 checkout was on `feature/heygen-context-cleanup` and was not used); `frontend` `99523a3`; Tavus docs
 `https://docs.tavus.io/llms-full.txt` fetched 2026-10-08. Line numbers below are as observed that day.
-Tavus-behaviour claims that need a live conversation are marked **live-only** and are tracked as L1-L8 in
-`tasks.md`; nothing marked live-only is assumed true.
+Tavus-behaviour claims that need a live conversation were marked **live-only** and tracked as L1-L8 in
+`tasks.md`. The 2026-10-09 spike (Appendix A) has since answered L1-L4, L6 (partly), L7 and L8, and L5
+partly; "live-only" below now means "see Appendix A for the result".
 
 ### Corrections A1-A13
 
@@ -39,29 +49,33 @@ row N would POST `/end` for row N again after the cursor moved to N+1, which is 
 keyed `v-for`; a new `cursor.current` feeds `/end`, `/suspend`, `sessionId`, snapshot and integrity. The
 ticket-before-send ordering of D3 is RETAINED.
 
-**A3 - the interaction is `append_llm_context`, not `overwrite_llm_context`.** Tavus documents
-`conversation.append_llm_context {context}` as "Appends to the conversation's LLM context" and
+**A3 - the interaction is `append_llm_context` followed by a mandatory `respond`, not `overwrite_llm_context`.**
+Tavus documents `conversation.append_llm_context {context}` as "Appends to the conversation's LLM context" and
 `conversation.overwrite_llm_context {context}` as "Replaces the conversation's LLM context"
 (`llms-full.txt` lines 15585-15586). Overwriting with a pointer would delete the multi-topic anchors the whole
-design relies on. Use **context-append**. It probably needs a `conversation.respond {text}` to make the avatar
-speak (`respond` = "the PAL should respond as if the user had spoken that text", line 6378); that is
-**live-only** (L3). A `respond` may be echoed back as a user-role `conversation.utterance` and would then be
-scored as candidate speech (L4), so the client must drop its own steering text (A4/N5). Spec wording becomes
-"context-append (and, if needed, respond) over the data channel". The 2026-08-21 overwrite smoke result is not
-evidence for this design.
+design relies on. Use **context-append**. **Verified live 2026-10-09 (S1, Appendix A L3):** an append alone
+leaves the avatar silent, so a `conversation.respond {text}` ("the PAL should respond as if the user had spoken
+that text", line 6378) is MANDATORY after every append. The `respond` is echoed back as a user-role
+`conversation.utterance` (Appendix A L4) and would be scored as candidate speech, so the client must drop its
+own steering echo (N15; N5's text-only rule is superseded). Spec wording is "context-append followed by a fixed
+respond over the data channel". The 2026-08-21 overwrite smoke result is not evidence for this design, and the
+2026-10-09 clean control confirms that overwrite really discards creation-time context (Appendix A L2).
 
 **A4 - there is no acknowledgement for interactions.** Sends go through `sendAppMessage(msg,'*')`, which
 returns nothing. The only observable acknowledgement is the next **replica utterance** plus Daily
 `left-meeting` / `error`. N5 defines an explicit rule instead of hoping.
 
-**A5 - "`/end` leaks a live conversation" is overstated.** Tavus documents `participant_left_timeout` default
-**0** and `participant_absent_timeout` default **300** (`llms-full.txt` lines 4623-4624). BEAI sets
-`properties.max_call_duration` and `properties.participant_absent_timeout` from the template
-(`api/app/Support/AvatarTemplates/TemplatePayload.php:176-177`; the plan cited `:171-172`, which are now
-comments), plus the optional recording and caption knobs, and never sets `participant_left_timeout`.
-Consequences: `ReleaseProviderConversation` (N8) is belt-and-braces, covering the ceiling crossfade overlap
-and never-joined rooms; and, importantly, **any browser drop ends the shared conversation**, which is why the
-D2 client assertion is mandatory and why every re-entry path falls to fresh-issue (A12). F4 is AMENDED.
+**A5 - [SUPERSEDED by S3 and C1, 2026-10-09; kept as history] "`/end` leaks a live conversation" is overstated.**
+Tavus documents `participant_left_timeout` default **0** and `participant_absent_timeout` default **300**
+(`llms-full.txt` lines 4623-4624). BEAI sets `properties.max_call_duration` and
+`properties.participant_absent_timeout` from the template (`api/app/Support/AvatarTemplates/TemplatePayload.php:176-177`),
+plus the optional recording and caption knobs, and never sets `participant_left_timeout`. This amendment
+concluded that `ReleaseProviderConversation` (N8) is only belt-and-braces and that any browser drop ends the
+shared conversation. **Both conclusions are wrong.** The live spike showed the documented default does NOT end
+the conversation when the browser leaves (Appendix A L7: still `active` 86 s after the leave, ended only by an
+explicit `/end` at +95 s), and the code moved under the rescope so that `/end` itself releases the conversation
+(C1). What survives: the D2 client assertion is mandatory (the server cannot know whether the browser is in the
+room) and every re-entry path falls to fresh-issue (A12). F4 is RETAINED, not weakened (S3).
 
 **A6 - the conversation id never reaches the browser on a fresh `/start`.** `BuildInterviewSessionResponse`
 (`api/app/Actions/Interview/BuildInterviewSessionResponse.php:51-94`) returns `session_id`, `provider`,
@@ -100,7 +114,8 @@ back to `ProviderFieldSpecs::TAVUS_MAX_SECONDS` (3600, `:60`). Expose it for `Pr
 the constant 3600 the original D7 used. Headroom is at least the 300 s question limit plus a join buffer;
 default **480 s** (config `ceiling_headroom_seconds`, replacing D7's 300). Note Tavus caps a requested
 `max_call_duration` to the plan maximum (`llms-full.txt` line 4627): the effective ceiling can be lower than
-the template value; **live-only** (L6).
+the template value; the spike accepted `max_call_duration` 240 and the conversation ended at about that value
+(Appendix A L6), but the plan-level cap was NOT tested (live gate G-B).
 
 **A11 - resume does not reuse; it issues first and tears down second.** `handleResumeInCorso`
 (`InterviewController.php:1157-1255`) calls `issue()` first, then `liveClock->close()`, then tears down the old
@@ -115,8 +130,10 @@ construction, because the browser then holds no live handle, but each must be te
 network-drop guards (`InterviewSession.vue:853-863` area), re-offer and `ResetSessionForRetry` (which nulls the
 ref), the SA-04 pause directive, embed/public-API mode (it shares `InterviewSession.vue`), test-mode with the
 mock provider (`RunMockInterviewJob`, `app/Jobs/PublicApi/RunMockInterviewJob.php`: gate on
-`provider === 'tavus'` only), and the stale-interview reaper (`ReapStaleInterviews::endSession`,
-`app/Console/Commands/ReapStaleInterviews.php:197-226`, never tears down: add a release dispatch).
+`provider === 'tavus'` only), and the stale-interview reaper (`ReapStaleInterviews::endSession`). **Amended
+2026-10-09 (C2):** the reaper already releases the provider session after commit on `develop`
+(`ReleaseProviderSession`), so the original "add a release dispatch" is not needed; what the reaper, `/end`
+and the resume path need instead is the shared-ref sibling guard (N12).
 
 **A13 - the hand-written `@scramble-return` must grow.** `InterviewController.php:141` declares the `/start`
 response shape by hand; it must gain `conversation_id`, `conversation_ttl_seconds` (N11) and `continuation`, and `/utterance` gains a 202 body
@@ -138,10 +155,11 @@ response shape by hand; it must gain `conversation_id`, `conversation_ttl_second
 | `frontend/tests/fixtures/tavus/` golden | `frontend/tests/` has `e2e`, `nuxt`, `unit` and no `fixtures` directory | The directory is created by FE-01 |
 | `conversation_plan` and the config flag are new | Verified: neither exists on `develop`; `config/conversation.php` holds `prompt_version`, `followup_budget` (env default **4**), `min_questions` | The `boundary_due` threshold therefore evaluates to `1 + 4 + 1 = 6` substantive turns at today's config |
 
-Not verified (and why): the real behaviour of Tavus on `respond` echo, `append_llm_context` retention across
-topics, plan-limit behaviour and `participant_left_timeout` effect on a browser drop, because all need a live
-conversation (L1-L8). The Tavus docs were verified for the field names, the default timeouts and the
-plan-cap sentence only.
+Not verified on 2026-10-08 (and why): the real behaviour of Tavus on `respond` echo, `append_llm_context`
+retention across topics, plan-limit behaviour and `participant_left_timeout` effect on a browser drop, because
+all need a live conversation. **Update 2026-10-09:** all but the plan-limit behaviour were measured (Appendix A);
+the Tavus docs were verified for the field names, the default timeouts and the plan-cap sentence only, and one
+documented default (`participant_left_timeout` = 0) did not match the observed behaviour (S3).
 
 ### New decisions N1-N11
 
@@ -176,18 +194,21 @@ time), `/end`, `/suspend`, `sessionId.value`, snapshot, integrity (including the
 reset, `ProctorOverlay`. Unsent integrity events are flushed against the old row **before** the cursor moves.
 `handle.dbSessionId` identifies the player only.
 
-**N5 - Acknowledgement rule and echo suppression.** After `sendBoundary`, the ack is the first `role: 'replica'`
-utterance observed after the send, or Daily `left-meeting` / `error` (which fail the steering immediately). If
-none arrives within `STEERING_ACK_TIMEOUT_MS` (10 000 ms initial value, re-derived from L3 timings) the provider
-emits `steering_failed`. Handling: unmute, keep the cursor, and if `meetingState === 'joined-meeting'` resend
-once (idempotent: same ticket, cursor not advanced again); otherwise or on a second failure end the **new**
-competency as `timeout` and let the next `/start` issue fresh (the browser holds no usable handle, so the
-server refuses a continuation by construction). Rationale for `timeout` rather than resuming the row: it is the
-existing per-competency degradation, the interview continues, and an invalid competency is covered by the
-completion gate and the single evaluation retry (ruling 4). Echo suppression: the provider remembers the exact
-fixed `respond` text it sent; the next user-role utterance whose normalised text equals it is dropped once and
-never reaches `transcript`. The mic-mute window leaves one disclosed residual: avatar-only speech inside the
-window is dropped (unchanged from D4).
+**N5 - Acknowledgement rule (AMENDED 2026-10-09; the echo half moved to N15).** The boundary steering is TWO
+data-channel messages sent back to back by the one choke point: `append_llm_context` (the fixed template plus the
+server-issued code), then the fixed `respond` trigger (S1). The acknowledgement is the first avatar utterance
+observed after the send (the provider's de-duplicated `replica`/`pal` copy, frontend PR #69), or Daily
+`left-meeting` / `error` (which fail the steering immediately). If none arrives within `STEERING_ACK_TIMEOUT_MS`
+(10 000 ms initial value; the observed `respond`-to-reply latency was 1.1-1.2 s on a tiny context, so 10 s is
+deliberately generous and is re-derived at live gate G-C with a realistic context) the provider emits
+`steering_failed`. **The microphone stays muted from before `/end` until the acknowledgement or the failure**, not
+merely until the send (N15 depends on it). Handling of a failure: unmute, keep the cursor, and if
+`meetingState === 'joined-meeting'` resend once (idempotent: same ticket, cursor not advanced again); otherwise or
+on a second failure end the **new** competency as `timeout` and let the next `/start` issue fresh (the browser
+holds no usable handle, so the server refuses a continuation by construction). Rationale for `timeout` rather
+than resuming the row: it is the existing per-competency degradation, the interview continues, and an invalid
+competency is covered by the completion gate and the single evaluation retry (ruling 4). The mic-mute window
+leaves one disclosed residual: avatar-only speech inside the window is dropped (unchanged from D4).
 
 **N6 - `AdvanceOnLiveConversation` and the grant rules.** Optional `/start` input `live_conversation_id`. A
 continuation is granted iff all hold: (1) the flag applies (N1); (2) the id equals the `provider_session_ref`
@@ -196,7 +217,7 @@ owns the ref covers the resolved next competency code; (4) the next row is **bra
 `(participant, code)`: not a RESUME, not pending, not a re-offer, not an evaluation-retry reset); (5)
 `ProviderRefLifetime` permits (N7). Otherwise `/start` runs the ordinary issue path and never errors for a
 refusal. On grant: no `issue()`; one short transaction inserts the row `in_corso` with the same ref and the
-plan entry's `primary_questions` / `follow_up_budget`, copies the LLM snapshot (A9), opens a live period; a
+plan entry's `primary_questions` / `follow_up_budget`, copies the LLM snapshot (A9; five columns since C4), opens a live period; a
 transaction failure never leaks the ref (nothing was created at the provider). The response carries
 `provider_token: null`, `conversation_url: null`, `continuation: {conversation_id, competency_code}` and the
 usual `question_context`. Cross-participant and cross-organization ids fall to the issue path.
@@ -205,12 +226,13 @@ usual `question_context`. Cross-participant and cross-organization ids fall to t
 that ref (a span, not a sum, as D7 argued); `ceilingSeconds(session)` = the template-derived ceiling;
 `isNearCeiling(session, ref)` = `age + ceiling_headroom_seconds >= ceiling`.
 
-**N8 - `ReleaseProviderConversation` (A5).** Queued job, scalar ids only, explicit `$tries` and `$timeout`,
-`TenantContextScope::runFor` (the queue arch tests `QueuedJobTenantContextArchTest` and
-`QueuedJobRetryOwnershipArchTest` apply). Dispatched `afterCommit` with a delay (a) from the ceiling resume
-(the crossfade is still showing the old conversation), (b) from `/end` when `next_action` is not `continue`,
-(c) from the reaper. Best-effort and idempotent: ending an already-ended conversation must be benign (live-only
-L8). It never decides an outcome.
+**N8 - [AMENDED 2026-10-09: no new job; see N12] `ReleaseProviderConversation` (A5).** As first written: a queued,
+tenant-scoped, best-effort teardown dispatched `afterCommit` with a delay from the ceiling resume, from `/end`
+when `next_action` is not `continue`, and from the reaper. On `develop` that job already exists in substance:
+`ReleaseEndedProviderSessionJob` (scalar ids, `$tries = 1`, `$timeout = 60`, `TenantContextScope::runFor`, delay
+`interview.provider_release_delay_seconds` = 45) over `ReleaseProviderSession::forRefs`, dispatched by `/end`
+and by the reaper. This change reuses them and adds the one thing they lack, the shared-ref sibling guard (N12).
+Ending an already-ended conversation is benign (Appendix A L8: HTTP 200, empty body, repeated and after expiry).
 
 **N9 - `boundary_due` (D5 RETAINED, contract fixed).** `/utterance` 202 body becomes `{ "boundary_due": bool }`.
 Substantive candidate turns of the session = candidate-speaker rows with `length(text) >= nudge_min_chars`
@@ -231,6 +253,196 @@ closed and on continuations, whose conversation already has its timer). The clie
 `HANDOVER_LEAD_MS` (120 000 ms) before it. Both the lead and `ceiling_headroom_seconds` are retuned from L6. The
 field joins the A13 schema list (`conversation_id`, `continuation`, `conversation_ttl_seconds`, `boundary_due`).
 
+## Amendments 2026-10-09
+
+Evidence base: wrapper `develop` at `fc451c5`; `api` read from `origin/develop` (`cf1d82a`, which contains
+`heygen-context-cleanup`, `pluggable-conversation-llm` and `db-driven-conversation-prompts`); `frontend` from
+`origin/develop` (`cc26363`, which contains the PR #69 `pal` de-duplication); the live Tavus spike of 2026-10-09
+(Appendix A); the Tavus docs. Line numbers are as observed on those commits.
+
+### What the live spike settled (S1-S6)
+
+The spike was explicitly authorized by the owner and spent real Tavus credits. Evidence references are in
+Appendix A; nothing below is asserted that the logs do not show.
+
+**S1 - the boundary steering is `append_llm_context` followed by a mandatory `respond` (L1, L3).** The browser can
+send both over the Daily data channel with `call.sendAppMessage(envelope, '*')` and Tavus acts on them; the
+envelope is `{message_type:'conversation', event_type, conversation_id, properties:{context}|{text}}`. After an
+`append_llm_context` the avatar produced no thinking, speaking or utterance event for the 25 s that followed; only the
+later `respond` made it think and speak. The "begin the next topic on its own" assumption is therefore false, and the `respond`
+trigger moves from "if L3 needs one" to a requirement. Not yet tested: the real sequence (end phrase spoken, then
+append, then respond, with a realistic composed context). That is live gate G-C in `tasks.md`.
+
+**S2 - a `respond` is echoed back as candidate speech (L4).** Each `respond` came back as a
+`conversation.utterance` with `properties.role: "user"` and `properties.speech` equal to the text sent, carrying
+the same `inference_id` as the avatar's reply and a `turn_idx`, about 1.1-1.2 s after the send. An
+`append_llm_context` produced no echo and no event. The existing provider code would emit that echo as a
+`transcript` event with role `user` and post it to `/utterance` as candidate speech. N15 defines the drop rule.
+
+**S3 - A5 is disproved; F4 stands (L7).** Without `participant_left_timeout` (which BEAI does not set), a Daily
+`leave()` from the only browser participant left the conversation `active` for the whole 86 s it was polled; it
+ended only when `/end` was called 95 s after the leave. The documented default of 0 did not apply in that
+observation (cause not isolated; the avatar's own participant may count as present). Consequences: a browser drop
+does NOT end a shared conversation, so a conversation whose browser left can linger, bill and hold a concurrency
+slot; release must be explicit (N12) and bounded by an explicit `participant_left_timeout` on single-session
+conversations (N16), whose effect is itself unverified (live gate G-D).
+
+**S4 - the ceiling arrives unannounced (L6, partially).** A conversation created with `max_call_duration` 240 was
+accepted and ended by itself about 241 s after the browser joined, with no warning event before it. Observed
+order: `conversation.left` (user, pal) -> `system.shutdown` (no reason) -> avatar `track-stopped` ->
+`participant-left` -> Daily `error` "Meeting has ended" -> `left-meeting` about 1.6 s later; a status poll then read
+`ended` with `shutdown_reason` null. Not tested: the plan-level cap, and whether the clock starts at creation or
+at the avatar's join (about 3 s apart, indistinguishable here). N17 records the consequence.
+
+**S5 - append retains creation-time context, overwrite discards it (L2).** Two clean controls (the earlier
+codeword never spoken in the dialogue): after `append` of a new topic the avatar answered both the creation-time
+and the appended codeword; after `overwrite` it answered the new one and "unknown" for the creation-time one. The
+overwrite control inside the main run was contaminated (the creation-time codeword had been spoken in the dialogue
+at +61 s, so a later correct answer came from chat history) and is not evidence. A3 is confirmed.
+
+**S6 - what the spike did not settle.** L5 is partial: with a two-topic creation context saying "do not begin a
+topic until told by code", the request "Please begin TOPIC BRAVO." was refused, which supports the negative half;
+the positive half failed to run because the test text "Code BRAVO." was not the codeword (COBALT), so it proves
+nothing. No realistic-size multi-topic context and no Q1 adaptivity comparison was run. The respond trigger text
+used in production is not validated by any spike text (the spike used throwaway sentences).
+
+### What `develop` changed under the first rescope (C1-C5)
+
+**C1 - `/end` now releases the conversation, which would kill a shared one.** Since `heygen-context-cleanup`,
+`InterviewController::end()` calls `ReleaseProviderSession` after commit for every ended row, except a HeyGen
+`completed` row followed by `continue` (deferred 45 s through `ReleaseEndedProviderSessionJob`,
+`interview.provider_release_delay_seconds`). For a Tavus row that is `TavusProvider::teardown()`, i.e.
+`POST /v2/conversations/{id}/end`. Under single-session, ending competency CSF would therefore end the very
+conversation INN is about to use, in every flag-on interview, from the first boundary. This hazard is absent from
+the 2026-10-08 documents (they were written against api `e215c43`). N12 is the fix and is a precondition of the
+continuation grant, not an optional hardening.
+
+**C2 - the release plumbing already exists.** `ReleaseProviderSession` (action, `forRefs()` for deferred
+callers), `ReleaseEndedProviderSessionJob` (scalar ids, `$tries = 1`, `$timeout = 60`,
+`TenantContextScope::runFor`) and the reaper's post-commit release are on `develop`. The new job of N8 and the
+reaper dispatch of A12 are not needed; the missing piece is the sibling guard.
+
+**C3 - composition goes through the stored prompt set (`db-driven-conversation-prompts`, merged and archived
+2026-10-09 as `openspec/changes/archive/2026-10-09-db-driven-conversation-prompts/`).**
+`SystemPromptComposer::compose(...)` now takes `?PromptTemplateSet $templates` and `?string $override` (appended
+last). `InterviewController::composePromptForCompetency()` (`:945`) resolves, per competency,
+`PromptSetResolver::resolveActive($locale, $competencyCode, $roleCode)` when `PromptSource::configured() ===
+PromptSource::Db` (null templates and null override for the `baseline` break-glass), composes with that set's
+templates and the competency's override, and returns `ComposedPrompt($text, $version, $resolved->stampRef())`.
+`QuestionContext` carries `promptSetRef` and `stampedPromptVersion()` (`{prompt_version}+s{id}.{sha12}`, bare for
+the baseline). A2-A9's "map `compose()`" and "`SystemPromptComposer` is also edited by F3, which merges first" are
+both resolved: F3 merged, and N13 says how `composeMany` uses it.
+
+**C4 - the LLM snapshot gained a column.** `InterviewSessionLlmSnapshot::stamp()` now also writes
+`interview_sessions.conversation_prompt_version`, write-once and never from a null. The continuation row's
+snapshot copy (A9) therefore covers FIVE columns: `avatar_template_id`, `llm_model_key`, `llm_binding_status`,
+`system_prompt_chars` and `conversation_prompt_version`.
+
+**C5 - locators moved and a prompt rule is keyed on ordinal.** On `origin/develop` the controller is 2092 lines;
+`start()` is at `:152` with its hand-written `@scramble-return` at `:148` (and `end()`'s at `:714`),
+`resolveNextCompetency` at `:1094`, `handleResumeInCorso` at `:1258`, `handleIssuePending` at `:1373`,
+`releaseProviderSession` at `:1755`, the deferred-release helpers at about `:870-896`. The F3-era rule "a later
+competency does not greet again" (`opening.continuation`) is keyed on the competency's ordinal in the project, so
+each segment of a plan carries it by that ordinal and a conversation created mid-interview behaves correctly.
+
+### New decisions N12-N17
+
+**N12 - the shared-ref release guard (`/end`, resume, deferred job, reaper).** `/end` MUST NOT release the
+provider conversation of a Tavus row when ALL of these hold: the row's ref is non-null and belongs to a
+single-session conversation (the row, or the row that created the ref, has a `conversation_plan`), the response
+`next_action` is `continue`, and the owning plan covers at least one competency after this one. In that case it
+dispatches `ReleaseEndedProviderSessionJob` with the captured refs and the existing delay (45 s) as the safety
+net for a browser that never comes back, instead of releasing at once. Every other end releases exactly as today
+(`pause`, `done`, a non-shared ref, HeyGen, mock). A single guard method (`SharedProviderRefGuard::hasLiveSibling`
+or equivalent) answers "does another `in_corso` row share this ref?" and is consulted by (a) the deferred job
+before it releases, (b) the reaper's release, (c) `handleResumeInCorso`'s teardown (this is D8/A11's skip). A
+Tavus conversation id is globally unique and the guard returns a boolean that never leaves the server; whether it
+runs under the ambient tenant scope or with an explicit `organization_id` predicate is an implementation choice
+that a cross-organization test must pin. When a continuation is refused for the ceiling (or a mid-competency
+expiry resumes the row on a fresh ref) the old conversation is released through the SAME deferred job, not
+inline, because the crossfade is still showing it (D7 stands). A job that fires after a continuation was
+granted finds a live sibling and does nothing; a job that fires with no live sibling releases a conversation no
+one is using.
+
+**N13 - `composeMany` goes through the stored prompt set.** `ComposeConversationPlan` resolves each covered
+competency exactly as the single path does (the per-competency resolution of `composePromptForCompetency()` is
+extracted into a reusable action first, behaviour-preserving, so both paths share one implementation): pinned
+revision, role (null for `potential`), competency, authored primaries, spoken opening, advance phrase, and the
+stored set via `PromptSetResolver::resolveActive(locale, code, roleCode)` with that competency's override.
+`SystemPromptComposer::composeMany(list<ResolvedCompetencyInput>)` stays a pure assembler: each input already
+carries `?PromptTemplateSet $templates` and `?string $override`, `composeMany` calls `compose(..., templates:
+$input->templates, override: $input->override)` per entry (so each segment is byte-identical to what the
+single-competency path composes for that competency, and F3's goldens keep pinning every segment) and wraps the
+segments in the global rules and the `=== TOPIC CODE ===` markers. The wrapper text is a code constant, machine
+facing and English, not an operator-editable fragment (adding a stored fragment key would change the sealed
+fragment set and is F3's publish flow, out of scope); changing it follows the existing convention of bumping
+`conversation.prompt_version`. Three rules follow. (1) **One set per conversation:** the action asserts that every
+entry's `stampRef()` is identical (the active set can flip between two `resolveActive()` calls) and otherwise
+fails closed with 422 `composition_error` before any provider call; the retry composes against the new active
+set. (2) **One stamp:** the creating row's `conversation_prompt_version` is the plan's
+`stampedPromptVersion()` (`{prompt_version}+s{id}.{sha12}`, bare for the baseline source) and every continuation
+row copies it (C4), so every row on the shared conversation names the one set it was composed from, even if
+another set is activated mid-interview. (3) **Same failure surface:** an unresolvable or tampered set, a missing
+locale or an override breaking the contract for ANY covered competency yields the existing 422 and, for
+`PromptTemplateUnresolvableException`, the existing `report($e)`. `max_context_chars` bounds the final combined
+string, overrides included. `question_context.prompt_version` stays the bare configured string.
+
+**N14 - the steering texts are provisional, the envelope shape is not.** The envelope shape, the two
+event types, the `properties` keys and the `'*'` target are verified (S1) and are frozen in the FE-01 golden. The
+append template wording and the `respond` constant are NOT validated by any spike text: both are machine-facing
+English closed constants, chosen provisionally (append: `The candidate has finished that topic. Begin topic code
+%s now.`; respond: `Please continue.`) and confirmed or amended at live gate G-C, which must also check that an
+English trigger does not pull a non-English interview into English. Changing either after G-C is a reviewed
+golden change.
+
+**N15 - the echo is dropped by correlation, not by text alone (replaces the echo half of N5).** The Tavus
+provider arms a one-shot filter when it sends the `respond`. While armed it HOLDS (does not emit) the first
+user-role `conversation.utterance` whose normalised text equals the closed trigger. When the next avatar
+utterance arrives and carries the same `inference_id`, the held utterance is the echo: it is discarded and its
+`inference_id` and `turn_idx` are remembered as the steering turn (any further user-role copy of that turn is
+dropped too, and the avatar utterance is the acknowledgement of N5). If the reply never comes, the held utterance
+is still discarded (it is the platform's own text) and `steering_failed` fires. Text equality alone is not
+enough outside an armed window, and `inference_id` alone discriminates nothing, because EVERY candidate turn
+also shares its `inference_id` with the reply (Appendix A L4); the discriminators are the armed one-shot window
+plus the mute-until-ack rule of N5, which guarantees no genuine candidate speech can occur while the echo is in
+flight. A held utterance is released as ordinary candidate speech if the filter disarms without a match.
+
+**N16 - `participant_left_timeout` is set explicitly on single-session conversations.** Config
+`interview.tavus.participant_left_timeout` (env `INTERVIEW_TAVUS_PARTICIPANT_LEFT_TIMEOUT`, default **60**
+seconds) is written to `properties.participant_left_timeout` of the create body only when the single-session
+gate applies, so `conversations_request_golden.json` and every flag-off request stay byte-identical. The value is
+a default taken for lack of data: the spike observed the missing property not ending the conversation but did not
+test any value (live gate G-D). It is safe by construction because every re-entry path issues a fresh
+conversation (A12), the release job (N12) remains the primary mechanism, and Daily's own reconnect handles a drop
+shorter than the timeout. The same property would also bound the flag-off lingering that S3 shows exists today;
+that is a separate decision for the owner, outside this change.
+
+**N17 - the ceiling signal is the client's timer first, the end sequence second.** Because Tavus sends no
+warning (S4), the primary handover trigger stays the client age timer fed by `conversation_ttl_seconds` (N11).
+If a conversation ends without it (the observed sequence `conversation.left` -> `system.shutdown` -> avatar
+tracks stop -> Daily `error` "Meeting has ended" -> `left-meeting`) while a competency is `in_corso`, the Tavus
+provider reports it as a stop and the client treats it exactly as a mid-competency ceiling: `/start` on the
+`in_corso` row, fresh ref, question clock preserved. FE-06 replays the observed sequence through the fake Daily.
+`ceiling_headroom_seconds` (480) and `HANDOVER_LEAD_MS` (120 000) are retuned only after G-B.
+
+### Traceability: where each correction A1-A13 is reflected
+
+| Ref | Reflected in | State after 2026-10-09 |
+|---|---|---|
+| A1 drain shipped | design A1; frontend spec "The closing utterance is not lost"; tasks FE-03 | Applied; only the mic-mute remains, now until the acknowledgement (N5) |
+| A2 cursor instead of `handle.dbSessionId` for `/end` | design A2, N4, D3; frontend spec attribution requirement; tasks FE-03 | Applied; D3's "dbSessionId stays for /end" corrected inline |
+| A3 `append_llm_context`, not overwrite | design A3, S1, S5, N5, N14, N15; proposal Intent and Scope 2, 6; session spec Wire Contract; frontend spec ack and echo; tasks FE-01, FE-02 | Applied and strengthened: `respond` is mandatory, echo rule replaced |
+| A4 no interaction ack | design A4, N5; frontend spec ack requirement; tasks FE-02, FE-04 | Applied; ack now also gates the unmute |
+| A5 `/end` leak "overstated" | design A5 (superseded), S3, C1, N12, N16; session spec release requirement and wire contract; tasks API-03, API-07 | **Superseded**: F4 retained, release explicit, `participant_left_timeout` explicit |
+| A6 `conversation_id` on a fresh multi-plan `/start` | design A6, N11; session spec step 6a; tasks API-03 | Applied |
+| A7 regex on the server-issued `competency_code` | design A7, D6; session spec anti-leak requirement; tasks FE-01 | Applied; D6 corrected inline |
+| A8 `ComposeConversationPlan` action | design A8, N3, N13; conversation spec multi mode; tasks API-02, API-03 | Applied; now via the stored set (N13) |
+| A9 `conversation_plan` JSON and the LLM snapshot copy | design A9, N2, C4; session spec plan freeze; tasks API-01, API-03, API-04 | Applied; snapshot copy now five columns |
+| A10 ceiling from the template, headroom 480 s | design A10, N7, N17; session spec lifetime requirement; tasks API-05 | Applied; plan-cap behaviour untested (G-B) |
+| A11 resume wording | design A11, N12; session spec resume requirement; tasks API-07 | Applied; guard shared with N12 |
+| A12 paths through the plan/continuation logic | design A12; frontend spec re-entry requirement; tasks API-03, API-07, FE-04 | Applied; the reaper item is done on `develop` (C2) |
+| A13 Scramble annotation | design A13, N11; session spec; tasks API-03..06, API-08 | Applied; locators moved (C5) |
+
 ### Status of the original decisions
 
 | Original | Status | Note |
@@ -238,22 +450,22 @@ field joins the A13 schema list (`conversation_id`, `continuation`, `conversatio
 | F1 `/utterance` drops, not misattributes | RETAINED | |
 | F2 `/end` then `/start` ordering is forced | RETAINED | |
 | F3 closing sentence at risk of being dropped | RESOLVED | Drain shipped (A1) |
-| F4 `/end` never tears a conversation down | AMENDED | Overstated (A5); also true of the reaper (A12) |
+| F4 `/end` never tears a conversation down | RETAINED as a concern, mechanism changed | The 10-08 "overstated" verdict is superseded (S3). Since `heygen-context-cleanup` `/end` DOES release; for a shared ref that is the hazard (C1, N12) |
 | F5 client has no conversation id | RESOLVED | `conversation_id` on fresh `/start` and in `continuation` (A6) |
 | F6 `matchesEndPhrase` is a loose containment check | RETAINED | |
-| D1 one composed, segmented context | AMENDED | Built by `ComposeConversationPlan`, frozen in `conversation_plan` (A8, A9, N3) |
+| D1 one composed, segmented context | AMENDED | Built by `ComposeConversationPlan` through the stored prompt set, frozen in `conversation_plan` (A8, A9, N3, N13) |
 | D2 client asserts, server verifies | AMENDED | Plus `conversation_id` (A6), grant rules (N6), flag (N1) |
 | D3 retarget before its cause | AMENDED | Ticket ordering RETAINED; "handle keeps `dbSessionId` for `/end`" SUPERSEDED by the cursor (A2, N4) |
 | D4a drain | RESOLVED | Shipped (A1) |
-| D4b uplink mute | RETAINED | |
-| D5 client declares the boundary, mechanical input | RETAINED | Contract fixed in N9; acknowledgement rule added (N5) |
+| D4b uplink mute | AMENDED | The mute lasts until the steering acknowledgement or failure, not until the send (N5, N15) |
+| D5 client declares the boundary, mechanical input | RETAINED | Contract fixed in N9; acknowledgement rule N5 (amended 2026-10-09) |
 | D6 anti-leak type, choke point, sentinels | AMENDED | Interaction is `append_llm_context` (A3); frozen 20-code set SUPERSEDED by the branded regex (A7); choke point and UUID sentinels RETAINED |
-| D7 two ceilings, one mechanism | AMENDED | Ceiling from the template, headroom 480 s (A10, N7); release job per N8 |
-| D8 resume teardown learns about siblings | SUPERSEDED by Amendments | A11: skip teardown only with a live sibling; resume issues fresh |
+| D7 two ceilings, one mechanism | AMENDED | Ceiling from the template, headroom 480 s (A10, N7); release through the existing deferred job with the sibling guard (N12, replaces N8); unannounced end handled per N17 |
+| D8 resume teardown learns about siblings | SUPERSEDED by Amendments | A11: skip teardown only with a live sibling; resume issues fresh; the guard is shared with `/end`, the deferred job and the reaper (N12) |
 | D9 second partial unique index | RETAINED | Joined by `conversation_plan` (N2) |
 | D10 audit of HeyGen assumptions | RETAINED | Locators updated; adds the A12 paths |
 | File Changes, Testing Strategy, Delivery | SUPERSEDED by Amendments | `tasks.md` and the proposal own them; the old tables are history |
-| Open Questions, Assumptions | AMENDED | See the proposal; Q1 still open |
+| Open Questions, Assumptions | AMENDED | See the proposal and Appendix B; Q1 still open |
 
 ---
 
@@ -337,9 +549,9 @@ being a client *decision* with several inputs, not a single string test.
 
 > **Status: AMENDED.** Built by `ComposeConversationPlan`, not by mapping `compose()` (A8). The plan is frozen on the creating row (A9, N2, N3). The remaining-list rule and the `max_context_chars` prefix truncation are RETAINED.
 
-`SystemPromptComposer::compose()` is untouched. A sibling `composeMany(list<CompetencyRef>)`
-returns one `ComposedPrompt`, built by concatenating each competency's existing sections between
-stable machine markers:
+`SystemPromptComposer::compose()` is untouched. A sibling `composeMany(list<ResolvedCompetencyInput>)` (the
+list type is amended by A8/N13; it was `list<CompetencyRef>` on 2026-08-21) returns one `ComposedPrompt`, built
+by concatenating each competency's `compose()` output between stable machine markers:
 
 ```
 GLOBAL RULES
@@ -354,10 +566,12 @@ When told to begin a topic, follow that topic's block and nothing else.
 …
 ```
 
-Determinism is preserved by construction: `composeMany` performs no ordering of its own — it
-consumes the ordered list `resolveNextCompetency()` already derives from
-`project_competencies.position` and maps `compose()` over it. Same ordered list ⇒ same string,
-which is the spec's scenario verbatim.
+Determinism is preserved by construction: `composeMany` performs no ordering of its own. It consumes the
+ordered list `resolveNextCompetency()` already derives from `project_competencies.position`, after
+`ComposeConversationPlan` has resolved every entry the way the single-competency path does (A8: revision, role,
+primaries, opening, advance phrase, and, since 2026-10-09, the stored prompt set and the competency's override,
+N13). It is NOT `map(compose)` over bare codes. Same ordered, resolved list => same string, which is the spec's
+scenario verbatim.
 
 **Which competencies go in.** The competencies **from the one being started through the end of
 the project's ordered list** — not the whole project, and not just one. A conversation created
@@ -398,7 +612,8 @@ The server grants a continuation **iff** all of the following hold:
    lookup, the same predicate `ResolvesOwnedSession` uses — a candidate must not be able to
    join a stranger's conversation by naming its id);
 2. that row's `provider` is `tavus`;
-3. the resolved next competency's row is **new or `pending`** (never a RESUME — see below);
+3. the resolved next competency has **no row yet** (never a RESUME and, amended by N6, never a `pending` row,
+   a re-offer or an evaluation-retry reset);
 4. the ref is **not near either ceiling** (D7).
 
 Otherwise `/start` behaves exactly as it does today, for every provider and every path.
@@ -435,11 +650,13 @@ holds it.
 
 **The instruction text is not on the wire from the server.** `continuation` carries a competency
 *code*, never prose. The advance-instruction template is a **frozen client-side constant**
-(D6) — so there is no version skew to handle, no server-authored free text for the client to
-relay, and the closed set the spec demands is a compile-time union rather than a runtime
-allow-list. The steering sentence is machine-facing text addressed to a model, so it is English
-in every locale (CLAUDE.md); the *spoken* language is governed by the composed context, which the
-smoke test confirmed dominates (each topic opened with its own literal sentence).
+(D6), so there is no version skew to handle and no server-authored free text for the client to
+relay. Amended by A7: the code is not checked against a closed set (codes are operator-authored, so no such set
+exists) but against the branded pattern `^[A-Z0-9_]{1,16}$`, on a value the server issued. The steering sentence
+is machine-facing text addressed to a model, so it is English in every locale (CLAUDE.md); the *spoken* language
+is governed by the composed context. The 2026-08-21 smoke claimed each topic opened with its own literal sentence,
+but that smoke used `overwrite_llm_context` and is not evidence for this design: whether an English `respond`
+trigger leaves a non-English interview in its language is part of live gate G-C (N14).
 
 ---
 
@@ -449,9 +666,9 @@ smoke test confirmed dominates (each topic opened with its own literal sentence)
 
 The race the proposal names is real only if the client is a **spectator** of the transition.
 It is not. Tavus's LLM does not move to competency N+1 until the browser sends the steering
-interaction — the smoke test established exactly this: a pointer carrying no competency content
-(`"Begin topic code CSF now."`) is what moves it, and it does not drift back. **The browser is
-the sole cause of the transition.** So:
+interaction. The 2026-08-21 smoke (which used `overwrite_llm_context`) is not evidence for that, but the
+2026-10-09 spike is: after an `append_llm_context` the avatar stayed completely silent until a `respond` arrived
+(S1). **The browser is the sole cause of the transition.** So:
 
 ```
 retarget attribution to N+1   ←── strictly before ──→   send the interaction that causes N+1
@@ -493,10 +710,11 @@ export class AttributionCursor {
 }
 ```
 
-`ProviderSession` gains `readonly attribution: AttributionCursor` and **loses nothing**:
-`dbSessionId` stays for `/end`, the player key, and the D6 keyed `v-for`, all of which must
-keep identifying the handle rather than the current competency. The transcript handler becomes
-`sendUtterance(handle.attribution.current, …)`.
+`ProviderSession` gains `readonly attribution: AttributionCursor`. **Amended by A2 (the original text here kept
+`dbSessionId` for `/end`, which would POST `/end` for the first row again after the cursor moved: a 409):**
+`handle.dbSessionId` stays only as the player key and for the D6 keyed `v-for`, which must keep identifying the
+handle; `/end`, `/suspend`, `sessionId`, snapshot and integrity read `cursor.current`. The transcript handler
+becomes `sendUtterance(handle.attribution.current, …)`.
 
 `TavusProvider.sendBoundary(ticket: AdvanceTicket)` takes **only** a ticket. You cannot obtain
 one without having already moved the cursor. A future contributor who sends first does not get
@@ -511,7 +729,7 @@ conflates them is asking the wrong question, and the two names now make that vis
 
 ## D4 — The boundary window is emptied, not tolerated
 
-> **Status:** (a) drain **RESOLVED**, already shipped (A1); (b) uplink mute RETAINED. The residual "avatar-only speech in the window is lost" is RETAINED and disclosed.
+> **Status:** (a) drain **RESOLVED**, already shipped (A1); (b) uplink mute AMENDED 2026-10-09: it lasts until the steering acknowledgement or failure, not until the send (N5, N15). The residual "avatar-only speech in the window is lost" is RETAINED and disclosed.
 
 Per F1/F2 the window between `/end` and the ticket is unavoidable and, in it, the outgoing row
 is already `completed`. Nothing in it can be *misattributed* (the cursor has not moved, and D3
@@ -526,7 +744,7 @@ is a real defect on `main` today for both providers, and it is the smallest chan
 design that stands alone as a bug fix.
 
 **(b) Close the uplink across the window.** `handle.provider.setMicMuted(true)` before `/end`;
-unmuted immediately after `sendBoundary(ticket)` returns. This is not new machinery —
+unmuted after `sendBoundary(ticket)` is ACKNOWLEDGED or has failed (amended by N5: the original text unmuted at the send, which would let candidate speech overlap the `respond` echo, N15). This is not new machinery —
 `beginHandover()` already does exactly this for HeyGen (`:730-746`), for the same reason, and
 `TavusProvider.setMicMuted` already exists (`tavus.ts:222-224`). With the uplink closed, the
 window contains **no candidate speech to lose**, which is the half that carries scoreable
@@ -596,18 +814,19 @@ timeout path produces one.
 
 ## D6 — The anti-leak invariant is a type and a choke point, tested with sentinels
 
-> **Status: AMENDED.** **SUPERSEDED by Amendments:** the frozen 20-element `COMPETENCY_CODES` set (A7: branded regex on the server-issued code) and the `overwrite_llm_context` name (A3: `append_llm_context`, plus a fixed `respond` trigger if L3 needs one). RETAINED: the type, the single choke point, the grep guard, the UUID sentinels and the structural length/exact-equality/key-set assertions.
+> **Status: AMENDED.** **SUPERSEDED by Amendments:** the frozen 20-element `COMPETENCY_CODES` set (A7: branded regex on the server-issued code) and the `overwrite_llm_context` name (A3: `append_llm_context` followed by the mandatory fixed `respond`, verified by S1). RETAINED: the type, the single choke point, the grep guard, the UUID sentinels and the structural length/exact-equality/key-set assertions.
 
 Three enforcement layers, none of which is "the developer must remember":
 
 1. **The type cannot carry prose.** `AdvanceTicket.competencyCode` is
    `CompetencyCode = string & { readonly __competency: unique symbol }`, minted only by
-   `asCompetencyCode(raw: string): CompetencyCode | null`, which requires exact membership in a
-   frozen 20-element `COMPETENCY_CODES` constant (the 18 standard codes plus MTG/LAT). That is
-   **platform vocabulary, not tenant data** — it is in the product brief — and shipping it is
-   *not* shipping an ordered project competency list, which the `interview-frontend` spec
-   forbids and which stays server-side. There is no field on the ticket a sentence could be
-   assigned to.
+   `asCompetencyCode(raw: string): CompetencyCode | null`, which requires the pattern
+   `^[A-Z0-9_]{1,16}$` (A7). The original text required membership in a frozen 20-element code set; that is
+   invalid because competency codes are operator-authored, so no closed set exists and shipping one would also
+   have come close to shipping a competency list, which the `interview-frontend` spec forbids and which stays
+   server-side. The value is the server-issued `continuation.competency_code`, so the anti-leak argument is
+   unchanged: it cannot hold prose, and the tests assert exact equality, not containment. There is no field on
+   the ticket a sentence could be assigned to.
 2. **One choke point.** `TavusProvider.sendBoundary(ticket)` is the only method in the codebase
    that calls `call.sendAppMessage`, and it builds its payload from a module-private
    `buildAdvancePayload(ticket)` returning a frozen object. `DailyCallObject` gains
@@ -628,8 +847,8 @@ assertions are therefore **structural on the client and sentinel-based on the se
   - `JSON.stringify(payload).length === FIXED_LENGTH + code.length` — an extra field or a word
     of prose changes the length and fails;
   - splitting `payload.properties.context` on the template's two literal halves yields a middle
-    that is `=== 'INN'` **and** a member of `COMPETENCY_CODES` — exact equality, not containment,
-    so an anchor sentence containing `INN` inside `INNOVAZIONE` cannot satisfy it;
+    that is `=== 'INN'` **and** matches `^[A-Z0-9_]{1,16}$` (A7; no code list exists) — exact equality, not
+    containment, so an anchor sentence containing `INN` inside `INNOVAZIONE` cannot satisfy it;
   - `Object.keys(payload)` and `Object.keys(payload.properties)` deep-equal fixed sets — so
     `conversational_context` cannot ride along;
   - a golden fixture `tests/fixtures/tavus/boundary_interaction_golden.json`, PR-gated the way
@@ -682,17 +901,19 @@ is materially more likely here than it is for HeyGen. That is a bounded, already
 degradation, not a new failure mode.
 
 **Releasing the superseded conversation.** `handleResumeInCorso` must **not** tear the outgoing
-ref down synchronously on the ceiling path — the crossfade is still showing it. A
-`ReleaseProviderConversation` job is dispatched `afterCommit` with a short delay. The delay is
-not a correctness mechanism: no attribution, state or response depends on it, and its worst case
-is bounded by Tavus's own ceiling (the leak F4 already lives with today). Releasing immediately,
-by contrast, freezes the avatar the candidate is looking at.
+ref down synchronously on the ceiling path — the crossfade is still showing it. Amended 2026-10-09 (N12): the
+release goes through the existing `ReleaseEndedProviderSessionJob` (captured refs, `afterCommit`, delay
+`provider_release_delay_seconds`), which first checks that no live sibling row shares the ref; there is no new
+`ReleaseProviderConversation` job. The delay is not a correctness mechanism: no attribution, state or response
+depends on it. Its worst case is a conversation that lingers until `participant_left_timeout` (N16) or Tavus's
+own ceiling, and S3 shows that a lingering conversation is real, not hypothetical. Releasing immediately, by
+contrast, freezes the avatar the candidate is looking at.
 
 ---
 
 ## D8 — Resume teardown learns about siblings
 
-> **Status: SUPERSEDED by Amendments (A11).** Do not implement the "resume reuses the live ref" behaviour: resume issues first and tears down second and the browser has left the room. Replacement: skip teardown only when a live sibling shares the ref; the resume still issues fresh. The query shape below is reusable.
+> **Status: SUPERSEDED by Amendments (A11, N12).** Do not implement the "resume reuses the live ref" behaviour: resume issues first and tears down second and the browser has left the room. Replacement: skip teardown only when a live sibling shares the ref; the resume still issues fresh. The guard is the one shared with `/end`, the deferred job and the reaper (N12). The query shape below is reusable; the sentence "the resume then **reuses the existing live ref** instead of issuing" in the text below is WRONG and must not be implemented.
 
 `handleResumeInCorso` tears down `$session->provider_session_ref` unconditionally (`:711-739`).
 With a shared ref that can kill a conversation another competency depends on. The guard:
@@ -763,22 +984,24 @@ provider name never leaves the composable, and `continuation` is not surfaced to
 
 ## Data Flow
 
-> **Status: AMENDED.** Replace `sendBoundary` with append (plus respond if L3 requires it), add the acknowledgement/`steering_failed` branch (N5), and note that `cursor.advanceTo` also moves `/end`, `/suspend`, `sessionId`, snapshot and integrity (N4). Everything else stands.
+> **Status: AMENDED 2026-10-09.** The diagram below is the CORRECTED flow: `sendBoundary` sends append then the mandatory respond (S1), the mic stays muted until the acknowledgement or failure (N5), the echo is held and dropped (N15), `/end` does not release a shared ref that a planned competency will use (N12), and `cursor.advanceTo` also moves `/end`, `/suspend`, `sessionId`, snapshot and integrity (N4).
 
 ```
 avatar speaks (or the budget is spent, or 300s elapses)
   │
-  ├─ phrase match on a role='replica' utterance ─┐
+  ├─ phrase match on an avatar utterance ────────┐
   ├─ /utterance 202 { boundary_due: true } ──────┼──▶ assertBoundary()   (idempotent, one guard)
   └─ 300s question timer ────────────────────────┘        │
                                                           ├─ await utterance tail        (D4a)
-                                                          ├─ setMicMuted(true)           (D4b)
+                                                          ├─ setMicMuted(true)           (D4b, until the ack)
                                                           ▼
                                           POST /end  { session_id: N }   → row N terminal
                                                           │  next_action
                           ┌───────────────────────────────┴─────────────┐
                      'continue'                                  'pause' | 'done' | noop
-                          │                                             └─ unmute, existing screens
+                          │                                             └─ release now, unmute, screens
+                          │  /end does NOT release a shared ref the plan still needs (N12);
+                          │  a delayed ReleaseEndedProviderSessionJob is the safety net
                           ▼
    POST /start { live_conversation_id: "c123" }        ← the browser asserts it is IN the room
                           │
@@ -789,14 +1012,18 @@ avatar speaks (or the budget is spent, or 300s elapses)
         │        ▲ attribution moves HERE                │   arm HANDOVER_BOUND_MS
         │        │                                       │   painted → crossfade → promote
         │  provider.sendBoundary(ticket)  ← the CAUSE    │   outgoing unmounts → stop()
-        │        │  Daily sendAppMessage, one call site  └─ ReleaseProviderConversation(old ref, delayed)
-        │  setMicMuted(false)
+        │     1. append_llm_context {template + code}    └─ deferred release of the old ref (N12)
+        │     2. respond {fixed trigger}   (mandatory, S1)
+        │     one call site, Daily sendAppMessage(msg, '*'); arm the echo filter (N15)
+        │        │
+        │  user-role echo held → avatar utterance (same inference_id) = the ACK → echo dropped
+        │  setMicMuted(false) at the ack, or on steering_failed
         ▼
    same call object, same <video>, same room; transcript handler now reads cursor.current = N+1
 
 server-side, at conversation creation ONLY:
-   composeMany([remaining competencies]) → conversational_context → POST /v2/conversations
-   anchors live here and nowhere else.
+   ComposeConversationPlan → composeMany([remaining competencies], stored set) → conversational_context
+   → POST /v2/conversations (with participant_left_timeout, N16). Anchors live here and nowhere else.
 ```
 
 ---
@@ -812,12 +1039,12 @@ server-side, at conversation creation ONLY:
 | `api/app/Http/Controllers/Candidate/InterviewController.php` | Modify | `live_conversation_id` validation + owned-ref resolution; `handleAdvanceOnLiveRef()`; ceiling refusal; `continuation` in `buildSuccessResponse()`; D8 sibling guard; ceiling classification on resume |
 | `api/app/Support/Interview/ProviderRefLifetime.php` | **Create** | `ageSeconds(ref)`, `isNearCeiling(session, ref)` — the single owner of the ref-age span (D7) |
 | `api/app/Http/Controllers/Candidate/UtteranceController.php` | Modify | Substantive-turn count → `{ boundary_due }` on the existing 202 (D5) |
-| `api/app/Jobs/ReleaseProviderConversation.php` | **Create** | Delayed, best-effort teardown of a superseded ref (D7) |
+| `api/app/Jobs/ReleaseEndedProviderSessionJob.php`, `app/Actions/Interview/ReleaseProviderSession.php` | Modify (2026-10-09; was Create `ReleaseProviderConversation`) | Sibling guard before a release (N12) |
 | `api/database/migrations/…_add_one_open_period_per_ref_index.php` | **Create** | Second partial unique index (D9) |
 | `api/config/conversation.php` | Modify | `max_context_chars`, `boundary_grace_turns`, `ceiling_headroom_seconds` |
 | `frontend/app/composables/useInterviewSession.ts` | Modify | `AttributionCursor` on the handle; `'boundary'` target; `assertBoundary()`; utterance tail + drain; continuation branch; crossfade ungating; the D10 audit sites |
 | `frontend/app/providers/tavus.ts` | Modify | `sendAppMessage` on `DailyCallObject`; `sendBoundary(ticket)` — the sole outbound call site; `SupportsContextSteering` (D6) |
-| `frontend/app/utils/competency-codes.ts` | **Create** | Frozen 20-code set + `asCompetencyCode()` (D6) |
+| `frontend/app/utils/competency-codes.ts` | **Create** | `asCompetencyCode()` with the pattern `^[A-Z0-9_]{1,16}$`, no code list (D6, A7) |
 | `frontend/app/utils/advance-interaction.ts` | **Create** | `ADVANCE_TEMPLATE`, `buildAdvancePayload(ticket)`, `AdvanceTicket` brand |
 | `frontend/app/utils/proctor-config.ts` | **Unchanged** | `matchesEndPhrase` stays exactly as it is — D5 demotes it to one input of three, it does not modify it |
 | `frontend/app/types/interview-provider.ts` | Modify | `SupportsContextSteering` + type guard only; `InterviewProvider` itself unchanged (no throwing HeyGen stub) |
@@ -841,7 +1068,7 @@ each PR — **never `php artisan test --filter`**, observed fabricating passes h
 | **Pest — advance path** | A continuation is granted only with a matching, **owned** `live_conversation_id`; a *stranger's* conversation id is refused (cross-participant and cross-org, both 
 returning the ordinary issue path, never a grant); no `live_conversation_id` → today's behaviour; the new row shares the ref and is `in_corso`; `issue()` is **not** called (`Http::assertNotSent`) |
 | **Pest — HeyGen invariance** | For every HeyGen path, `issue()` is still called and no two rows ever share a ref. This is the regression gate for the whole slice |
-| **Pest — ceiling** | Ref within headroom → continuation refused, `issue()` called, fresh ref; resume classified as ceiling dispatches `ReleaseProviderConversation` with a delay and does **not** call `teardown()` inline |
+| **Pest — ceiling** | Ref within headroom → continuation refused, `issue()` called, fresh ref; resume classified as ceiling dispatches `ReleaseEndedProviderSessionJob` with a delay and does **not** call `teardown()` inline |
 | **Pest — D8 guard** | Two `in_corso` rows on one ref (constructed directly): resume calls no `teardown()`; unshared ref: teardown still fires, `ResumeTranscriptTest` stays green |
 | **Pest — D9** | A second open period on one ref raises a unique violation at the DB, not a silently doubled age |
 | **Pest — anti-leak sentinel** | The UUID-in-`anchor_5` sweep of every candidate response body (D6), plus the positive assertion that it *did* reach the faked `/v2/conversations` body |
@@ -884,7 +1111,7 @@ lines and should be reviewed as such rather than pretending otherwise.
 |---|---|---|---|---|
 | **1** | `api` | D1 `composeMany` + golden fixture + `max_context_chars` | ~400 | **Nothing changes behaviourally.** The multi path is unreachable until PR 2 calls it; it ships as a tested pure function |
 | **2** | `api` | D2 continuation + D7 ceiling refusal + D8 guard + D9 migration + `ProviderRefLifetime` | ~500 | Additive: no caller sends `live_conversation_id`, so every existing client keeps today's exact behaviour. D8 and D9 are correctness improvements on their own |
-| **3** | `api` | D5 `boundary_due` + D7 `ReleaseProviderConversation` | ~250 | Additive response field + a job nothing dispatches yet except the ceiling path |
+| **3** | `api` | D5 `boundary_due` + D7 deferred release through `ReleaseEndedProviderSessionJob` | ~250 | Additive response field + a job nothing dispatches yet except the ceiling path |
 | **4** | `frontend` | D3 cursor/ticket + D6 choke point + D4 drain and mute + `'boundary'` target + D10 audit | ~600 | **The risk-bearing slice, and the one that closes the crux.** D4a alone fixes F3 on `main` for both providers |
 | **5** | `frontend` | D7 ceiling handover, crossfade ungated, conversation-age timer + Playwright | ~450 | Closes the 70–90 minute case, which is currently unhandled entirely |
 
@@ -905,7 +1132,7 @@ which every version of this code handles.**
 
 ## Open Questions
 
-> **Status: AMENDED.** Q1 open (owner threshold, L5). The grace/headroom defaults are now fixed (1 turn, 480 s). The in-window avatar speech question is unchanged. Q6 open.
+> **Status: AMENDED 2026-10-09.** Q1 open (owner threshold; needs live gate G-A). The grace/headroom defaults are fixed (1 turn, 480 s) and retuned only after G-B. The in-window avatar speech question is unchanged. Q6 open; Q7 and Q8 added.
 
 - [ ] **Q1 (from the proposal, unresolved) — does one large context degrade adaptivity?** D1
       makes it measurable rather than answering it: `max_context_chars` bounds the blast radius
@@ -913,7 +1140,7 @@ which every version of this code handles.**
       behaviour possible. Not blocking, but it should be measured before a 18-competency role
       runs on this path.
 - [ ] **What are `boundary_grace_turns` and `ceiling_headroom_seconds` in production?** Both are
-      config with conservative defaults (1 turn, 300 s). Real p95 time-to-joined for a Tavus
+      config with conservative defaults (1 turn; 480 s since A10, the 300 s here is the 2026-08-21 value). Real p95 time-to-joined for a Tavus
       conversation is not currently observed, and the headroom should be re-derived from it.
 - [ ] **Should the avatar's in-window speech be recoverable at all?** D4 discloses it as lost.
       A follow-up could buffer avatar-role utterances and post them after the ticket under the
@@ -922,6 +1149,12 @@ which every version of this code handles.**
 - [ ] **Q6 (raised by this design) — does the delayed conversation release interact badly with
       `TavusConcurrencyGuard` under load?** The release delay holds one extra slot per ceiling
       handover. Bounded and rare, but the guard's retry budget was sized before this existed.
+- [ ] **Q7 (2026-10-09) - does the end-phrase -> append -> respond sequence open the next topic, in the
+      project's language, with a realistic composed context?** The spike proved the mechanism with throwaway
+      texts only (S6). Live gate G-C; it also fixes the provisional trigger wording (N14).
+- [ ] **Q8 (2026-10-09) - which `participant_left_timeout` value ends a single-session conversation after the
+      browser leaves, and how fast?** The unset default did not end it within 86 s (S3). Live gate G-D validates
+      the default of 60 s (N16).
 
 ---
 
@@ -933,7 +1166,8 @@ which every version of this code handles.**
    capability token makes that ordering a compile-time obligation** (D3). If the token is ever
    weakened to a plain argument, the guarantee reverts to discipline.
 2. **The browser asserts `live_conversation_id`; the server never infers reuse from its own
-   rows** (D2). This is what makes pause, retry, device re-check and refresh safe with no
+   rows** (D2). The conversation can survive the browser leaving (S3), which makes the assertion more necessary,
+   not less. This is what makes pause, retry, device re-check and refresh safe with no
    special-casing.
 3. **The boundary window is emptied, not tolerated** — drain plus uplink mute — and avatar-only
    speech inside it is a **disclosed loss**, not a covered case (D4).

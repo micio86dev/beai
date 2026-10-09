@@ -1,7 +1,13 @@
 # Delta for Interview Session
 
-> Rescoped 2026-10-08. No requirement is REMOVED: every requirement below either extends a main-spec
-> requirement (MODIFIED, full text) or is new (ADDED). Main-spec titles are quoted exactly.
+> Rescoped 2026-10-08, amended 2026-10-09 (live spike and the merge of `heygen-context-cleanup` and
+> `db-driven-conversation-prompts`; see `design.md`, Amendments 2026-10-09 and Appendix A). No requirement is
+> REMOVED: every requirement below either extends a main-spec requirement (MODIFIED, full text) or is new
+> (ADDED). Main-spec titles are quoted exactly. The 2026-10-09 amendments: the boundary steering is an append
+> followed by a mandatory respond; the Tavus create request carries an explicit `participant_left_timeout` when
+> the gate applies; `/end` no longer releases a shared conversation that a planned competency will use; the
+> release plumbing is the existing deferred job plus a sibling guard, not a new job; the continuation row's
+> snapshot copy covers `conversation_prompt_version`.
 
 ## MODIFIED Requirements
 
@@ -70,7 +76,7 @@
       On grant `/start` MUST NOT call `issue()`. It inserts the new competency's row
       (`status='in_corso'`, `provider_session_ref` = the SAME ref, `question_index` =
       `project_competencies.position`, `primary_questions` and `follow_up_budget` copied from
-      the plan entry, the LLM snapshot copied from the creating row) and opens a live period,
+      the plan entry, the LLM snapshot copied from the creating row, `conversation_prompt_version` included) and opens a live period,
       in ONE short DB transaction, and returns HTTP 201 with `provider_token: null`,
       `conversation_url: null`, `continuation: {conversation_id, competency_code}` and the
       usual `question_context`.
@@ -347,17 +353,23 @@ partial context extended later by a client-supplied addition. The conversation i
 the TOP-LEVEL `conversation_id`/`conversation_url`, not nested under `data`. Teardown MUST be
 `POST /v2/conversations/{id}/end`, never `DELETE`.
 
-At a competency boundary inside a live conversation, the candidate's browser sends a
-`conversation.append_llm_context` interaction over the Daily data channel, with the envelope
-`{message_type:'conversation', event_type:'conversation.append_llm_context', conversation_id,
-properties:{context}}`. It APPENDS to the conversation's LLM context and MUST NOT be
-`conversation.overwrite_llm_context`, which REPLACES the context and would delete the other
-competencies' coverage that the combined context established. The client MAY follow the append with a
-fixed `conversation.respond {text}` interaction when the avatar does not open the next topic on its own;
-that trigger text is a closed constant. Both interactions are governed by "Outbound Interaction Payload
-Carries No Scoring Content". Neither re-sends `conversational_context`.
+At a competency boundary inside a live conversation, the candidate's browser sends two interactions, in this
+order, over the Daily data channel with `call.sendAppMessage(envelope, '*')` (shape verified live on 2026-10-09):
+(1) `conversation.append_llm_context`, envelope `{message_type:'conversation',
+event_type:'conversation.append_llm_context', conversation_id, properties:{context}}`; then (2)
+`conversation.respond`, envelope `{message_type:'conversation', event_type:'conversation.respond',
+conversation_id, properties:{text}}`. The append APPENDS to the conversation's LLM context, keeping the coverage
+the combined context established at creation, and MUST NOT be `conversation.overwrite_llm_context`, which
+REPLACES the context and discards it. The respond is MANDATORY: an append alone leaves the avatar silent, and the
+respond is what makes it speak the next topic. The respond text is a closed constant; Tavus echoes it back as a
+user-role utterance that the client drops (see `interview-frontend`). Neither interaction re-sends
+`conversational_context`. When the single-session gate applies, the create request MUST also carry
+`properties.participant_left_timeout` taken from config `interview.tavus.participant_left_timeout` (default 60
+seconds), because the unset default was observed NOT to end a conversation after the browser left; when the gate
+is closed the create request MUST be byte-identical to today's.
 (Previously: `conversational_context` held a single competency's composed prompt, no boundary
-interaction existed, and the 2026-08-21 text named `overwrite_llm_context`.)
+interaction existed, the 2026-08-21 text named `overwrite_llm_context`, and the 2026-10-08 text made the respond
+optional ("MAY follow ... when the avatar does not open the next topic on its own"), which the live spike disproved.)
 
 #### Scenario: /conversations body is the real shape
 - GIVEN a candidate starting a Tavus interview
@@ -391,12 +403,27 @@ interaction existed, and the 2026-08-21 text named `overwrite_llm_context`.)
   `conversational_context` key, and no `conversation.overwrite_llm_context` message is built anywhere
   in `frontend/app` (asserted by a single-call-site guard)
 
-#### Scenario: Live-only — append retains earlier topics and overwrite does not (L2)
+#### Scenario: The boundary steering is an append followed by a respond
 
-- GIVEN a live Tavus conversation created knowing codeword AMBER for topic ALPHA and COBALT for topic BRAVO
-- WHEN `append_llm_context` is sent, then `overwrite_llm_context` as a negative control
-- THEN after the append the avatar still knows the earlier topic's codeword, and after the overwrite
-  it does not. This scenario is verified only by the authorized live spike and is NOT asserted offline
+- GIVEN a live conversation advancing from CSF to INN
+- WHEN the client sends the boundary steering
+- THEN exactly two messages are sent, in this order: `conversation.append_llm_context` then
+  `conversation.respond`, each with the documented envelope, and no other message type is built anywhere in
+  `frontend/app` (asserted by the single-call-site guard)
+
+#### Scenario: A single-session create carries participant_left_timeout and a flag-off create does not
+
+- GIVEN the gate applies and `interview.tavus.participant_left_timeout` is 60
+- WHEN `TavusProvider::issue()` builds the `POST /v2/conversations` body
+- THEN `properties.participant_left_timeout` equals 60 and the body matches `conversations_request_multi_golden.json`;
+  with the gate closed the body matches the unchanged `conversations_request_golden.json`
+
+#### Scenario: Verified live (2026-10-09, design Appendix A L2) — append retains earlier topics and overwrite does not
+
+- GIVEN a live Tavus conversation created knowing codeword AMBER for topic ALPHA
+- WHEN `append_llm_context` adds topic CHARLIE, and separately `overwrite_llm_context` replaces with topic DELTA
+- THEN after the append the avatar answered both AMBER and SCARLET, and after the overwrite it answered
+  "unknown" for ALPHA and VIOLET for DELTA. Recorded from the authorized live spike; NOT asserted offline
 ---
 
 ## ADDED Requirements
@@ -442,7 +469,8 @@ transaction that stamps the ref, and never rewritten. A later row on the same re
 `primary_questions` and `follow_up_budget` snapshot from the plan entry for its code (so the avatar turn
 classifier audits against what the conversation was actually composed with), and MUST receive a copy of the
 creating row's LLM snapshot (`avatar_template_id`, `llm_model_key`, `llm_binding_status`,
-`system_prompt_chars`) so that cost recording works for the continuation row. A single-competency
+`system_prompt_chars` and `conversation_prompt_version`, so that cost recording works for the continuation row
+and every row on the shared conversation names the one prompt set it was composed from). A single-competency
 conversation MUST NOT write a plan.
 
 #### Scenario: The plan holds snapshots and no anchors
@@ -503,8 +531,9 @@ refused continuation MUST NOT surface an error or any detail about why. A row wh
 Every interaction the candidate's browser sends over the Tavus data channel at a competency boundary MUST be
 structurally restricted: the `conversation.append_llm_context` `properties.context` MUST equal a fixed,
 versioned template with exactly one substituted value, the competency code issued by the server in
-`continuation.competency_code`, and the optional `conversation.respond` `properties.text` MUST be a closed
-constant that carries no code and no variable at all. The code MUST be validated by a branded constructor
+`continuation.competency_code`, and the mandatory `conversation.respond` `properties.text` that follows it MUST be a
+closed constant that carries no code and no variable at all (both constants are provisional wording until the
+live steering gate, `design.md` N14; the envelope shapes are verified). The code MUST be validated by a branded constructor
 that requires the pattern `^[A-Z0-9_]{1,16}$` (the same alphabet and length the catalogue allows, since codes
 are operator-authored and no closed set exists). No BARS indicator name, anchor text
 (`anchor_5`/`anchor_3`/`anchor_1`) or composed prompt fragment MUST be assignable to the template slot or
@@ -639,41 +668,80 @@ logic MUST live in one class (`ProviderRefLifetime`), reusing the existing templ
 - WHEN the age is computed
 - THEN it is 700 seconds measured from the earliest `started_at`, not the sum of the periods
 
-### Requirement: Superseded Provider Conversations Are Released Asynchronously
+### Requirement: A Shared Provider Conversation Is Released Only When No Live Row Needs It
 
-The server MUST release a provider conversation that no live row depends on, through a queued job
-`ReleaseProviderConversation` that carries scalar identifiers only, declares `$tries` and `$timeout`, and
-runs under `TenantContextScope::runFor`. It MUST be dispatched `afterCommit` with a delay (a) from the
-ceiling resume, (b) from `POST /end` when `next_action` is not `continue`, and (c) from the stale-interview
-reaper after it ends a row. The job MUST be best-effort and idempotent, never decide a request's outcome, and
-never release a ref that a live row still uses. It is belt-and-braces: Tavus ends a conversation after
-`participant_left_timeout` (documented default 0) and `participant_absent_timeout` (default 300), neither of
-which BEAI sets to a value that would rely on this job.
+The server MUST NOT release (tear down) a Tavus provider conversation while another `in_corso`
+`InterviewSession` row of the same participant shares its `provider_session_ref`, and MUST NOT release it at a
+competency `/end` when the next planned competency will use it. Release plumbing is the existing
+`ReleaseProviderSession` action and `ReleaseEndedProviderSessionJob` (scalar identifiers, `$tries`, `$timeout`,
+`TenantContextScope::runFor`); this change adds only the guards below and introduces no second release job.
+(1) `POST /end` MUST NOT release at once when ALL of these hold: the row's provider is `tavus`, its ref is
+non-null and belongs to a single-session conversation (the row, or the row that created the ref, stores a
+`conversation_plan`), the response `next_action` is `continue`, and the owning plan covers at least one
+competency after the ended one. In that case it MUST dispatch `ReleaseEndedProviderSessionJob` `afterCommit`
+with the refs captured at dispatch and the delay `interview.provider_release_delay_seconds` as the safety net for
+a browser that never returns. Every other `/end` (`pause`, `done`, a ref no plan shares, HeyGen, mock) releases
+exactly as before. (2) The deferred job, the stale-interview reaper's release and `handleResumeInCorso`'s teardown
+MUST each skip the release when another `in_corso` row shares the ref. (3) When a continuation is refused because
+the ref is near its ceiling, or a mid-competency expiry resumes the row on a fresh ref, the old conversation MUST
+be released through the same deferred job, never inline, because the crossfade is still showing it. (4) A release
+MUST be best-effort and idempotent, MUST NOT decide a request's outcome, and MUST tolerate an already-ended
+conversation (verified live 2026-10-09: `POST /v2/conversations/{id}/end` returns HTTP 200 with an empty body on
+an ended conversation). The guard exists because a browser leaving does NOT end a Tavus conversation (verified
+live: it stayed `active` 86 s after the leave and ended only on an explicit `/end`), so an unreleased conversation
+lingers, bills and holds a concurrency slot.
 
-#### Scenario: The ceiling resume dispatches a delayed release instead of tearing down inline
+#### Scenario: A continue boundary on a shared ref defers the release instead of releasing
 
-- GIVEN a resume that issues a fresh ref because the old one is near its ceiling
-- WHEN the transaction commits
-- THEN `ReleaseProviderConversation` is dispatched with a delay for the old ref and `teardown()` is not
-  called inline
+- GIVEN a single-session conversation planned for [CSF, INN, DRV] and CSF ending with `next_action = 'continue'`
+- WHEN `POST /end` commits
+- THEN `TavusProvider::teardown()` is NOT called, and `ReleaseEndedProviderSessionJob` is dispatched `afterCommit`
+  with the captured ref and the configured delay
 
-#### Scenario: A terminal /end dispatches a release
+#### Scenario: The last competency and a pause release at once
 
-- GIVEN the last competency ends with `next_action = 'done'`, or a pause
-- WHEN `/end` commits
-- THEN a release is dispatched for the row's ref when no live row shares it
+- GIVEN a shared conversation whose last planned competency ends (`next_action = 'done'`), or any competency ends
+  with `next_action = 'pause'`
+- WHEN `POST /end` commits
+- THEN the release runs exactly as today
 
-#### Scenario: The reaper dispatches a release
+#### Scenario: A deferred release after a granted continuation does nothing
 
-- GIVEN `ReapStaleInterviews` ends an abandoned `in_corso` row
-- WHEN the row is marked `timeout`
-- THEN a release is dispatched for its ref
+- GIVEN a deferred release for ref R was dispatched at CSF's `/end` and INN was then granted a continuation on R
+- WHEN the job runs
+- THEN another `in_corso` row shares R and no `POST /v2/conversations/{id}/end` is sent
 
-#### Scenario: A shared live ref is never released
+#### Scenario: A deferred release with no live sibling releases an orphan
 
-- GIVEN a ref still used by an `in_corso` row
-- WHEN a release job for that ref runs
-- THEN no `POST /v2/conversations/{id}/end` is sent
+- GIVEN a deferred release for ref R and no `in_corso` row sharing R (the browser never returned)
+- WHEN the job runs
+- THEN `POST /v2/conversations/{id}/end` is sent for R
+
+#### Scenario: The reaper and resume respect a live sibling
+
+- GIVEN two rows of one participant sharing a ref, one of them `in_corso`
+- WHEN the reaper ends the other, or `/start` resumes the other
+- THEN no release or teardown is sent against the shared ref, and the resumed row still receives a fresh ref
+
+#### Scenario: A ceiling refusal releases the old conversation through the deferred job
+
+- GIVEN an owned ref within `ceiling_headroom_seconds` of its ceiling
+- WHEN `/start` refuses the continuation and issues a fresh conversation
+- THEN the old ref is released by a deferred job, not inline, and the response carries a fresh handle
+
+#### Scenario: HeyGen and non-shared Tavus ends are unchanged
+
+- GIVEN a HeyGen competency, or a Tavus competency whose ref no plan shares
+- WHEN `POST /end` commits
+- THEN the existing behaviour runs (HeyGen `completed` then `continue` defers 45 s; every other end releases at once)
+
+#### Scenario: Releasing an already-ended conversation is benign
+
+- GIVEN a ref whose conversation already ended on the provider side
+- WHEN a release job runs for it
+- THEN the call is treated as success (HTTP 200 or 404) and nothing is retried
+
+---
 
 ### Requirement: At Most One Open Live Period Per Provider Reference
 

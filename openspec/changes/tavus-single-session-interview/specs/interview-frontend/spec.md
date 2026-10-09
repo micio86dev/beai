@@ -1,7 +1,12 @@
 # Delta for Interview Frontend
 
-> Rescoped 2026-10-08. MODIFIED requirements keep their main-spec titles exactly and their current full text
-> (the HeyGen-only presentation requirement keeps its "(HeyGen only)" title). Nothing is REMOVED.
+> Rescoped 2026-10-08, amended 2026-10-09. MODIFIED requirements keep their main-spec titles exactly and their
+> current full text (the HeyGen-only presentation requirement keeps its "(HeyGen only)" title). Nothing is
+> REMOVED. The 2026-10-09 amendments follow the live spike (`design.md`, Appendix A): the boundary steering is an
+> append followed by a mandatory respond; the microphone stays muted until the steering is acknowledged; the
+> `respond` echo is held and dropped by correlation, not by text alone; an unannounced end of the conversation is
+> handled as a ceiling. The avatar's duplicate `pal` utterance is already de-duplicated by frontend PR #69 and the
+> acknowledgement rule relies on it.
 
 ## MODIFIED Requirements
 
@@ -22,8 +27,8 @@ in the order mandated by the backend contract:
    handle; it sends nothing otherwise. When the `201` response contains a `continuation` object
    (`conversation_id`, `competency_code`) and null `provider_token`/`conversation_url`, the client
    MUST NOT create a provider handle, mount a player or transition to `connecting`; it moves the
-   attribution cursor to the new `session_id` and then sends the boundary interaction over the
-   EXISTING Daily data channel (see "Utterance Attribution Retargets At A Competency Boundary
+   attribution cursor to the new `session_id` and then sends the boundary steering (an append, then the mandatory
+   respond) over the EXISTING Daily data channel (see "Utterance Attribution Retargets At A Competency Boundary
    Without A Race Window"). A response with a fresh handle and no `continuation` takes today's
    path unchanged. A response with `continuation` but a missing field, or with `continuation` AND
    a non-null handle, is malformed and takes the existing retryable error screen. The client
@@ -416,7 +421,8 @@ interaction (an `AdvanceTicket` that cannot be constructed elsewhere), so that t
 ordered strictly BEFORE the interaction that causes the new competency. Unsent integrity events MUST be
 flushed against the outgoing row before the cursor moves. Across the boundary window the client MUST
 `/end` the outgoing row only after every in-flight `/utterance` request has settled (bounded), MUST mute the
-candidate's microphone before `/end` and unmute it after the boundary interaction has been sent, and MUST
+candidate's microphone before `/end` and keep it muted until the boundary steering has been acknowledged or has
+failed (not merely sent: the `respond` echo arrives after the send and must not meet candidate speech), and MUST
 use the outgoing row's id for `/end`.
 
 #### Scenario: The attribution tape posts every utterance under the right row
@@ -430,8 +436,8 @@ use the outgoing row's id for `/end`.
 
 - GIVEN a continuation response for INN
 - WHEN the boundary path runs
-- THEN the recorded order is `[cursor.advanceTo, sendAppMessage]`; a transcript event fired between the
-  two posts under INN, one fired before the cursor write posts under CSF
+- THEN the recorded order is `[cursor.advanceTo, sendAppMessage(append_llm_context), sendAppMessage(respond)]`; a
+  transcript event fired between the two posts under INN, one fired before the cursor write posts under CSF
 
 #### Scenario: Sending without a ticket does not compile
 
@@ -452,30 +458,38 @@ use the outgoing row's id for `/end`.
 - WHEN `/end` is about to be called
 - THEN the closing utterance's POST has settled first (the shipped drain), including when one POST rejects
 
-### Requirement: Steering Is Acknowledged By The Next Replica Utterance, Or It Failed
+### Requirement: Steering Is Acknowledged By The Next Avatar Utterance, Or It Failed
 
-Tavus provides no acknowledgement for a data-channel interaction. After sending the boundary interaction the
-Tavus provider MUST treat the FIRST `conversation.utterance` with `properties.role === 'replica'` observed
-after the send as the acknowledgement. If none arrives within `STEERING_ACK_TIMEOUT_MS` (10 000 ms), or the
-Daily call object reports `left-meeting` or `error`, or the send throws, or the call is not in
-`joined-meeting`, the provider MUST emit `steering_failed` and MUST NOT send into a call that is not joined.
-On `steering_failed` the client MUST unmute the microphone, keep the cursor where it is, and: if the call
-is still joined, resend the same interaction once; otherwise, or after the second failure, end the NEW
-competency as `timeout` through `POST /end` and let the next `/start` issue a fresh conversation (the
-browser then holds no live handle, so the server refuses a continuation). The failure of one competency's
-steering MUST NOT fail the interview.
+The boundary steering is two data-channel messages sent by the one choke point, `conversation.append_llm_context`
+followed by the mandatory `conversation.respond` (verified live 2026-10-09: an append alone leaves the avatar
+silent). Tavus provides no acknowledgement event for either. After sending, the Tavus provider MUST treat the
+FIRST avatar `conversation.utterance` observed after the send (the provider's de-duplicated `replica`/`pal`
+copy) as the acknowledgement. If none arrives within `STEERING_ACK_TIMEOUT_MS` (10 000 ms), or the Daily call
+object reports `left-meeting` or `error`, or a send throws, or the call is not in `joined-meeting`, the provider
+MUST emit `steering_failed` and MUST NOT send into a call that is not joined. The candidate's microphone MUST
+stay muted from before `/end` until the acknowledgement or `steering_failed`. On `steering_failed` the client
+MUST unmute the microphone, keep the cursor where it is, and: if the call is still joined, resend the same
+steering once; otherwise, or after the second failure, end the NEW competency as `timeout` through
+`POST /end` and let the next `/start` issue a fresh conversation (the browser then holds no live handle, so
+the server refuses a continuation). The failure of one competency's steering MUST NOT fail the interview.
 
-#### Scenario: A replica utterance acknowledges the steering
+#### Scenario: An avatar utterance acknowledges the steering
 
-- GIVEN a boundary interaction was sent
-- WHEN a `role: 'replica'` utterance arrives within the window
-- THEN no `steering_failed` is emitted and the ack timer is cleared
+- GIVEN a boundary steering was sent
+- WHEN an avatar utterance arrives within the window
+- THEN no `steering_failed` is emitted, the ack timer is cleared and the microphone is unmuted
 
-#### Scenario: No replica utterance triggers one retry then a timeout
+#### Scenario: The microphone stays muted until the acknowledgement
 
-- GIVEN a boundary interaction was sent and the call is still joined
-- WHEN no replica utterance arrives within `STEERING_ACK_TIMEOUT_MS`
-- THEN `steering_failed` is emitted, the same interaction is resent once, and if the second window also
+- GIVEN both steering messages were sent and no avatar utterance has arrived yet
+- WHEN the window is still open
+- THEN the microphone is still muted; it unmutes on the acknowledgement or on `steering_failed`
+
+#### Scenario: No avatar utterance triggers one retry then a timeout
+
+- GIVEN a boundary steering was sent and the call is still joined
+- WHEN no avatar utterance arrives within `STEERING_ACK_TIMEOUT_MS`
+- THEN `steering_failed` is emitted, the same steering is resent once, and if the second window also
   expires the new competency ends with `ended_reason = 'timeout'` and the interview continues
 
 #### Scenario: A left meeting fails the steering immediately without a send
@@ -490,23 +504,50 @@ steering MUST NOT fail the interview.
 - WHEN the boundary path sends
 - THEN `steering_failed` is emitted, the microphone is unmuted and the cursor is unchanged
 
+#### Scenario: The duplicate pal copy is not a second acknowledgement
+
+- GIVEN the avatar utterance arrives as a `replica` event and a `pal` event with the same `inference_id`
+- WHEN the provider processes them
+- THEN exactly one avatar utterance is emitted, and it is the acknowledgement
+
 ### Requirement: The Client Drops Its Own Steering Echo
 
-If the boundary interaction includes a `conversation.respond` trigger, the Tavus provider MUST remember the
-exact trigger text it sent and MUST drop, once, the first user-role `conversation.utterance` whose
-normalised text equals it, so the platform's own steering text is never emitted on the `transcript` stream
-and never posted to `/utterance` as candidate speech. Genuine candidate speech MUST be unaffected. The real
-shape of any echo (role, `inference_id`) is verified only by the authorized live spike (L4).
+Tavus echoes a `conversation.respond` back as a `conversation.utterance` with `properties.role: "user"`,
+`properties.speech` equal to the text sent, the same `inference_id` as the avatar's reply and a `turn_idx`
+(verified live 2026-10-09). The Tavus provider MUST arm a one-shot echo filter when it sends the `respond`. While
+armed it MUST hold, without emitting, the first user-role `conversation.utterance` whose normalised text equals the
+closed trigger. When the next avatar utterance arrives carrying the same `inference_id`, the held utterance is the
+echo: it MUST be discarded, its `inference_id` and `turn_idx` remembered as the steering turn, and any further
+user-role copy of that turn dropped. If the acknowledgement window ends without a reply, the held utterance MUST
+still be discarded and `steering_failed` raised. A user-role utterance that does not match, or that arrives when
+the filter is not armed, MUST be emitted as ordinary candidate speech; a held utterance MUST be released as
+candidate speech if the filter disarms without a match. The echo MUST never reach the `transcript` stream and
+MUST never be posted to `/utterance`. `inference_id` alone is not a discriminator, because every candidate turn
+also shares its `inference_id` with the reply; the microphone staying muted until the acknowledgement is what
+guarantees no genuine speech is in flight while the echo arrives.
 
-#### Scenario: An echoed steering text is not posted
+#### Scenario: The echoed steering text is not posted
 
 - GIVEN the provider sent the fixed `respond` text
-- WHEN a user-role utterance with identical text arrives
-- THEN no `transcript` event is emitted for it and no `/utterance` call is made
+- WHEN a user-role utterance with identical text arrives, followed by an avatar utterance with the same `inference_id`
+- THEN no `transcript` event is emitted for the user-role utterance and no `/utterance` call is made for it, and
+  the avatar utterance is emitted and acknowledges the steering
 
-#### Scenario: Candidate speech that merely resembles the trigger is kept after the first match
+#### Scenario: A held utterance is dropped even when the reply never comes
 
-- GIVEN the echo has already been dropped once
+- GIVEN the echo was held and no avatar utterance arrives within the window
+- WHEN the window expires
+- THEN the held utterance is discarded, `steering_failed` is emitted, and nothing reaches `/utterance`
+
+#### Scenario: Candidate speech with other text is untouched
+
+- GIVEN the filter is armed
+- WHEN a user-role utterance with different text arrives
+- THEN it is emitted as candidate speech
+
+#### Scenario: The same words later are candidate speech
+
+- GIVEN the echo has already been dropped once and the filter is disarmed
 - WHEN a later user-role utterance with the same text arrives
 - THEN it is emitted as candidate speech
 
@@ -598,6 +639,15 @@ the competency in progress, its utterances or its attribution.
 - GIVEN a live shared conversation and the server's gate switched off
 - WHEN the next `/start` returns a fresh handle
 - THEN the client crossfades to it
+
+#### Scenario: An unannounced end of the conversation is handled as a ceiling
+
+- GIVEN Tavus ends a conversation at its limit with no prior warning, and the client's age timer has not fired
+  (the observed sequence: `conversation.left`, `system.shutdown`, the avatar's tracks stop, Daily `error`
+  "Meeting has ended", `left-meeting`)
+- WHEN that sequence arrives while a competency is `in_corso`
+- THEN the Tavus provider reports a stop, and the client calls `/start` on the `in_corso` row (fresh ref on the
+  same row), preserving the row, its utterances and the remaining question time
 
 #### Scenario: HeyGen's own crossfade is unaffected
 
