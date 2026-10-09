@@ -236,7 +236,7 @@ Delivery strategy: each slice is its own PR merged in dependency order, all dark
 | Slice | Repo | Subject | ~Lines |
 |---|---|---|---|
 | PR0 | wrapper | Rescoped proposal, design, specs, tasks (this slice) | docs |
-| API-01 | api | Schema, config | 180 |
+| API-01 | api | Schema, config | 220 |
 | API-02 | api | `composeMany` over resolved inputs, `ConversationPlan` | 350 |
 | API-03 | api | Create path with plan through the stored set, `participant_left_timeout` (flag-gated) | 400 (03a extraction + 03b plan) |
 | API-04 | api | Continuation grant | 400 |
