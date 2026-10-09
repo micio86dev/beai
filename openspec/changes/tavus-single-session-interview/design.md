@@ -1187,3 +1187,89 @@ which every version of this code handles.**
    snapshots.** Nothing downstream learns that a ref can be shared.
 10. **This artifact exceeds the skill's 800-word budget deliberately**, per the orchestrator's
     direction that H1, H2 and the anti-leak invariant each receive a full decision record.
+
+---
+
+## Appendix A - Live spike record, 2026-10-09
+
+### Run
+
+- **What.** One owner-authorized live run against the real Tavus API, spending real credits. Four conversations
+  were created from the `api` container through `TavusProvider::issue()` (so the Tavus key never reached the
+  browser process) with a throwaway protocol-test context ("TOPIC ALPHA codeword AMBER. TOPIC BRAVO codeword
+  COBALT. Do not begin a topic until told by code."), joined by a headless Chromium with fake audio devices as a
+  Daily participant through the real `@daily-co/daily-js` call object, and driven by
+  `tavus-steering-verify.mjs`. The runner reported about 8 of the 12 live minutes it was allowed and a full account
+  listing afterwards showing all four conversations `ended` and none `active` (a runner report, not a log).
+- **When.** 2026-10-09, roughly 10:37Z to 10:46Z. Conversations are named here by their last four characters only:
+  `...e4eb` (default settings; L7, L8), `...245a` (`max_call_duration` 240; L1-L6), `...9401` (clean L2 overwrite),
+  `...e494` (clean L2 append).
+- **Tooling, not in the repository.** `tavus-steering-verify.mjs` (scenarios `steer`, `l2-overwrite`, `l2-append`,
+  `leave`, `observe`; header documents the envelope) and `spike.php` (a tinker helper with modes `create`, `poll`,
+  `status`, `end`) were kept outside the tree. SPIKE-02 in `tasks.md` commits the script to
+  `frontend/scripts/live/` as a separate frontend PR.
+- **Evidence files** (session scratch under `/private/tmp/claude-501/spike/`, NOT committed because they hold full
+  conversation ids and Daily participant data; this appendix is the committed record):
+  - E1 `steer-1791542370.json`: scenario `steer` on `...245a`; `summary.actions`, `summary.utterances`,
+    `summary.lifecycle`, `summary.nonUtteranceAppMessages`, `rawAppMessages`.
+  - E2 `l2-overwrite-1791542654.json` (`...9401`) and E3 `l2-append-1791542715.json` (`...e494`).
+  - E4 `leave-1791542245.json` and `poll-conv-leave.txt` (`...e4eb`: the browser leave and the status polls).
+  - E5 `poll-conv-steer.txt` (status polls of `...245a` through the end).
+  - E6 the `SPIKE_END http=200` lines in the runner's own transcript (five calls, epochs 1791542354.95,
+    1791542357.93, 1791542623.38, 1791542704.24, 1791542764.31).
+- **Limits of this evidence.** One run per scenario (n = 1); a context of a few hundred characters; throwaway
+  English texts; no composed BEAI prompt; no end phrase before the append; a fake microphone; a persona whose
+  `stopped_thinking` events name the model `Gemma-4-31B-IT-FP8`; no cost or credit signal in any API response.
+
+### Results L1-L8
+
+| Id | Question | Result | Evidence |
+|---|---|---|---|
+| L1 | Can the browser send `append_llm_context` / `respond` over the Daily data channel, and does Tavus accept it? | **Observed: yes**, for `respond`, `append_llm_context` and `overwrite_llm_context`. `sendAppMessage(envelope, '*')` returned an object (no acknowledgement); the effect was visible in later avatar speech. | E1 actions `S1..S6` all `ok: true`; S1 `respond` at +15.0 s answered "Ready." at +16.1 s; S2 `append` effect visible in S3's answer at +61.2 s; S5 `overwrite` effect visible in S6's answer at +149.2 s. Envelope: `{message_type:'conversation', event_type, conversation_id, properties:{context}\|{text}}`. |
+| L2 | After an append does the model still know the earlier topic's codeword; after an overwrite does it not? | **Observed: append keeps it, overwrite drops it** (two clean controls). The overwrite control inside the main run was contaminated and counts for nothing. | E3: after `append` "TOPIC CHARLIE codeword SCARLET." the answer was "the codeword for topic alpha is amber, and the codeword for topic charlie is scarlet". E2: after `overwrite` "TOPIC DELTA codeword VIOLET." the answer was "the codeword for topic alpha is unknown, but the codeword for topic delta is violet". E1 S6 answered ALPHA = amber after an overwrite only because ALPHA had been spoken at +61.2 s (S3). |
+| L3 | After an append, does the avatar open the next topic unprompted, or only after a `respond`? | **Observed: only after a `respond`.** Not observed: the real sequence (end phrase, then append, then respond) and the composed-size context. | E1: no thinking, speaking or utterance event between the S2 append at +35 s and the S3 `respond` at +60 s (first event: `started_thinking` at +60.2 s). |
+| L4 | Does a `respond` come back as a role-`user` utterance, and with which `inference_id`? | **Observed: yes.** `conversation.utterance` with `properties.role: "user"` and `properties.speech` equal to the text sent, `turn_idx` set, the same `inference_id` as the avatar's reply, arriving 1.1-1.2 s after the send and before the reply. An `append` produced no echo. | E1 utterances: S1 `user`/"Reply with only the word READY." at +16.1 with `turn_idx` 1 and the reply "Ready." sharing the `inference_id`; S3 at +61.2, S4a at +83.2, S4b at +103.2, S6 at +149.2; keys `conversation_id, event_type, inference_id, message_type, properties, seq, timestamp, turn_idx`, `properties` keys `role, speech`. |
+| L5 | Does a realistic three-topic context obey "do not begin a topic until told" (Q1 adaptivity A/B)? | **Inconclusive.** Observed only: "Please begin TOPIC BRAVO." was refused ("I cannot begin that topic until I am given the correct codeword"). The positive half did not run: "Code BRAVO." was also refused because the codeword was COBALT. No realistic-size context and no A/B were run. | E1 utterances S4a (+83.2 s) and S4b (+103.2 s). |
+| L6 | Real behaviour at `max_call_duration` and at the plan limit? | **Observed in part.** `max_call_duration` 240 was accepted and the conversation ended by itself about 241 s after the browser joined, with no warning event. **Not observed:** the plan-level cap, and whether the clock starts at creation or at the avatar's join (about 3 s apart). | E1 lifecycle: app messages `conversation.left` x2 at +241.5, `system.shutdown` (no reason) at +241.6; Daily `track-stopped` and `participant-left` at +241.7; `error` "Meeting has ended" and `left-meeting` at +243.3. E5: last poll `active` at epoch 1791542609.13, then `ended` with `shutdown_reason` null at 1791542613.48. |
+| L7 | Does `participant_left_timeout` 0 (the unset default) end the conversation on browser leave, how fast? | **Observed: it did not, within the window watched.** Not observed: whether anything else (`participant_absent_timeout` 300) would have ended it; no explicit `participant_left_timeout` value was tested. | E4: `leave()` completed at epoch 1791542259.37 (+12 s after join); E4 polls stayed `active` through epoch 1791542345.33 (86 s later); E6 `/end` at 1791542354.95 (95.6 s after the leave) was what ended it. |
+| L8 | Is `POST /conversations/{id}/end` on an already-ended conversation benign? | **Observed: yes.** HTTP 200 with an empty body on an active conversation, on a repeat call, and on a conversation that had already expired by itself; the status stayed `ended`. | E6: 200 at 1791542354.95 (`...e4eb` active), 1791542357.93 (repeat), 1791542623.38 (`...245a`, ten seconds after its natural end), and for `...9401`/`...e494`. |
+
+### Also observed (not one of L1-L8)
+
+- **Duplicate avatar utterance.** Every avatar utterance arrives twice, as `role: "replica"` and as the legacy
+  `role: "pal"`, with identical text and `inference_id` (E1: 6 + 6 `conversation.utterance`, 47 + 47
+  `conversation.utterance.streaming`). The pre-spike provider treated `pal` as the candidate. This is already
+  fixed on `frontend` `develop` by PR #69 (`isDuplicateAvatar`, keyed on `inference_id`); the acknowledgement
+  rule of N5 relies on that de-duplication.
+- **Timings.** Joining the room took 1.6-2.2 s; the greeting utterance arrived about 1 s after the join;
+  `respond` to `started_thinking` took about 0.2 s and to the first utterance 1.1-1.2 s (tiny context).
+- **No acknowledgement.** Tavus emitted no event for an `append_llm_context` or for the receipt of a `respond`;
+  the only observable consequences are the avatar's thinking/speaking events and the echo.
+
+### What this changes in the plan
+
+| Result | Decision recorded | Where |
+|---|---|---|
+| L1, L2 | Envelope shape and `append_llm_context` confirmed; FE-01 golden shape can be frozen | S1, S5, N14; tasks FE-01 |
+| L3 | `respond` is mandatory after every append | S1, N5; tasks FE-02 |
+| L4 | Echo must be dropped; correlation rule, mic muted until the ack | S2, N15; tasks FE-02 |
+| L6 | No warning at the ceiling; client timer first, end sequence second | S4, N17; tasks FE-06 |
+| L7 | A5 superseded, release explicit, `participant_left_timeout` set on single-session conversations | S3, N12, N16; tasks API-03, API-07 |
+| L8 | Release is idempotent; the job may fire without checking the provider | N8, N12; tasks API-07 |
+| L5 | Still open: live gate G-A (Q1) and G-C (steering end to end) | tasks "Offline versus live" |
+
+---
+
+## Appendix B - Open owner decisions and the defaults taken
+
+Nothing below blocks a dark slice. Each default is reversible without code changes.
+
+| # | Decision | Default taken | When it must be decided |
+|---|---|---|---|
+| 1 | Anchor exposure to the model: every remaining competency's BARS anchors in the avatar context from minute one (they never reach the browser) | **Accepted by this design.** Reversible by `conversation.max_context_chars` or by leaving the flag off | Settled |
+| 2 | Q1 adaptivity go/no-go threshold for the realistic multi-topic A/B against the single-competency baseline (G-A) | **Not decided; the flag stays off.** No threshold is invented here | Owner, before the flag flip, with the G-A result in hand |
+| 3 | Canary scope and the default flag value | **Flag off, canary list empty.** First enablement is one project id through `INTERVIEW_TAVUS_SINGLE_SESSION_PROJECTS` | Owner, at the flip |
+| 4 | Audible/visible mid-competency forced reconnect (Q5) | **Accepted as a bounded degradation** (the shipped 10 s `transition-panel` fallback) | Owner may revisit after G-B shows the real ceiling behaviour |
+| 5 | Cost: Tavus billing for a longer single conversation versus N conversations, and the larger LLM context sent on every turn | **Not decided.** The spike returned no cost signal, so there is no number to decide on | Owner, at the flip |
+| 6 | `participant_left_timeout` value for single-session conversations, and whether to also set it on the flag-off path where S3 shows lingering today | **60 s, single-session only, config-driven (N16);** the flag-off path is untouched | Owner, after G-D verifies an explicit value |
+| 7 | Steering texts: the append template and the `respond` constant | **Provisional** (N14); shape frozen, wording confirmed at G-C | Before the flag flip |
