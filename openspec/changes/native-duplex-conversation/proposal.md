@@ -1,18 +1,160 @@
 # Proposal: Native-Duplex Conversation — Gemini Live
 
-> **STATUS (2026-10-08): KEEP OPEN, NOT STARTED, NO LONGER BLOCKED ON HEYGEN.** `native_duplex` is still refused with
-> 422 `mode_unsupported` (`LlmMode`, `AvatarTemplate`), there is no `gemini_realtime_config` anywhere, and the Live
-> group is still disabled in `LlmModelPicker.vue`. Prerequisite `pluggable-conversation-llm` is archived
-> (`archive/2026-10-08-pluggable-conversation-llm`). Its HeyGen live questions were answered on 2026-10-08 against
-> the live LiveAvatar API (see that archive's report). **PROVEN:** the LLM binding is a top-level
-> `llm_configuration_id` on `POST /v1/sessions/token`; `POST /v1/contexts` has no such field (P5.12/P5.13 are not
-> applicable); a well-formed but unknown configuration id passes the token call and is rejected at
-> `POST /v1/sessions/start` with 400; `/v1/sessions/token` requires `avatar_persona`; the secrets API has no update
-> verb. **This proposal must be amended accordingly:** do not expect to bind the LLM on the context (the context
-> keeps only the prompt, per AD-7), and decide how a start-time 400 "configuration not found" (seen only by the
-> browser client, not by the API) is surfaced and reported. **Still open:** the proposal's own question round and the Gemini Live specifics (the Live
-> Connector behaviour itself was not exercised by the 2026-10-08 test). Next: amend the proposal, run the question
-> round, then spike, tasks and implementation.
+> **STATUS (2026-10-10): AMENDED, QUESTION ROUND PREPARED, NOT STARTED, NOT IN THE UPCOMING RELEASE.** The 2026-10-08
+> banner asked for this amendment; it is done below (see "Amendment 2026-10-10"). `native_duplex` is still refused
+> with 422 `mode_unsupported` (`AvatarTemplate::booted()` I2 guard, `LlmMode`), there is no `gemini_realtime_config`
+> anywhere in `api/`, `frontend/` or `backoffice/`, and the Live group is still `<optgroup disabled>` in
+> `LlmModelPicker.vue` (all re-read on `origin/develop` on 2026-10-10). The Live Connector behaviour itself has never
+> been exercised. Nothing here ships in the next release.
+>
+> **Next steps, in order:**
+> 1. The owner answers `questions.md` (Q1 to Q3 block design; Q4 to Q9 take their recommended default if unanswered).
+> 2. The Gemini Live spike (`## Amendment 2026-10-10`, section 6), which needs the owner's SEPARATE explicit
+>    authorization to spend money on live providers. A negative on transcript continuity blocks the change.
+> 3. `sdd-spec`, `sdd-design`, `sdd-tasks`, written against the spike's written answers.
+> 4. Implementation (the provider-fault report slice first, because it also repairs `managed` mode; then the P1 guard narrowing), chained PRs, Strict TDD.
+>
+> Claims marked **SUPERSEDED** further down are kept for the record and no longer bind.
+
+## Amendment 2026-10-10
+
+Why: on 2026-10-08 the HeyGen LiveAvatar API was exercised live for the archived change
+`pluggable-conversation-llm` (`openspec/changes/archive/2026-10-08-pluggable-conversation-llm/archive-report.md`,
+section "Live evidence, 2026-10-08"). Several things this proposal assumed (written 2026-08-27) were wrong or are now
+stale. Every statement below was checked against `origin/develop` of the wrapper and of `api`, `frontend`,
+`backoffice` on 2026-10-10, or against that archive report (marked "report").
+
+### 1. Corrected assumptions
+
+| # | Old assumption (where) | Now | Evidence |
+|---|---|---|---|
+| C1 | The LLM binding can ride on the context, and P5.12/P5.13 are pending (2026-10-08 banner; change 1's tasks) | **SUPERSEDED.** `POST /v1/contexts` accepts only `name`, `prompt`, `opening_text`, `links`; an extra `llm_configuration_id` is silently dropped. P5.12/P5.13 are NOT APPLICABLE. The context keeps only the prompt (AD-7 stands). | report; `HeygenProvider::buildContextBody()` sends `name`, `prompt`, `opening_text` only |
+| C2 | Placement of `llm_configuration_id` unknown | Top-level, optional uuid on `POST /v1/sessions/token`. Nested under `avatar_persona` it returns 200 and is silently ignored (a 200 proves nothing). | report; shipped in `$providerOwned` (`HeygenProvider.php`, `ManagedLlmPayload.php:39-43`) |
+| C3 | An invalid configuration is rejected when BEAI asks for the token | A malformed uuid is 422 at the token call; a well-formed but unknown uuid **passes** the token call and fails at `POST /v1/sessions/start` with 400 "LLM configuration with id '...' not found in your space". That call is made by the browser SDK, so the API never sees it. | report |
+| C4 | `avatar_persona` optional on the token call | `/v1/sessions/token` returns 422 without `avatar_persona` ("Provide exactly one of avatar_persona or voice_agent"). | report |
+| C5 | Secrets can be updated in place | The secrets API has POST, GET (list), DELETE only; PATCH/PUT are 405. Rotation is delete then recreate (this proposal already said so in AD-10; the report confirms it live). | report |
+| C6 | AD-8 / Dependencies: change 1's P6a/P6b (usage table, session snapshot, estimator, cost views) "did not ship"; this change must depend on or absorb them | **SUPERSEDED.** They are on `develop`: `InterviewSessionLlmSnapshot`, `ConversationLlmUsageEstimator`, `beai:reconcile-llm-usage`, the append-only usage aggregate and the backoffice cost views (`SessionReviewPanel.vue`, delivered `c129cb8`). Question 1 of the old round is therefore moot as a dependency; what remains is only "what does Live cost capture add" (`questions.md` Q4). | report ("Summary", "Specs merged") |
+| C7 | `conversation-llm` is not yet in `openspec/specs/`; the delta must target the change folder | **SUPERSEDED.** It is merged (8 requirements after the 2026-10-08 additions). This change's delta targets `openspec/specs/conversation-llm/spec.md`. | report |
+| C8 | `SystemPromptComposer` is "diff-free" and the prompt is "already the context prompt" | The composer is no longer diff-free and must not be treated so: the prompt now comes from the **active stored prompt set** (`ccbc727`, stamped on the session by `e0d55bf`, verified by seal; per-code overrides `8f29c6c`, `d2ecab1`), and `composeMany()` (`85018cf`) composes a multi-competency context. The "diff-free" success criterion is replaced by: Live adds no prompt-composition code; it consumes whatever the composer returns. AD-7 (language only via the prompt, `projects.language` single source) is unchanged. | `origin/develop` log; `SystemPromptComposer.php:131,243`; `openspec/specs/conversation-prompt-templates/spec.md` |
+| C9 | Provider teardown just ends the session | HeyGen teardown was broken (`DELETE /v1/sessions/{ref}` answered 405 and was swallowed). Fixed in api PR #144: `POST /v1/sessions/stop {session_id, reason}`, then the context created by `issue()` is deleted best-effort; a failed stop keeps the context. The Live path inherits this and must not add a second teardown. | `HeygenProvider.php:545-610`; report |
+| C10 | Seed has four models, line refs `llm_models.php:71-112`, `:87-88` | Five models; Live rates are now at `llm_models.php:131-132` (`0.005000` in, `0.018000` out per minute for `gemini-3.1-flash-live-preview`). Treat all line references in this proposal as stale. | `origin/develop` seeder |
+
+Re-verified as still true: `native_duplex` refused at every write path (`AvatarTemplate.php:240-243`, I2, 422
+`mode_unsupported` via `UnsupportedLlmModeException`); `LlmModelPicker.vue:44` keeps the Live `<optgroup ... disabled>`
+with each option disabled; no `gemini_realtime_config` in `api/`, `frontend/`, `backoffice/` (and nowhere outside this
+change folder). AD-3 (Tavus deferred) was not re-examined here; parallel Tavus work (`tavus-single-session`) exists
+but has not been read against AD-3, and nothing in this amendment changes AD-3.
+
+### 2. How the LLM binding is applied now that the context cannot carry it
+
+- `managed` (shipped, unchanged): the registrar creates a secret and an LLM configuration on HeyGen at template save;
+  the id lives in `avatar_templates.heygen_llm_configuration_id`; `issue()` puts it top-level on
+  `POST /v1/sessions/token`.
+- `native_duplex` (this change): the context is created exactly as today and carries only the prompt. The Live
+  selection is a **session-level** object (`gemini_realtime_config: { secret_id, context_id, voice, model,
+  temperature }`) placed in `$providerOwned`, never in the env-extendable `TOKEN_FIELD_ALLOWLIST`, and `context_id`
+  is the id `issue()` already holds. It is **UNVERIFIED** whether this object belongs on `/v1/sessions/token`
+  (like `llm_configuration_id`) or on `/v1/sessions/start`; the earlier text of this proposal said "session start".
+  Because the browser makes the start call, the token route is the only place BEAI can put it, so the spike must
+  confirm that the token schema accepts it (a wrong placement would again return 200 and be ignored). Spike item
+  S2 below.
+- The two modes are mutually exclusive per template, so a template never sends both `llm_configuration_id` and
+  `gemini_realtime_config`. Whether the API rejects both together is unknown; the guard makes it unreachable.
+- Golden-body rule unchanged: an unbound and a text-bound template's token bodies stay byte-identical to `develop`.
+
+### 3. The start-time 400, decided
+
+Problem: for both `llm_configuration_id` (managed) and the Live selector, a well-formed but stale or unknown id is
+accepted at token time and rejected at `POST /v1/sessions/start` with 400. Only the browser SDK sees it. Today the
+candidate sees a generic provider failure and BEAI learns nothing. (This is a pre-existing gap of `managed` mode,
+fixed here once for both.)
+
+**Decision (engineering, recorded): add one narrow candidate endpoint plus a Sentry tag; do not reuse
+`/integrity`.**
+
+- **Why not `/integrity`.** `IntegrityController` is proctoring: its kinds are candidate behaviours, they feed the
+  operator risk score, and an arch test forbids candidate controllers from even naming the scorer. `proctor_unavailable`
+  already shows the cost of putting "a statement about us" in that table (it needs a special zero-weight exemption and
+  wording to dodge a blunt guard). A provider fault is not integrity data. Reuse would be about 40 lines cheaper
+  and would pollute the integrity surface; rejected.
+- **Why not Sentry alone.** `frontend` already ships `@sentry/nuxt` with a scrubber (`sentry-scrub.ts`). A tagged
+  event gives engineers an alert, but it does not mark the BEAI session, so support cannot answer "why did candidate
+  X's interview not start" and nothing can retry or alert per tenant. Kept as the secondary signal.
+- **Design.**
+  1. `frontend/app/providers/heygen.ts`: when `session.start()` rejects, classify the error into a closed code set
+     (`llm_configuration_not_found`, `start_failed`, `unknown`) by matching the provider's message class, never by
+     forwarding the message.
+  2. New `POST /api/candidate/interview/provider-fault` (same middleware group as `/integrity`: candidate JWT,
+     `ParticipantStatusGuard`, `resolveOwnedSession` first, so tenancy is enforced). Body: `{session_id, code}`,
+     `code` validated against the closed enum, nothing else accepted. Persist one row on the session (a
+     nullable `provider_fault_code` plus timestamp on `interview_sessions`, or an append-only `interview_provider_faults`
+     table; engineering decision: **append-only table**, because a session can fault more than once on resume and
+     the history is the diagnostic). Answer 202. Rate-limit per session (the stop-the-loop guard).
+  3. The API logs the code at warning level and reports a Sentry event tagged `provider_fault=<code>` with the
+     session id and the template id only. Never the configuration id's neighbours: no secret ids, no Gemini key, no
+     provider response body, no candidate PII (the scrubber already drops visitor identity).
+  4. For `llm_configuration_not_found` specifically the API also marks the template's registration as suspect
+     (`llm_sync_status` is the existing field) so the operator sees "binding out of sync" in the backoffice instead of
+     a silent breakage. Auto-repair is out of scope.
+  5. The candidate sees the existing degraded/error path (old question 6 is split into `questions.md` Q3 and Q8) with a localized
+     generic message; the code is never shown.
+- **Size, forecast.** api: migration + model + controller + FormRequest + enum + arch/exposure entries + tests,
+  about 220 changed lines. frontend: classifier + post + tests, about 90. backoffice: the existing
+  `llm_sync_status` badge only, 0 to 30. Total about 330 to 340 changed lines, one slice (below the 400 budget),
+  gated so it can ship before and independently of `native_duplex` because it fixes a `managed` gap too. It needs a
+  `T-EXPOSE-001` decision: the endpoint accepts input only and exposes no new public field, to be confirmed in design.
+- **Alternative that removes the blind spot instead of reporting it.** A pre-flight `GET /v1/llm-configurations/{id}`
+  at `issue()` time (the report proved `GET` works) would turn the 400 into a server-visible failure before the
+  candidate connects, at the price of one extra provider call per session start. Not adopted now; recorded as
+  `questions.md` E3 to revisit after the spike measures start latency.
+
+### 4. What stays exactly as proposed
+
+AD-1 (no LiveKit), AD-2's choice of the Connector, AD-4 to AD-7, AD-9 and AD-10 stand, with these edits: the
+"already in the right place" sentence in AD-2 is only true for the prompt (the selector is a new session-level
+object, section 2); AD-8's "does not exist yet" block is superseded by C6; the "diff-free" criterion for
+`SystemPromptComposer` is replaced per C8.
+
+### 5. Open items this amendment does not close
+
+Everything about the Connector itself: transcript events, end-phrase matching, `secret_type`, voice ownership,
+the placement S2, resumability. These need a live session. See section 6 and `questions.md`.
+
+### 6. Live prerequisites: the Gemini Live spike
+
+**Status: NOT RUN, NOT AUTHORIZED.** Nothing in this change has run, or will run, a live provider call without the
+owner's SEPARATE explicit authorization for this spike (destination: `api.liveavatar.com` and Google Gemini Live;
+credentials: the platform HeyGen key and a Gemini key to be named by the owner; operation: the steps below). The
+2026-10-08 authorization covered the `pluggable-conversation-llm` test only and does not extend to this.
+
+What the spike must verify, in order, each answered in writing (a 200 answers none of them):
+
+| Id | Question | If negative |
+|---|---|---|
+| S1 | Do `user.transcription` and `avatar.transcription` still fire to the browser SDK under the Connector? | Blocks the change; reopens AD-2's bridge option |
+| S2 | Does the token body accept `gemini_realtime_config` (and is it not silently ignored)? Prove placement with a deliberately malformed value that must 422 at the right level, as C2 was proven | Redesign placement |
+| S3 | Does `matchesEndPhrase()` see the avatar transcript stream so the completion gate fires? | Blocks the change |
+| S4 | Is the context `prompt` honoured as the system instruction, and is the interview Italian when the prompt is Italian (no `language_code` sent)? | Blocks AD-7 |
+| S5 | Which `secret_type` does `/v1/secrets` need for the Connector (today `OPENAI_API_KEY` for managed)? | One-field fix |
+| S6 | Voice: does `gemini_realtime_config.voice` exist, and does the template voice map onto it? Is the voice set the same? | Decides `questions.md` Q5 |
+| S7 | What does a stale or unknown `secret_id` / `context_id` / model produce, and where (token 4xx or start 400)? | Feeds section 3 |
+| S8 | Mid-session Gemini drop: does the Connector resume, and what does the browser see? | Decides `questions.md` Q3 |
+| S9 | Is the session cut by a fixed Live duration limit and what is it? | Feeds AD-6 timer |
+| S10 | Teardown: does `POST /v1/sessions/stop` plus context delete leave nothing behind, including Live-path secrets? | Cleanup runbook |
+
+Cost and side effects (estimates from the seeded rates; the LiveAvatar credit price was NOT verified):
+
+- Google: `gemini-3.1-flash-live-preview` is seeded at $0.005/min in and $0.018/min out, about $0.023/min if both
+  channels run continuously. A 10-minute session is about $0.23; the full spike (3 to 5 short sessions, 5 to
+  10 minutes each, including one deliberate failure and one forced drop) is on the order of $1 to $3 of Google
+  spend. This needs a Gemini key with Live access enabled (a separate Google-side entitlement, unverified).
+- HeyGen: 1 LiveAvatar credit per minute, so roughly 15 to 50 credits for the same sessions, charged to the platform
+  account. Whether HeyGen sandbox mode reaches the Connector at all is unknown and unverified.
+- Created resources to clean up afterwards: HeyGen secrets (immutable, name not unique, delete by stored id),
+  contexts (deleted by the teardown fix on a clean stop), and any configuration. Nothing is deleted without the
+  owner's say-so.
+- Run from the local `beai_api` container, through `interview:smoke-check`-style tooling only, never from CI and never
+  with a tenant key. No production data is touched.
 
 ## Intent
 
@@ -90,7 +232,8 @@ The decisive fit is that **BEAI already creates the object the Connector consume
 returned id (`HeygenProvider.php:76-99, 139`). The Connector takes a `context_id`. The BARS
 system prompt — composed per competency by `SystemPromptComposer` in the project's locale — is
 therefore **already in the right place**, under the right key, on the right vendor. This is close
-to configuration.
+to configuration. **[SUPERSEDED in part, 2026-10-10: true for the prompt only. The LLM selector is a
+session-level object that the context cannot carry; see Amendment 2026-10-10, C1 and section 2.]**
 
 **What BEAI needs and must confirm the Connector still exposes.** Named precisely, because a 200
 response proves nothing here — the same trap `TemplatePayload.php:38-40` already documents for
@@ -274,7 +417,7 @@ ours — and the audio-understanding docs give **32 tok/s** for a third context 
 (`design.md:72-84`). Multiplying by a borrowed constant would misprice every Live interview
 plausibly and invisibly.
 
-**A correction the brief for this proposal got wrong, verified 2026-08-27.** The premise that
+**[SUPERSEDED 2026-10-10 (Amendment C6): P6a, P6b and P9 are on `develop`; the text below is the 2026-08-27 state, kept for the record.]** **A correction the brief for this proposal got wrong, verified 2026-08-27.** The premise that
 *"`interview_session_llm_usage.actual_*` columns shipped NULL specifically so this change fills
 them"* is **false in this working tree**. Change 1 is at `api` **v0.35.0** / `backoffice`
 **v0.20.0** and shipped **P0–P5, P7 and P8** — resolver, registry, credentials, binding
@@ -568,7 +711,7 @@ into implementation.** Both were still unverified at proposal time and both are 
    payloads through `sendAppMessage` for 15 minutes, measured for drops and reordering — or a
    working "Microphone Echo" track publish. Until one passes, Tavus stays out.
 
-**Scoping dependency — must be answered before `sdd-tasks`:**
+**Scoping dependency — SUPERSEDED 2026-10-10 (Amendment C6: P6a/P6b shipped, so option (i) is satisfied and nothing is absorbed). Original text:**
 
 - **Change 1's P6a/P6b did not ship** (AD-8, verified 2026-08-27). There is no
   `interview_session_llm_usage` table, no session snapshot columns, no estimator. This change
@@ -579,7 +722,7 @@ into implementation.** Both were still unverified at proposal time and both are 
 
 **Other dependencies:**
 
-- **`conversation-llm` is not yet in `openspec/specs/`.** It lives only in the unarchived
+- **[SUPERSEDED 2026-10-10, Amendment C7: merged into `openspec/specs/conversation-llm/spec.md`.]** **`conversation-llm` is not yet in `openspec/specs/`.** It lives only in the unarchived
   `openspec/changes/pluggable-conversation-llm/specs/`. Either change 1 is archived first, or this
   change's delta targets the change folder. Mechanical, but it must be chosen, not stumbled into.
 - **A tenant Google API key with Gemini Live access enabled** — the same key as `managed` (AD-10),
@@ -609,7 +752,7 @@ into implementation.** Both were still unverified at proposal time and both are 
 - [ ] The picker enables the Live group on a HeyGen template and leaves it rendered-and-disabled on a Tavus one, asserted per provider.
 - [ ] `gemini-2.5-flash-native-audio-preview-12-2025` renders a deprecation warning and is **not** the default.
 - [ ] No LiveKit account, `livekit_config`, `agora_config`, Python service, or new `docker-compose` service exists anywhere in the diff; `frontend/app/providers/tavus.ts` is **diff-free**.
-- [ ] `llm_credentials` schema, `AnthropicLLMProvider`, `config/scoring.php`, `projects.language` and `SystemPromptComposer` are **diff-free**.
+- [ ] `llm_credentials` schema, `AnthropicLLMProvider`, `config/scoring.php`, `projects.language` and `SystemPromptComposer` are **diff-free**. **[SUPERSEDED 2026-10-10, Amendment C8: the composer changed after this was written; the criterion becomes "Live adds no prompt-composition code".]**
 - [ ] The spec delta records that change 1's LiveKit prerequisite (`proposal.md:46-51`, `design.md:86-93`) was a research error, and why — so the archive preserves the correction, not the error.
 - [ ] Pest + Vitest + Playwright green in CI (Chromium + WebKit); coverage ≥ 85% overall, ~95% on the binding guards and the cost path.
 
@@ -619,7 +762,7 @@ Execution mode did not allow interactive questioning. These are **product** deci
 `sdd-spec` and `sdd-design` MUST NOT silently invent answers. Assumptions are stated so a
 correction is cheap.
 
-1. **Does this change absorb change 1's unshipped P6a/P6b, or depend on them?** (AD-8,
+1. **[SUPERSEDED 2026-10-10: P6a/P6b shipped; replaced by `questions.md` Q4. The whole round is re-issued in `questions.md`.]** **Does this change absorb change 1's unshipped P6a/P6b, or depend on them?** (AD-8,
    `## Dependencies`.) Absorbing adds a migration, an append-only table and ~490 lines to a change
    that is otherwise close to configuration. Depending means this change **cannot record any Live
    cost** until change 1 is resumed.
