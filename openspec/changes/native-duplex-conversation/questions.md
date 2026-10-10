@@ -103,7 +103,7 @@ with rationale, so you can overrule one by number.
   data controller decides, not engineering.
 - **Options.** A. Add "candidate audio sent to Google (Gemini Live) under the tenant's key, and HeyGen's handling of
   it" to the controller's sign-off list before any production Live use. B. Treat it as covered by the existing HeyGen
-  single-account disclosure. 
+  single-account disclosure.
 - **RECOMMENDED: A.** B is a legal conclusion nobody here is entitled to draw. Live stays behind the opt-in (Q6)
   and off in production until the controller answers.
 
