@@ -12,7 +12,7 @@
 > 2. The Gemini Live spike (`## Amendment 2026-10-10`, section 6), which needs the owner's SEPARATE explicit
 >    authorization to spend money on live providers. A negative on transcript continuity blocks the change.
 > 3. `sdd-spec`, `sdd-design`, `sdd-tasks`, written against the spike's written answers.
-> 4. Implementation (P1 guard narrowing first), chained PRs, Strict TDD.
+> 4. Implementation (the provider-fault report slice first, because it also repairs `managed` mode; then the P1 guard narrowing), chained PRs, Strict TDD.
 >
 > Claims marked **SUPERSEDED** further down are kept for the record and no longer bind.
 
