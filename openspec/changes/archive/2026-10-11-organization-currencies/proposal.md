@@ -1,5 +1,8 @@
 # Proposal: Organization Currencies
 
+> **STATUS: DELIVERED and RATIFIED 2026-10-11, archived.** The owner ratified P1-P10 on 2026-10-11 (`CLAUDE.md`,
+> product decision 11); the EUR rate is applied by `CurrencyRatesSeeder` (design D8). The original status follows.
+>
 > **STATUS: Proposed 2026-10-11.** Docs-only: nothing is implemented. Grounded in the wrapper `develop` at `e539957` and
 > the `api`/`backoffice` submodule commits it pins. Decisions marked **RATIFIED** come from the owner (2026-10-11);
 > decisions marked **PROPOSED** are the orchestrator's and stand unless the owner vetoes them (see `design.md`, "Decisions").
@@ -41,16 +44,16 @@ organization's currency drives display only.
 |---|---|---|
 | R1 | FX source is a platform currency table maintained by the superadmin (code ISO 4217, symbol, decimals, rate per USD, `rate_as_of`, active). No external feed, no per-organization rates. | **RATIFIED** |
 | R2 | Amounts stay canonical in USD everywhere they are computed and stored; conversion happens only at display time. | **RATIFIED** |
-| P1 | `organizations.currency_code` `char(3)`, NOT NULL, default `'USD'`, foreign key to the catalogue; set by the org admin (Settings) and the superadmin (tenant create/edit); read by all roles. | PROPOSED |
-| P2 | No `*_usd` field is renamed or removed; `/v1` unchanged. The org currency travels on the admin `OrganizationResource`; rates come from `GET /api/currencies`; the backoffice converts. | PROPOSED |
-| P3 | Converted amounts are always marked approximate (`≈`) and show the USD original, the rate and `rate_as_of`. Missing or inactive currency falls back to USD display. | PROPOSED |
-| P4 | Stored costs are never re-denominated; display uses the current rate (documented limitation, surfaced by `rate_as_of`). | PROPOSED |
-| P5 | Conversion applies only to backoffice cost surfaces (dashboard KPI, participant detail, session review, avatar-template forecast). Superadmin: acting organization's currency, else USD. | PROPOSED |
-| P6 | Display rounds to the currency's minor units. Seed `USD` (active, rate 1) and `EUR` **inactive with no rate**: the database refuses to activate a currency without a rate, so no invented quote can ever render. | PROPOSED |
-| P7 | Validation: rate `> 0`, `< 1,000,000`, at most 6 decimals; code `^[A-Z]{3}$`, unique, immutable; `USD` immutable; an assigned currency cannot be deleted or deactivated (`409`); every write audited. | PROPOSED |
-| P8 | Only the superadmin manages the catalogue; org admins choose among active currencies for their own organization; operators and viewers read. | PROPOSED |
-| P9 | `currency_code` and the currency resource fields are classified admin-only in `ExposureCatalogue` (`T-EXPOSE-001`). | PROPOSED |
-| P10 | `Intl.NumberFormat` with `style: 'currency'`; the existing sub-minor-unit significant-digits rule is kept; the hardcoded `$` and the `{currency}` prefix leave the copy; i18n `it`/`en` for new strings. | PROPOSED |
+| P1 | `organizations.currency_code` `char(3)`, NOT NULL, default `'USD'`, foreign key to the catalogue; set by the org admin (Settings) and the superadmin (tenant create/edit); read by all roles. | RATIFIED 2026-10-11 |
+| P2 | No `*_usd` field is renamed or removed; `/v1` unchanged. The org currency travels on the admin `OrganizationResource`; rates come from `GET /api/currencies`; the backoffice converts. | RATIFIED 2026-10-11 |
+| P3 | Converted amounts are always marked approximate (`≈`) and show the USD original, the rate and `rate_as_of`. Missing or inactive currency falls back to USD display. | RATIFIED 2026-10-11 |
+| P4 | Stored costs are never re-denominated; display uses the current rate (documented limitation, surfaced by `rate_as_of`). | RATIFIED 2026-10-11 |
+| P5 | Conversion applies only to backoffice cost surfaces (dashboard KPI, participant detail, session review, avatar-template forecast). Superadmin: acting organization's currency, else USD. | RATIFIED 2026-10-11 |
+| P6 | Display rounds to the currency's minor units. Seed `USD` (active, rate 1) and `EUR` **inactive with no rate**: the database refuses to activate a currency without a rate, so no invented quote can ever render. | RATIFIED 2026-10-11; EUR rate seeding superseded by `CurrencyRatesSeeder` (design D8) |
+| P7 | Validation: rate `> 0`, `< 1,000,000`, at most 6 decimals; code `^[A-Z]{3}$`, unique, immutable; `USD` immutable; an assigned currency cannot be deleted or deactivated (`409`); every write audited. | RATIFIED 2026-10-11 |
+| P8 | Only the superadmin manages the catalogue; org admins choose among active currencies for their own organization; operators and viewers read. | RATIFIED 2026-10-11 |
+| P9 | `currency_code` and the currency resource fields are classified admin-only in `ExposureCatalogue` (`T-EXPOSE-001`). | RATIFIED 2026-10-11 |
+| P10 | `Intl.NumberFormat` with `style: 'currency'`; the existing sub-minor-unit significant-digits rule is kept; the hardcoded `$` and the `{currency}` prefix leave the copy; i18n `it`/`en` for new strings. | RATIFIED 2026-10-11 |
 
 ## Impact
 
