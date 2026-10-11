@@ -49,6 +49,7 @@ OC-05 backoffice formatMoney (pure util)                     -- parallel with OC
 ## Owner action (blocks nothing in code)
 
 - [ ] OWNER-1 Decide the initial EUR rate, its source and who maintains it (design open question 1). Until then EUR stays
+  - **Proposed initial value (2026-10-11, read from the ECB daily reference file, published for 2026-10-09; not a quote of record):** 1 EUR = 1.1206 USD, therefore `rate_per_usd` = 0.892379 EUR per 1 USD (`1 / 1.1206`, six decimals). Source: https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml. The owner confirms it, sets it from the superadmin page before activating EUR, and keeps it updated by hand (R1: no external feed). The seed and migrations MUST NOT carry this number: EUR stays inactive with no rate (P6).
       seeded inactive with no rate and cannot be selected; the e2e slice creates its own rate in a fixture.
 
 ## OC-01: Currency catalogue schema, model and seed (api, about 260 lines)
