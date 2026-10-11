@@ -1,5 +1,8 @@
 # Proposal: Native-Duplex Conversation — Gemini Live
 
+> **STATUS (2026-10-11): DEFERRED by the owner.** Separate future work, not needed for the release. The question round
+> in `questions.md` stays open for later; nothing here is scheduled.
+
 > **STATUS (2026-10-10): AMENDED, QUESTION ROUND PREPARED, NOT STARTED, NOT IN THE UPCOMING RELEASE.** The 2026-10-08
 > banner asked for this amendment; it is done below (see "Amendment 2026-10-10"). `native_duplex` is still refused
 > with 422 `mode_unsupported` (`AvatarTemplate::booted()` I2 guard, `LlmMode`), there is no `gemini_realtime_config`

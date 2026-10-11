@@ -276,7 +276,9 @@ Depends on: UI-10. Files: `tests/e2e/interview-call.spec.ts` (extend), generated
       self-view video masked and animations disabled. Baselines generated only with `task e2e:update`; review the images in the PR.
 - [ ] UI-11.3 Verify: `task e2e:frontend` green twice in a row (no flake; `failOnFlakyTests` is on); baselines committed for linux
       (container) and darwin per the repo convention. Commit: `test(frontend): pin the call stage layout and screenshots`.
-- [ ] UI-11.4 MANUAL (owner go): M1 to M4 recorded in the PR description, with what was and was not observed.
+- [x] UI-11.4 MANUAL (owner go): M1 to M4 recorded in the PR description, with what was and was not observed.
+      Done by the owner on 2026-10-11: the manual call-UI test M1 to M5 is considered done (owner statement in chat;
+      no per-check observation record exists in this file).
 
 ## T-BUG-1: Smooth handover between competencies (reserved slot)
 
@@ -332,6 +334,9 @@ Depends on: UI-11, T-BUG-1, T-BUG-2, the owner's explicit approval after seeing 
 
 ## UI-13: Remove the old live screen (deletion-only; after one released soak)
 
+> **DEFERRED (2026-10-11):** open on purpose until the call screen has been released and soaked; not part of the
+> upcoming release.
+
 Depends on: UI-12 released and observed by the owner.
 
 - [ ] UI-13.1 Delete the legacy live dock and header status pill markup, `InterviewCaption`'s legacy use, the `question-label` heuristic
@@ -341,6 +346,9 @@ Depends on: UI-12 released and observed by the owner.
       `refactor(frontend): remove the legacy live screen`.
 
 ## UI-14: Consolidate the docs and close the change (wrapper)
+
+> **DEFERRED (2026-10-11):** waits for UI-13, so it too is open until after a released soak. This change is not
+> archived until then.
 
 Depends on: UI-13.
 
