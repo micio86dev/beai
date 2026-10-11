@@ -1057,7 +1057,7 @@ discoverability gap that a rail entry and a deep link already answer.
 ### 8.2.1 Settings — section rail (not a tab strip)
 
 `/settings` presents its sections (Organization profile, API keys, Webhook
-defaults, Users & roles, Conversation LLM credentials) as a **vertical section
+defaults, Users & roles, Conversation LLM credentials, and for superadmins Currencies, §8.2.11) as a **vertical section
 rail**, 16 rem wide and sticky, with the panel to its right. Each rail item
 carries an icon, the section label, and a one-line description; the same label
 and description repeat as the panel heading, so the nav and the content can
@@ -1188,11 +1188,12 @@ also binds the per-template forecast in §8.2.7:
    manages" — never `$0.00`. Zero is a price; absent is "we did not run this
    model."
 
-Every USD figure in the product renders through one formatter
-(`utils/format.ts` → `formatUsdAmount`), which widens to significant digits
-**below a cent**. One interview's LLM spend is routinely a fraction of a cent,
-and two fixed decimals would round a real charge to `0.00` — reintroducing rule
-4's defect through the formatter.
+Every cost figure in the product renders through one formatter
+(`utils/format.ts` → `formatMoney`, reached through `useMoney`; see §8.2.11),
+which widens to significant digits **below one minor unit** of the display
+currency. One interview's LLM spend is routinely a fraction of a cent, and
+fixed decimals would round a real charge to `0.00` — reintroducing rule 4's
+defect through the formatter.
 
 ### 8.2.7 Per-template conversation-LLM forecast
 
@@ -1316,6 +1317,64 @@ Both the per-project `ProjectQuestionsPanel` and this page's
 `CatalogueDefaultQuestionsPanel` are thin containers over that one editor
 (container/presentational, per §5's rules), so the two surfaces cannot drift
 into two different editors that happen to look alike.
+
+### 8.2.11 Organization currency — approximate amounts, Settings select, catalogue
+
+Costs are **computed and stored in USD** and converted only when drawn. An
+organization chooses a display currency; the four backoffice cost surfaces (the
+dashboard cost KPI and its breakdown, the participant interview cost, the
+session review cost lines, the avatar template forecast) render through
+`useMoney`. `/v1`, webhooks, `GET /api/llm-models` and the candidate `frontend`
+are not converted.
+
+**A converted amount is approximate and reconcilable.** When the display
+currency is not USD:
+
+- The amount carries a leading `≈` (`money.approximate`, `≈ {amount}`).
+- The `≈` is not reliably announced, so the words carry it for assistive tech:
+  the element has an `aria-label` from `money.approximateLabel`
+  ("approximately {amount}").
+- A **visible** secondary line, never a `title` tooltip alone (invisible to
+  keyboard, touch and screen-reader users), states the original USD amount, the
+  rate and its date: "Converted from $0.42 at 1 USD = 0.92 EUR, rate of 1 Oct
+  2026" (`money.convertedNote`). One note per cost section suffices where every
+  line shares the rate. Changing currency never re-denominates history: past
+  amounts convert at the current rate, and the note's date makes that visible.
+- The avatar template forecast keeps its leading `≈` in USD too, because it is a
+  forecast.
+
+**USD fallback, no `≈`, no note.** An organization on USD, no acting
+organization, a currency missing from the ACTIVE catalogue, a rate-less one, or a
+failed `GET /api/currencies` all render plain USD. Never a guess, never `0`.
+
+**Amount formatting.** One formatter, `Intl.NumberFormat` with
+`style: 'currency'`; the symbol, its placement and spacing belong to `Intl`,
+never to copy keys (no `{currency}` parameter). Fraction digits equal the
+catalogue `decimals` (minor units, 0-4). Below one minor unit and non-zero, it
+switches to `maximumSignificantDigits: 2`, so a non-zero amount is never read as
+zero. Zero is a price; an absent figure is a dash (§8.2.5 rule 4).
+
+**Settings → Organization: currency select.** One `Select` in the existing
+Organization section (no new section), labelled "Display currency", listing only
+the **active** currencies (option text `EUR — €`), with the same Save, toast and
+inline error pattern as branding. Admins can change it; operators and viewers
+see the current value as read-only text. Help text says costs are computed in
+US dollars and shown converted at the platform rate.
+
+**Settings → Currencies: superadmin catalogue.** A section on the rail, rendered
+only with the `currencies.manage` ability (affordance only; the server enforces,
+and it fails closed as in §8.2.1). A table of every row (code, symbol,
+decimals, rate, rate date, active) with add/edit dialog, activate/deactivate and
+delete behind `ConfirmDialog`.
+
+- The **rate is entered manually** by the superadmin; there is no external feed
+  and no per-organization rate.
+- **EUR ships inactive with no rate**, so no invented rate can ever be shown; it
+  becomes selectable only once a rate and date are entered and it is activated.
+- Activation requires a rate. `USD` is the fixed base (rate 1, always active, only
+  its symbol editable). A currency assigned to an organization cannot be
+  deactivated or deleted; the `409` codes surface as localized messages that name
+  no organization.
 
 ### 8.3 BARS Report View
 
