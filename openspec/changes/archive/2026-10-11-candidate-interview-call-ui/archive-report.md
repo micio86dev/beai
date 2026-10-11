@@ -33,8 +33,7 @@ the legacy screen.
 
 - Recording indicator: still not rendered and still an open consent and legal decision (open question 4, `DESIGN.md`
   §7.3 status elements).
-- Pending references: the frontend hotfix 0.25.1 PR number and merge commit are TBD; fill them into the UI-13 `Done:`
-  line once merged.
+- References: UI-13 is frontend hotfix 0.25.1, branch `hotfix/0.25.1` (no PR: Git Flow hotfix finished locally), deletion commit `c3cf938`, release commit `90d9f19`, merge commit `737ea18` on frontend `main`, tag `v0.25.1`. It removed the legacy live screen and the `candidateCallUi` flag; native review `review-5534c34040af2dc8` approved with two accepted warnings (no configuration-level rollback any more; a deployment still setting `NUXT_PUBLIC_CANDIDATE_CALL_UI` is silently ignored; the variable was never set in Railway).
 
 ## Rollback
 

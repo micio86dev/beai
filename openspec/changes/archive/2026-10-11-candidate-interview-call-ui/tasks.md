@@ -334,7 +334,7 @@ Depends on: UI-11, T-BUG-1, T-BUG-2, the owner's explicit approval after seeing 
 
 ## UI-13: Remove the old live screen (deletion-only)
 
-Done: frontend hotfix 0.25.1 (branch hotfix/0.25.1). The owner decided on 2026-10-11 to remove the legacy screen now
+Done: frontend hotfix 0.25.1 (branch hotfix/0.25.1, merge `737ea18`, tag `v0.25.1`). The owner decided on 2026-10-11 to remove the legacy screen now
 instead of after a released soak.
 
 Depends on: UI-12 released.
