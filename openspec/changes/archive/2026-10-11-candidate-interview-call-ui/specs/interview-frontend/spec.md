@@ -2,9 +2,10 @@
 
 > Proposed 2026-10-09. MODIFIED requirements keep their main-spec titles exactly and carry their full current text with
 > the changes marked "(Previously: ...)". They describe the end state in which the call screen is the only live screen
-> (after tasks `UI-12`/`UI-13`); while the `candidateCallUi` flag is off, the unmodified main-spec text still describes
-> what ships. Nothing is REMOVED. Reserved: the root cause and fix design for the two tester findings are appended to
-> `design.md` Appendix A, and the last two ADDED requirements state their acceptance criteria independently of the cause.
+> (after tasks `UI-12`/`UI-13`). Nothing is REMOVED. Amended at archive (2026-10-11): the legacy live screen and the
+> `candidateCallUi` flag were removed in frontend 0.25.1 (`UI-13`), so the flag wording and the ADDED requirement "The
+> Call Screen Ships Behind The candidateCallUi Flag" were dropped before the merge. Reserved: the root cause and fix
+> design for the two tester findings are appended to `design.md` Appendix A, and the last two ADDED requirements state their acceptance criteria independently of the cause.
 
 ## MODIFIED Requirements
 
@@ -195,7 +196,7 @@ v0.6.4.)
 
 ## ADDED Requirements
 
-Vocabulary: the "call screen" is the live interview screen rendered when the `candidateCallUi` flag is on. The "stage"
+Vocabulary: the "call screen" is the live interview screen (the only one). The "stage"
 is its layout: the interviewer tile, the question band, the candidate's own tile and the side panel. The "interviewer
 tile" is the existing avatar player layer. The "own tile" is the candidate's self-view. The "side panel" is the
 `<aside>` with progress, time, Exit and the help link; below `xl` it is a strip under the question band. The "ring" is
@@ -203,7 +204,7 @@ the glowing border on a speaking tile.
 
 ### Requirement: The Live Interview Screen Is A Work Video Call Stage
 
-With the `candidateCallUi` flag on, the system MUST render the `live` interview as a video-call stage made of exactly:
+The system MUST render the `live` interview as a video-call stage made of exactly:
 the interviewer tile, a written-question band directly under it, the candidate's own tile at the bottom right of the
 interviewer tile, and the side panel. It MUST NOT render, in the live state, the header status pill, the live dock, a
 Pause button or the question label ("D1", "Q1.2"). The interviewer tile MUST be the existing single keyed player layer
@@ -212,7 +213,7 @@ competency handover. The layer MAY change only its classes (grid placement, `sr-
 
 #### Scenario: The stage is composed of the four parts
 
-- GIVEN the flag is on and the session is `live`
+- GIVEN the session is `live`
 - WHEN the live screen is inspected
 - THEN it contains the interviewer tile, a question band under it, the own tile inside the interviewer tile's
   bottom-right corner, and a side panel; and it contains no element with `data-testid="interview-status"`, no
@@ -220,16 +221,16 @@ competency handover. The layer MAY change only its classes (grid placement, `sr-
 
 #### Scenario: The player is mounted once across the lifecycle
 
-- GIVEN the flag is on
+- GIVEN an interview in progress
 - WHEN the session goes `connecting -> live -> paused -> connecting -> live`
 - THEN each provider session is rendered by exactly one `AvatarPlayer` instance for its whole lifetime and is stopped
   exactly once; the layer element is the same DOM node before and after each change of screen
 
 #### Scenario: A HeyGen handover still crossfades inside the interviewer tile
 
-- GIVEN the flag is on and a HeyGen competency ends with `next_action = 'continue'`
+- GIVEN a HeyGen competency ends with `next_action = 'continue'`
 - WHEN the incoming session paints
-- THEN the outgoing and incoming players overlap inside the interviewer tile exactly as without the flag, and no
+- THEN the outgoing and incoming players overlap inside the interviewer tile, and no
   skeleton, empty or panel state is shown in between
 
 ---
@@ -338,7 +339,7 @@ on the call screen other than the existing `timeout` path.
 
 #### Scenario: No finish control exists
 
-- GIVEN the flag is on and the session is `live`
+- GIVEN the session is `live`
 - WHEN the interactive elements of the screen are listed
 - THEN they are only Exit, the help link, and (while open) the dialog's two buttons; none declares the answer finished
 
@@ -556,7 +557,7 @@ candidate app (the three in `InterviewSession.vue` and the one in `pages/intervi
 
 ### Requirement: The Call Screen Keeps Branding, Proctoring And The Embed Working
 
-With the flag on, the organization's logo and primary colour MUST still apply through the existing canvas; the side panel and
+The organization's logo and primary colour MUST still apply through the existing canvas; the side panel and
 the question band MUST be `bg-card` surfaces with card text tokens; no brand colour MUST be used for the ring. The proctoring
 overlay MUST remain mounted exactly while the state is `live` and unmounted when paused, so snapshots and integrity events
 behave as today. The integrity toast MUST appear at the top left under the header so it never covers the side panel. The
@@ -574,7 +575,7 @@ and `completed`, and MUST NOT use viewport-height units in the stage, so its pos
 
 - GIVEN the call screen is live
 - WHEN snapshots and integrity events fire
-- THEN `POST /snapshot` and `POST /integrity` are sent as without the flag, and the overlay unmounts on suspend
+- THEN `POST /snapshot` and `POST /integrity` are sent unchanged, and the overlay unmounts on suspend
 
 #### Scenario: The toast does not cover the panel
 
@@ -584,7 +585,7 @@ and `completed`, and MUST NOT use viewport-height units in the stage, so its pos
 
 #### Scenario: The embed renders the same stage with a stable height
 
-- GIVEN the flag is on and the interview is opened at `/embed/{token}`
+- GIVEN the interview is opened at `/embed/{token}`
 - WHEN the stage mounts and the page posts `resize` twice
 - THEN both heights are equal, the stage contains no `vh`, `dvh` or `svh` sizing, and `question:changed` is still posted
 
@@ -600,7 +601,7 @@ focusable (`tabindex="0"`) because it can scroll.
 
 #### Scenario: Axe is clean in all three states
 
-- GIVEN the flag is on
+- GIVEN a candidate interview
 - WHEN axe runs on the live call screen, the open exit dialog and the suspended screen, under `#ffd400` and `#771aaf`
 - THEN each reports zero violations, in Chromium and WebKit
 
@@ -644,33 +645,6 @@ the browser is redirected to `/unsupported`, and a mid-session narrowing flushes
 - GIVEN a mobile viewport outside the embed
 - WHEN the candidate opens the interview
 - THEN the unsupported-experience page is shown as before
-
----
-
-### Requirement: The Call Screen Ships Behind The candidateCallUi Flag
-
-The call screen MUST render only when `runtimeConfig.public.candidateCallUi === 'true'` (env
-`NUXT_PUBLIC_CANDIDATE_CALL_UI`, default empty). Any other value, including absence, MUST render today's live screen
-unchanged (header status pill, live dock, Pause). The flag MUST be read once when the component is set up, MUST apply to the
-hosted route and the embed alike, and MUST NOT be settable by the candidate.
-
-#### Scenario: Default is today's screen
-
-- GIVEN no flag is configured
-- WHEN the live screen renders
-- THEN the status pill, the live dock and the Pause button are present and no call-stage element exists
-
-#### Scenario: The flag turns the stage on
-
-- GIVEN `NUXT_PUBLIC_CANDIDATE_CALL_UI=true`
-- WHEN the live screen renders
-- THEN the stage renders and the header status pill is absent
-
-#### Scenario: A garbage value is off
-
-- GIVEN the flag is `"1"` or `"yes"`
-- WHEN the live screen renders
-- THEN today's screen is shown
 
 ---
 
