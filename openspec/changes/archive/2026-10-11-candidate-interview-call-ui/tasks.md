@@ -332,28 +332,28 @@ Depends on: UI-11, T-BUG-1, T-BUG-2, the owner's explicit approval after seeing 
 - [ ] UI-12.3 Verify: full unit suite and `task e2e:frontend` green with no skipped test. Commit:
       `feat(frontend): make the call screen the default live interview`.
 
-## UI-13: Remove the old live screen (deletion-only; after one released soak)
+## UI-13: Remove the old live screen (deletion-only)
 
-> **DEFERRED (2026-10-11):** open on purpose until the call screen has been released and soaked; not part of the
-> upcoming release.
+Done: frontend hotfix 0.25.1 (branch hotfix/0.25.1). The owner decided on 2026-10-11 to remove the legacy screen now
+instead of after a released soak.
 
-Depends on: UI-12 released and observed by the owner.
+Depends on: UI-12 released.
 
-- [ ] UI-13.1 Delete the legacy live dock and header status pill markup, `InterviewCaption`'s legacy use, the `question-label` heuristic
+- [x] UI-13.1 Delete the legacy live dock and header status pill markup, `InterviewCaption`'s legacy use, the `question-label` heuristic
       and their now-dead i18n keys (`interview.live.pause`, `interview.live.question_label`), and the flag branch. Keep
       `interview.live.listen_hint`, `avatar_label`, `region_label`.
-- [ ] UI-13.2 Verify: no reference to a deleted symbol (`rg`); unit and E2E green; coverage thresholds hold. Commit:
+- [x] UI-13.2 Verify: no reference to a deleted symbol (`rg`); unit and E2E green; coverage thresholds hold. Commit:
       `refactor(frontend): remove the legacy live screen`.
 
 ## UI-14: Consolidate the docs and close the change (wrapper)
 
-> **DEFERRED (2026-10-11):** waits for UI-13, so it too is open until after a released soak. This change is not
-> archived until then.
+Done: wrapper branch `docs/close-call-ui`, archived 2026-10-11 (see `archive-report.md`).
 
 Depends on: UI-13.
 
-- [ ] UI-14.1 Fold the call-screen description into `DESIGN.md` §7.3 as the only description; remove the flag-off text.
-- [ ] UI-14.2 Archive per the SDD flow: merge the delta into `openspec/specs/interview-frontend/spec.md` (the three MODIFIED requirements
-      replace their main-spec text, the sixteen ADDED are appended), with the stale pause text now corrected.
-- [ ] UI-14.3 Verify: `rg -n 'Pause \(live mute\)|presses Pause' openspec/specs/interview-frontend/spec.md` finds nothing.
+- [x] UI-14.1 Fold the call-screen description into `DESIGN.md` §7.3 as the only description; remove the flag-off text.
+- [x] UI-14.2 Archive per the SDD flow: merge the delta into `openspec/specs/interview-frontend/spec.md` (the three MODIFIED requirements
+      replace their main-spec text, the sixteen ADDED are appended), with the stale pause text now corrected. At archive the flag requirement was dropped
+      (the flag no longer exists after UI-13), so fifteen ADDED were appended: 50 -> 65 requirements.
+- [x] UI-14.3 Verify: `rg -n 'Pause \(live mute\)|presses Pause' openspec/specs/interview-frontend/spec.md` finds nothing.
       Commit: `docs(openspec): archive the candidate interview call UI`.
