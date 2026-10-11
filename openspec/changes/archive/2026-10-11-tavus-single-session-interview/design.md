@@ -1264,6 +1264,11 @@ which every version of this code handles.**
 
 Nothing below blocks a dark slice. Each default is reversible without code changes.
 
+> **Decided 2026-10-11 (owner accepted the defaults; full record in `tasks.md`, "Owner decisions at the flip"):** 2, up
+> to 5 topics per conversation with the hardened global rules; 3, flag off at release and no canary project, enabled
+> project by project; 4, a mid-competency reconnect starts a fresh conversation; 5, only the client's Tavus invoice is
+> authoritative for cost; 6, 60 s stands; 7, both steering constants confirmed unchanged at G-C.
+
 | # | Decision | Default taken | When it must be decided |
 |---|---|---|---|
 | 1 | Anchor exposure to the model: every remaining competency's BARS anchors in the avatar context from minute one (they never reach the browser) | **Accepted by this design.** Reversible by `conversation.max_context_chars` or by leaving the flag off | Settled |

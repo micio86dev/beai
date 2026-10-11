@@ -532,8 +532,9 @@ Every interaction the candidate's browser sends over the Tavus data channel at a
 structurally restricted: the `conversation.append_llm_context` `properties.context` MUST equal a fixed,
 versioned template with exactly one substituted value, the competency code issued by the server in
 `continuation.competency_code`, and the mandatory `conversation.respond` `properties.text` that follows it MUST be a
-closed constant that carries no code and no variable at all (both constants are provisional wording until the
-live steering gate, `design.md` N14; the envelope shapes are verified). The code MUST be validated by a branded constructor
+closed constant that carries no code and no variable at all (both constants were confirmed unchanged by the live
+steering gate G-C on 2026-10-11, `design.md` N14: append "The candidate has finished that topic. Begin topic code %s
+now.", respond "Please continue."; the envelope shapes are verified). The code MUST be validated by a branded constructor
 that requires the pattern `^[A-Z0-9_]{1,16}$` (the same alphabet and length the catalogue allows, since codes
 are operator-authored and no closed set exists). No BARS indicator name, anchor text
 (`anchor_5`/`anchor_3`/`anchor_1`) or composed prompt fragment MUST be assignable to the template slot or
