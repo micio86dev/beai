@@ -269,7 +269,7 @@ Depends on: API-08.
 
 Each needs the owner's written go (date, scope, budget) before any call. Tool: the SPIKE-02 script. Results are recorded here with the date.
 
-- [~] G-A realistic multi-topic context (composed by API-03 for a real role) and the Q1 A/B against a single-competency baseline on the same scenario; result handed to owner decision 2.
+- [x] G-A realistic multi-topic context (composed by API-03 for a real role) and the Q1 A/B against a single-competency baseline on the same scenario; result handed to owner decision 2.
   - **Run 2026-10-10 (owner-authorized cap 10 USD, est. spend about 5.75 USD at an ASSUMED 0.75 USD/min; no conversation left active).** Three conversations on a synthetic ICO scenario, context from the real `composeMany` (4.4k, 22.7k and 36.2k chars: baseline PRS, 5 topics, 8 topics truncated by `max_context_chars`). n=1 per arm, simulated candidate via `conversation.respond`, no real voice, no scoring rubric.
   - **Adaptivity:** no degradation seen up to 8 topics; the multi-topic arms asked STAR-consistent probes (a style difference, not a quality drop). **Context size:** no effect on adaptivity, obedience or steering; every create succeeded.
   - **Steering:** the provisional N14 texts opened the next topic in English, but the test was contaminated (see below) and ack latency was not measurable.
@@ -279,9 +279,17 @@ Each needs the owner's written go (date, scope, budget) before any call. Tool: t
   - **Applied:** api #169 replaces the multi-topic `GLOBAL_RULES` with the tested "hardened 2" wording and bumps `conversation.prompt_version` to `conv-2026-10-10` (check Railway does not pin the old value before the release). The single-competency prompt is byte-identical.
   - **Real spend:** Tavus exposes no balance or usage endpoint, so the bill is NOT measured here; at the published 0.37 USD/min the round is about 6.7 USD (round 1 assumed 0.75, about twice too high; the repo's `rates.tavus.usd_per_minute` is already 0.37). ElevenLabs (58,429 of 100,000 characters) and Cartesia (0 credits) showed delta 0 because the voices are consumed inside Tavus, not through the owner's own accounts. HeyGen's quota endpoint answered 401 with the available key, and Anthropic usage needs an admin key. The owner must read the Tavus dashboard minutes for 2026-10-10 18:30-18:48 UTC (expect about 18 for round 2 and about 7.7 for round 1) and whether they drew from the plan or from overage.
   - **Q1 stays an owner decision;** the evidence now supports "isolation holds with the hardened header in this small sample".
-- [ ] G-B plan-level cap and `max_call_duration` with the clock origin isolated; retune `ceiling_headroom_seconds` and `HANDOVER_LEAD_MS`.
-- [ ] G-C end phrase, append, respond with the realistic context; confirm or amend the two wording constants (reviewed golden change); check the reply language; record the ack latency and retune `STEERING_ACK_TIMEOUT_MS`.
-- [ ] G-D explicit `participant_left_timeout` (default 60): conversation ends after the leave, how fast, concurrency slot freed.
+- [x] G-B plan-level cap and `max_call_duration` with the clock origin isolated; retune `ceiling_headroom_seconds` and `HANDOVER_LEAD_MS`.
+  - **Run 2026-10-11 (owner go for all gates; no amount given, so the orchestrator capped total spend at 25 USD; about 10.5 call-minutes, about 3.9 USD at 0.37 USD/min, 7.9 USD at the pessimistic 0.75; no conversation left active).** Four short conversations (caps 60, 60, 90, 60 s; joins at about 33 s, 3 s, 53 s and never) plus three create-then-end probes (caps 3600, 7200, 86400 s accepted without error).
+  - **Clock origin:** `max_call_duration` runs from conversation CREATION (`created_at`), not from join or first speech; the end arrives at cap + 2.9 to 4.0 s after `created_at` whatever the join time, even with no participant. N17 end sequence identical in all runs: two `conversation.left` and `system.shutdown` together, Daily `participant-left` within about 0.1 s, then the Daily error "Meeting has ended" and `left-meeting` about 2 to 2.8 s later; API status `ended` about 1.5 s after `system.shutdown`.
+  - **Parameters:** `ceiling_headroom_seconds` (480) and `HANDOVER_LEAD_MS` (120000) stay unchanged (the roughly 3.5 s overshoot is negligible against the lead). The client age timer should be anchored to the conversation creation instant; counting from the `/start` response receipt is about 2 s late, which is harmless.
+  - **Not verified:** the plan-level cap (the create response has `policy: null` and the GET does not show the effective duration; measuring it needs a conversation as long as the plan maximum) and a real 900 s conversation (extrapolated from short caps).
+- [x] G-C end phrase, append, respond with the realistic context; confirm or amend the two wording constants (reviewed golden change); check the reply language; record the ack latency and retune `STEERING_ACK_TIMEOUT_MS`.
+  - **Run 2026-10-11:** one English and one Italian conversation with the real 5-topic ICO context under the hardened rules, 4 steering sequences. The append alone triggers no reaction; append then respond opened the right next topic 4/4. **Wording constants confirmed unchanged** (append "The candidate has finished that topic. Begin topic code %s now.", respond "Please continue."). **Reply language:** the English trigger texts did not pull the Italian interview into English (both Italian openings stayed in Italian).
+  - **Ack latency (n=17):** respond to `started_thinking` 0.18-0.33 s; to `started_speaking` 0.92-1.32 s; the replica utterance and the user-role echo arrive together 1.07-1.47 s after the send. `STEERING_ACK_TIMEOUT_MS` stays 10000 (about 7x the worst measure; 5000 would also be safe).
+  - **Limits:** two conversations, one scripted candidate, no real voice.
+- [x] G-D explicit `participant_left_timeout` (default 60): conversation ends after the leave, how fast, concurrency slot freed.
+  - **Run 2026-10-11:** with `participant_left_timeout` 15 the conversation ended 15.6 s after the leave, with 60 it ended 60.5 s after; status became `ended` without a manual end. The default of 60 stands. **Not verified:** the concurrency slot (the API exposes no concurrency indicator; the next create succeeded immediately, but the plan limit was never reached).
 
 ## Owner decisions at the flip (not code)
 
@@ -311,3 +319,7 @@ Open and deliberately not code: the live gates G-A to G-D (each needs the owner'
 - API-07 ended `escalated` on a finding that a deferred release can run before the boundary `/start`; API-04's `provider_released_at` marker is the mitigation (a continuation is refused for a released ref and falls to a fresh issue).
 - `boundary_due` is computed for every row, not only single-session ones (design N9).
 - The echo filter is covered by the Vitest provider tests only; the Playwright flows cannot reach Daily's data channel.
+
+## Gate status (2026-10-11)
+
+G-A to G-D have all been run with the owner's go. Open owner decisions at the flip: Q1 threshold (the hardened header held 3/3 in a small sample, see G-A), canary scope and default flag value, mid-competency reconnect (Q5), `participant_left_timeout` value and scope (evidence supports the default 60), and the real Tavus bill (no usage endpoint: read the dashboard minutes for 2026-10-10 18:30-18:48 UTC, expected about 18, and 2026-10-11 09:35-09:50 UTC, expected about 10.5, and whether they drew on the plan or on overage). The change is ready to archive once those decisions are recorded.
