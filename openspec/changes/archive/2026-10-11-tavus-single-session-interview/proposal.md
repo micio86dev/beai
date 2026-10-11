@@ -1,5 +1,9 @@
 # Proposal: One Tavus Conversation Across Many Competencies
 
+> **STATUS: CLOSED and archived 2026-10-11.** Every slice is merged, the live gates G-A to G-D are recorded, and the
+> owner decisions at the flip are recorded in `tasks.md`. The feature ships dark (`INTERVIEW_TAVUS_SINGLE_SESSION`
+> default `false`, no canary project). The original status follows.
+>
 > **STATUS: Rescoped 2026-10-08, amended 2026-10-09.** This is a living change, rewritten in place. The
 > original proposal (2026-08-21) was re-validated against `develop` on 2026-10-08 (api `e215c43`, frontend
 > `99523a3`) and again on 2026-10-09 (api `cf1d82a`, frontend `cc26363`, wrapper `fc451c5`) after an

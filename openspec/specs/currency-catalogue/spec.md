@@ -1,9 +1,13 @@
-# Delta for Currency Catalogue
+# Currency Catalogue Specification
 
-> Proposed 2026-10-11. New capability: there is no main spec yet; on archive this file becomes
-> `openspec/specs/currency-catalogue/spec.md`. Decisions referenced as D-numbers live in `design.md`.
+## Purpose
 
-## ADDED Requirements
+The platform-level catalogue of display currencies and their exchange rates, maintained by the superadmin. It is the
+only exchange-rate source BEAI uses: amounts stay canonical in USD wherever they are computed and stored, and an
+organization's currency only changes how they are displayed (`organization-settings`, `admin-backoffice`). Introduced
+by `organization-currencies` (archived 2026-10-11).
+
+## Requirements
 
 ### Requirement: The Platform Currency Catalogue Is The Only Exchange-Rate Source
 
@@ -29,13 +33,23 @@ rates.
 
 `rate_per_usd` and `rate_as_of` MUST be both present or both absent. A currency MUST NOT be active without a rate; this
 MUST be enforced by a database CHECK, not only by validation. The catalogue MUST be seeded with `USD` (`$`, 2 decimals,
-rate 1, active) and `EUR` (`€`, 2 decimals, no rate, inactive), so no invented rate can ever render.
+rate 1, active) and `EUR` (`€`, 2 decimals, no rate, inactive), so the migration never carries a market quote. The
+owner-confirmed initial EUR rate (2026-10-11: `rate_per_usd` `0.892379` as of `2026-10-09`, ECB reference rate) MUST be
+applied only by the explicit `CurrencyRatesSeeder` (`beai:sync-currency-rates`, run by `beai:deploy`), which sets the
+rate and activates EUR ONLY while the stored EUR rate is NULL and MUST NOT overwrite a rate a superadmin has set.
 
 #### Scenario: Fresh database seed
 
 - GIVEN a freshly migrated database
 - WHEN `currencies` is read
 - THEN it holds `USD` active with rate `1.000000` and `EUR` inactive with a NULL rate and NULL `rate_as_of`
+
+#### Scenario: The deploy applies the confirmed EUR rate once
+
+- GIVEN `EUR` has a NULL rate
+- WHEN `beai:deploy` runs `beai:sync-currency-rates`
+- THEN `EUR` holds `rate_per_usd` `0.892379`, `rate_as_of` `2026-10-09` and is active
+- AND a later deploy, after a superadmin changed the EUR rate, leaves that rate unchanged
 
 #### Scenario: Activation without a rate is refused
 

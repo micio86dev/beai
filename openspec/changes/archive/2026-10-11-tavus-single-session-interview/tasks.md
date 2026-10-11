@@ -295,6 +295,16 @@ Each needs the owner's written go (date, scope, budget) before any call. Tool: t
 
 Defaults and rationale: design Appendix B. Q1 threshold (from G-A); canary scope and default flag value; mid-competency reconnect (Q5); cost; `participant_left_timeout` value and scope; steering wording.
 
+**Recorded 2026-10-11: the owner accepted the orchestrator defaults.**
+
+- **Q1 threshold:** up to **5 topics per conversation** (the tested size, with the hardened global rules of api #169).
+- **Canary scope:** no project by default; the owner enables projects one by one when he decides.
+- **Default flag value at release:** OFF (`INTERVIEW_TAVUS_SINGLE_SESSION=false`, empty `INTERVIEW_TAVUS_SINGLE_SESSION_PROJECTS`).
+- **Mid-competency reconnect (Q5):** start a fresh conversation (what the code does).
+- **`participant_left_timeout`:** default 60 stands (G-D live evidence).
+- **Steering wording:** the two N14 constants are confirmed unchanged by the live gates (G-C).
+- **Cost:** only the client's Tavus invoice is authoritative; the minutes derived below are estimates. Accepted by the owner.
+
 ## Plan gaps closed
 
 - **PG1 client has no ceiling:** the fresh multi-plan `/start` returns `conversation_ttl_seconds` (API-05, FE-06).
@@ -323,6 +333,16 @@ Open and deliberately not code: the live gates G-A to G-D (each needs the owner'
 ## Gate status (2026-10-11)
 
 G-A to G-D have all been run with the owner's go. Open owner decisions at the flip: Q1 threshold (the hardened header held 3/3 in a small sample, see G-A), canary scope and default flag value, mid-competency reconnect (Q5), `participant_left_timeout` value and scope (evidence supports the default 60), and the real Tavus bill (no usage endpoint: read the dashboard minutes for 2026-10-10 18:30-18:48 UTC, expected about 18, and 2026-10-11 09:35-09:50 UTC, expected about 10.5, and whether they drew on the plan or on overage). The change is ready to archive once those decisions are recorded.
+
+## Final status (2026-10-11): CLOSED and archived
+
+Every slice is merged and every live gate G-A to G-D is run and recorded; the owner decisions at the flip are recorded
+above. **What stays dark:** the whole single-session path. `INTERVIEW_TAVUS_SINGLE_SESSION` ships `false` and the canary
+list is empty, so every Tavus interview keeps one conversation per competency until the owner enables a project; the
+frontend acts only on a `/start` response carrying `continuation`, so it stays inert too. **Open item:** the real Tavus
+bill for the live test windows (and for production use) is read from the client's Tavus invoice; the derived minutes
+below are estimates, not billed amounts. Not verified live and accepted: the plan-level cap and the concurrency slot
+(G-B, G-D).
 
 ## Tavus usage derived from the API (2026-10-11)
 

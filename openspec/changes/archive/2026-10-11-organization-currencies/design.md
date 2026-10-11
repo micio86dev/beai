@@ -7,6 +7,9 @@
 
 Each PROPOSED decision names the rejected alternative so the owner can veto it with one line.
 
+> **RATIFIED 2026-10-11.** The owner ratified P1-P10 as implemented; the "PROPOSED" labels below are kept as the
+> historical record. P6 (D8) is partly superseded, see D8. Recorded in `CLAUDE.md`, product decision 11.
+
 ### D1 (RATIFIED R1). A platform currency table is the only FX source
 
 Superadmin-maintained rows; adding a currency is inserting a row. Rejected by the owner: an external FX feed (a runtime
@@ -62,6 +65,12 @@ NOT NULL))` makes "active" imply a rate. The migration seeds `USD` (`$`, 2, rate
 inactive). EUR cannot be selected by any organization until the superadmin enters a rate and activates it.
 **Rejected:** seeding a market quote (invented, stale on day one); seeding a placeholder rate with a "set me" flag
 (one forgotten flag and a fake number renders as money).
+
+**Superseded 2026-10-11 by the owner-authorized seeder.** The migration still seeds EUR inactive with no rate, as above.
+The owner confirmed the initial rate (1 EUR = 1.1206 USD, ECB reference file published for 2026-10-09, `rate_per_usd`
+0.892379), and it is applied by `CurrencyRatesSeeder` (api `beai:sync-currency-rates`, run by `beai:deploy`, api #174):
+it sets the rate and activates EUR ONLY while the stored rate is NULL, so a superadmin edit is never overwritten. The
+rule "EUR stays inactive with no rate until the owner decides" no longer holds; applied locally and in production.
 
 ### D9 (PROPOSED P7). Validation and invariants
 
@@ -260,8 +269,8 @@ their existing wording ("estimate" labels).
 
 ## Open questions for the owner
 
-1. **Initial EUR rate and who maintains it.** EUR stays unselectable until a rate is entered. Who sets it, from which
-   source (e.g. ECB reference rate), and how often?
+1. ~~**Initial EUR rate and who maintains it.**~~ RESOLVED 2026-10-11: ECB reference rate of 2026-10-09 (1 EUR =
+   1.1206 USD), applied by `CurrencyRatesSeeder` (see D8); the superadmin maintains it by hand afterwards (R1).
 2. **Should `/v1` ever expose the organization currency** (e.g. on `/v1/organization`)? Proposed: no, until a calling
    system asks; it would be a `T-EXPOSE-001` addition.
 3. **Rate history.** Is the audit log enough, or is a dated rate table wanted later so historical costs convert at the
