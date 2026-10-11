@@ -642,8 +642,8 @@ with the canvas tone at any opacity ≥ the unblended ratio; primary-ink on whit
 on-primary-surface on primary-surface ≥ 4.5:1; card text tokens on `bg-card` unchanged from
 §9.1; the primary-ink edge on white ≥ 3:1; the progress fill (primary-ink) on its
 `--secondary` track ≥ 3:1; the current-step numeral (primary on an on-primary disc) ≥ 4.5:1;
-the urgent timer (`--color-recording`) on its white surface ≥ 4.5:1 (the status pill of the flag-off
-screen, the call panel's `bg-card` on the call screen; 4.83:1 measured on white).
+the urgent timer (`--color-recording`) on its white surface ≥ 4.5:1 (the call panel's `bg-card`;
+4.83:1 measured on white).
 
 **Screenshot matrix.** Any change to the canvas, the shell or a candidate page is reviewed in
 screenshots at 1440×900 for four brands: light `#ffd400` (black on-primary), dark `#771aaf`
@@ -706,13 +706,12 @@ page background is the client colour, no longer `--color-avatar-bg`. There is no
 Submit control: the timer is the only client-side early end, and a competency cannot be
 skipped.
 
-REVISED 2026-10-09 (`candidate-interview-call-ui`): the live state becomes a work video call
-(the call stage below). It is specified here before it is built and ships behind the
-`candidateCallUi` flag, default off. The flag-off description stays in this section, marked,
-until the call screen is the default; the consent, device-check and other-state rules apply
-to both.
+REVISED 2026-10-09, consolidated 2026-10-11 (`candidate-interview-call-ui`): the live state
+is a work video call (the call stage below). It is the only live screen: the earlier screen
+(header status pill, live dock with a caption and a Pause button) was removed in frontend
+0.25.1.
 
-**Call stage (flag on).** Hierarchy, in the order the eye should find it: the interviewer
+**Call stage.** Hierarchy, in the order the eye should find it: the interviewer
 tile, the written question, the candidate's own tile, the side panel.
 
 ```
@@ -737,8 +736,8 @@ tile, the written question, the candidate's own tile, the side panel.
 The Italian strings in the diagram are copy examples; every string is i18n-keyed in `it` and `en`.
 
 - **Canvas and header.** `BrandCanvas` in bare mode with `wide` (§7.0.1). The header's trailing
-  end is empty while live: the **status pill is superseded** (progress, duration and timer
-  moved into the side panel), and so is the in-header question label.
+  end is empty while live: progress, duration and timer live in the side panel, and there is
+  no in-header status pill or question label.
 - **Grid.** At `xl` and up: `minmax(0, 1fr)` beside `--spacing-call-panel` (§3.3), container
   `max-w-[96rem]`, `px-10`, `gap-6`. Below `xl` (`lg`, and any embedded container narrower than
   that, down to 480 px): one column, with the panel as a wrapped strip under the question band.
@@ -818,37 +817,6 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
   between-competencies transition) are one canvas surface each, `max-w-[34rem]`, primary action
   44px. The scheduled pause shows the server progress bar (primary-ink fill) once; support links
   are `text-primary-ink`.
-
-**Flag-off screen — until the call screen is the default.** The description below is the
-shipped live screen while `candidateCallUi` is off. It is removed when the call screen becomes
-the only screen; until then it is frozen and its tests pass unchanged.
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ [logo plate] │ Organization           ( Q1.2 │ ▬▬▬▭ 2 / 5 │ 04:12 )   │  header, on canvas
-│                                                                      │  status pill = bg-card
-│            ┌────────────────────────────────────────────┐            │
-│            │                                            │            │
-│            │        AVATAR (HeyGen/Tavus), dark panel   │            │  --color-avatar-bg,
-│            │                                            │            │  --radius-surface,
-│            └────────────────────────────────────────────┘            │  --shadow-avatar
-│            ┌────────────────────────────────────────────┐            │
-│            │ Caption (or the listen hint)     [ Pause ] │            │  live dock = bg-card
-│            └────────────────────────────────────────────┘            │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-- **Header chrome.** While live, the header's trailing end shows a white **status pill**
-  (`bg-card`, `rounded-full`, `h-11`): the question label, the server's progress
-  (`ProgressBar compact`, only once the server has stated a total) and the timer. The pill is
-  white so the timer's last-ten-seconds red (`--color-recording`) has a measured contrast.
-- **Avatar panel.** Centred, `max-w-3xl`, `--radius-surface`, `--shadow-avatar`, its dark
-  surface and internals unchanged. The first connect shows a still dark panel of the same
-  aspect ratio with the loading line under it, so the page does not jump when the avatar paints.
-- **Live dock.** One white surface under the avatar: the caption (`text-card-foreground`, an
-  `aria-live` region that stays mounted) and the single Pause control (outline, 44px). Until the
-  first question arrives a muted hint ("Listen to the question, then answer out loud.") sits in
-  the caption's place.
 
 #### 7.3.1 Voice-only variant
 
@@ -955,7 +923,7 @@ to stop reporting whether anyone is talking.
 
 **Accessibility.** `role="img"` with a static label, never a live region: the
 interviewer's speech already reaches assistive technology as live text through
-`<InterviewCaption>` (flag off) or the call stage's question band (WCAG 1.2.4), and announcing every amplitude change would
+the call stage's question band (WCAG 1.2.4), and announcing every amplitude change would
 bury it.
 **Status elements of the live screen, as shipped.**
 - Recording indicator: **not rendered.** A pulsing red dot (`--color-recording`), always
