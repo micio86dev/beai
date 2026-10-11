@@ -2654,6 +2654,7 @@ matching the existing `settings` and `avatar-templates` entries' pattern.
 - WHEN they navigate directly to `/clients`
 - THEN the guard redirects them away, per the existing fail-closed pattern
   used for `settings` and `avatar-templates`
+
 ### Requirement: Platform-Scope Catalogue Pages
 
 A `catalogue.manage` ability MUST gate a Catalogue nav entry and its
@@ -2698,6 +2699,7 @@ replaced by any client-side override.
 - GIVEN a superadmin opens the competencies form of any role
 - WHEN the form renders
 - THEN the potential-competencies note is visible, whatever the role's assignments
+
 ### Requirement: Link Disclosure Never Hard-Codes A Lifetime
 
 Any copy that discloses an entry-link or retry-link expiry MUST render the absolute expiry taken
@@ -2883,3 +2885,294 @@ and the abilities gate.
 - GIVEN the same participant and a viewer session
 - WHEN the detail page opens
 - THEN no authorize action exists
+
+### Requirement: A Net-New Review-Status Element Renders Per-Indicator Audit Signal — `ScoreChip` Stays Score-Only
+
+The backoffice MUST render a net-new element on `IndicatorEvidence.vue`
+carrying the per-indicator audit signal (supported / weakly supported /
+could not check / not audited). The existing `ScoreChip` component MUST NOT
+be repurposed or overloaded to encode this signal — it MUST continue to
+encode only the numeric score, exactly as before this capability. The two
+elements MUST be visually and semantically distinct so an operator never
+confuses "what the model scored" with "whether the evidence was judged to
+support it."
+
+#### Scenario: `ScoreChip` renders identically for audited and unaudited indicators
+
+- GIVEN two indicators with the same score, one audited (`judged`) and one
+  never audited
+- WHEN both are rendered
+- THEN their `ScoreChip` output is identical — the score chip carries no
+  audit-derived styling or content
+
+#### Scenario: The audit signal renders as its own distinct element
+
+- GIVEN an indicator with a `judged` audit status and a low
+  `support_probability`
+- WHEN `IndicatorEvidence.vue` renders it
+- THEN a review-status element distinct from `ScoreChip` is visible, and it
+  is the one that communicates the audit signal
+
+### Requirement: An Operator Can Trigger an Audit Run and See Its Status
+
+The backoffice MUST expose a control that lets an admin request an audit run
+for a completed evaluation, and MUST render the run's outcome once a
+terminal result is available. The run's own `status` column is written
+exactly once, at completion, and carries only `completed`, `partial`, or
+`failed` — there is no persisted `pending` or `running` status to poll or
+render. Before a terminal result is available, the UI MAY show a
+client-local "queued"/"in progress" indicator, but MUST NOT present it as a
+value read from the run's persisted `status`. Non-admin operators and
+viewers MUST NOT see an enabled trigger control, consistent with the API's
+admin-only gate.
+
+#### Scenario: An admin triggers a run and sees it progress
+
+- GIVEN an admin viewing a completed evaluation with no prior audit
+- WHEN they activate the audit trigger control
+- THEN the UI shows a client-local in-progress indicator immediately after
+  the `202` response, sourced from the request lifecycle, not from a
+  persisted run status
+- AND once the run reaches a terminal outcome, the UI renders that
+  persisted `status` (`completed`, `partial`, or `failed`)
+
+#### Scenario: A non-admin does not see an active trigger control
+
+- GIVEN an operator or viewer viewing a completed evaluation
+- WHEN the evaluation view renders
+- THEN no enabled control to request an audit run is presented to them
+
+### Requirement: Audit Copy Names the Signal Advisory and Never Instructs a Score Change
+
+Every `en`/`it` string introduced for this capability MUST be authored (not
+machine-translated) and MUST frame the audit signal as advisory — it MUST
+NOT instruct or imply that an operator should change, override, or discard
+the persisted score. Copy MUST name the judge's version where the UI already
+surfaces provenance for comparable signals.
+
+#### Scenario: Audit copy is present and non-instructive in both locales
+
+- GIVEN the `en` and `it` locale files
+- WHEN the audit-related keys are inspected
+- THEN both locales have a non-empty, distinct-from-machine-translation
+  string for each key
+- AND none of those strings instructs the operator to change a score
+
+### Requirement: The Session-Review View Renders the Same Audit Signal As the Full Report
+
+Because `AdminEvaluationSerializer::serializeCompetencyResult()` is the
+single shaper for both surfaces, `useEvaluationReport` and the components
+consuming its output MUST render an identical audit signal for the same
+indicator regardless of which view (full report or session-review) is
+active.
+
+#### Scenario: The audit chip matches across both views for the same indicator
+
+- GIVEN the same audited indicator viewed once via the full report and once
+  via the session-review view
+- WHEN both are rendered
+- THEN the displayed audit status and support signal are identical
+
+### Requirement: The avatar template form exposes a grouped conversation-model picker with a disabled Live group
+
+The avatar template form MUST render a conversation-model fieldset built from
+`LlmModelPicker`, using `<optgroup>` to separate **"Text (managed)"**
+(enabled, selectable) from **"Live — coming soon"** (rendered and disabled).
+An `LlmModeExplainer` MUST render alongside the picker, describing what
+`managed` mode means. A provider-matching template with no LLM binding MUST
+show a **"No model bound — using the provider default"** badge.
+
+#### Scenario: The Live group renders present but disabled
+
+- GIVEN the avatar template form is open
+- WHEN the model picker renders
+- THEN a "Live — coming soon" optgroup is visible and every option inside it is disabled
+
+#### Scenario: No path selects a Live model
+
+- GIVEN the disabled "Live — coming soon" optgroup
+- WHEN the operator attempts to select one of its options
+- THEN the selection does not change and the form cannot be submitted with a Live model bound
+
+#### Scenario: An unbound, provider-matching template shows the no-model badge
+
+- GIVEN a template whose provider matches its project but which carries no LLM binding
+- WHEN the templates list or form renders it
+- THEN the "No model bound — using the provider default" badge is shown
+
+### Requirement: The credentials panel masks the key structurally and refuses to delete a bound credential without explanation
+
+The credentials panel MUST reuse `WriteOnlySecretField.vue` unchanged for
+entering and displaying credential state — the component MUST carry no
+`value` prop, so it structurally cannot render a stored secret; only
+`key_last_four` renders as a separate read-only string. The panel MUST offer
+rotate and remove actions. A remove attempt refused with 409
+`credential_in_use` MUST render the reason and name the bound templates from
+the response, rather than a generic failure.
+
+#### Scenario: The secret field never renders a stored value
+
+- GIVEN a platform credential already stored
+- WHEN the panel renders its row
+- THEN `WriteOnlySecretField` shows no stored key value — only `key_last_four`
+
+#### Scenario: Removing a bound credential explains why it is refused
+
+- GIVEN a credential bound to two templates
+- WHEN the operator triggers remove and the API returns 409 `credential_in_use`
+- THEN the panel displays the refusal and names both bound templates
+
+#### Scenario: Rotating a credential succeeds without exposing the old or new key
+
+- GIVEN a stored credential
+- WHEN the operator rotates it with a new key
+- THEN the panel confirms success and never displays either the old or the new key value
+
+### Requirement: Conversation-LLM cost renders as a labelled estimate, never combined with avatar-minute cost, and never as $/minute
+
+Wherever conversation-LLM cost appears (session review, per-template rollup),
+it MUST be labelled an estimate and MUST render as its own line, separate
+from avatar-minute cost — the two are never summed into one figure. The
+per-template forecast MUST state a reference minutes/turns pair and one USD
+total; it MUST NEVER be expressed as a $/minute rate.
+
+#### Scenario: Session review shows two separate labelled cost lines
+
+- GIVEN a completed session with both an avatar-minute cost and a conversation-LLM usage row
+- WHEN the session review renders
+- THEN the avatar cost and the LLM cost appear as two separately labelled estimate lines, with no combined total
+
+#### Scenario: The per-template forecast never shows a per-minute rate
+
+- GIVEN a template bound to a priced model
+- WHEN its cost forecast renders
+- THEN it shows the reference minutes, reference turns, and one USD figure — no `$/min` value appears anywhere in that view
+
+### Requirement: Navigation And Route Guards Follow The Suppressed Abilities Without A Client Change
+
+The ability suppression of `superadmin-clients-console` MUST be consumed by the existing mechanism with no
+client-side role or `is_superadmin` check: the `requires` map of the sidebar and the `REQUIRED` map of the route
+guard read the published abilities, and `scope: 'platform'` keeps narrowing the sidebar for a superadmin with no
+acting client. Because `users.viewAny`, `llmCredentials.viewAny` and `avatarTemplates.*` are not suppressed, a
+superadmin with no acting client MUST still reach Settings (platform user list, credentials, platform settings) and
+the avatar-template pages, while the organization-scoped Settings tabs (profile, branding, webhooks, API keys) stay
+absent.
+
+#### Scenario: Settings stays reachable without an acting client
+
+- GIVEN a superadmin with no acting client
+- WHEN the sidebar renders and they open `/settings`
+- THEN Settings is present, the guard lets them in, and only the platform sections are listed
+
+#### Scenario: The organization-scoped tabs are absent
+
+- GIVEN the same superadmin
+- WHEN the Settings rail renders
+- THEN the profile, branding, webhooks and API-keys sections are not offered
+
+#### Scenario: Selecting a client reveals them
+
+- GIVEN the superadmin selects organization A and the page reloads
+- WHEN the Settings rail renders
+- THEN the organization-scoped sections appear as for an admin of A
+### Requirement: Cost Amounts Display In The Organization Currency, Converted From USD At Display Time
+
+Every cost amount on the dashboard cost KPI and its breakdown, the participant detail interview cost, the session review
+cost lines and the avatar template LLM forecast MUST be displayed in the acting organization's currency, computed in the
+browser as `usd * rate_per_usd` from `GET /api/currencies`. The API values (`*_usd`) MUST be the only input; the
+backoffice MUST NOT persist or send a converted amount. Surfaces outside this list (provider price lists, `/v1`, the
+candidate app) MUST NOT convert.
+
+#### Scenario: EUR organization sees euros
+
+- GIVEN org A uses `EUR` at rate `0.920000` and a session's avatar cost is `1.00` USD
+- WHEN an `operator` of org A opens the session review
+- THEN the avatar cost line reads the `Intl` EUR rendering of `0.92` in the UI locale, prefixed by `≈`
+
+#### Scenario: USD organization is unchanged in value
+
+- GIVEN org A uses `USD`
+- WHEN the dashboard renders `total_usd = 2.34567`
+- THEN the KPI shows the `Intl` USD rendering of `2.35` with no converted-from note
+
+### Requirement: A Converted Amount Is Marked Approximate And Shows Its Source
+
+When the display currency is not USD, every converted amount MUST carry `≈`, and each cost surface MUST show, as visible
+text (not only a tooltip), the original USD amount, the rate (`1 USD = {rate} {code}`) and `rate_as_of`. When the
+display currency is USD no converted-from note MUST appear.
+
+#### Scenario: The operator can reconcile against a USD invoice
+
+- GIVEN org A uses `EUR` at rate `0.920000` as of `2026-10-01`
+- WHEN the participant detail shows an interview cost of `0.42` USD
+- THEN the cost reads `≈` plus the EUR amount
+- AND a visible note states the USD amount, `1 USD = 0.92 EUR` and the date `2026-10-01` in the UI locale
+
+### Requirement: Display Falls Back To USD, Never To A Guess Or Zero
+
+The backoffice MUST display USD when the organization currency is missing from the active catalogue, has no rate, the
+catalogue request fails, or there is no acting organization (superadmin with no client selected). It MUST NOT display a
+converted amount computed from a missing or zero rate.
+
+#### Scenario: Catalogue request fails
+
+- GIVEN org A uses `EUR` and `GET /api/currencies` returns `500`
+- WHEN the dashboard renders
+- THEN amounts render in USD with no `≈` conversion and no note
+
+#### Scenario: Superadmin with no acting organization
+
+- GIVEN a superadmin with no client selected
+- WHEN a page showing a cost renders
+- THEN amounts render in USD
+
+### Requirement: One Money Formatter With Minor-Unit Rounding And No Silent Zero
+
+All cost amounts MUST be formatted by one `formatMoney(usd, currency, locale)` utility using `Intl.NumberFormat` with
+`style: 'currency'`. At or above one minor unit (`10^-decimals`) the amount MUST round to the currency's `decimals`.
+Below one minor unit and non-zero it MUST render with at most 2 significant digits, never as zero. No i18n string MAY
+contain a currency symbol or a `{currency}` parameter for a cost amount.
+
+#### Scenario: Sub-cent conversation cost in EUR
+
+- GIVEN a conversation LLM cost of `0.0034` USD and `EUR` at `0.920000`
+- WHEN it is formatted for `it`
+- THEN the result is the `Intl` EUR rendering of `0.0031` (2 significant digits), not `0,00 €`
+
+#### Scenario: Zero-decimal currency
+
+- GIVEN a currency with `decimals = 0` and rate `150`
+- WHEN `2.34` USD is formatted
+- THEN the result has no fraction digits (`351`)
+
+#### Scenario: No symbol left in copy
+
+- GIVEN the `en` and `it` locale files
+- WHEN they are scanned
+- THEN no cost key contains `$`, `€` or `{currency}`
+
+### Requirement: Currency Is Chosen In Settings And Managed By The Superadmin
+
+The Settings `organization` section MUST offer a currency select listing active catalogue currencies, writable by
+`admin` and read-only for `operator` and `viewer`. The superadmin client form MUST offer the same select on create and
+edit. A Settings section for the catalogue MUST be visible only when the `currencies.manage` ability is true, and MUST
+list every currency (active or not) with create, edit, activate, deactivate and delete, rendering `409` refusals
+(`currency_in_use`, `currency_usd_immutable`) as localized messages. All new copy MUST exist in `it` and `en`.
+
+#### Scenario: Admin changes the currency
+
+- GIVEN an `admin` of org A and `EUR` active
+- WHEN they select `EUR` and save
+- THEN `PATCH /api/organization` is sent with `currency_code: "EUR"` and the dashboard then shows euros
+
+#### Scenario: Catalogue section hidden from tenant roles
+
+- GIVEN an `admin` of org A (`currencies.manage` false)
+- WHEN Settings renders
+- THEN no currency catalogue section is shown
+
+#### Scenario: Deactivating an assigned currency
+
+- GIVEN a superadmin and `EUR` assigned to an organization
+- WHEN they deactivate `EUR`
+- THEN the API answers `409 currency_in_use` and the panel shows the localized in-use message

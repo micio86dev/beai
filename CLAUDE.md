@@ -310,6 +310,23 @@ Full rationale in `openspec/ROADMAP.md`. Summary:
     complex for the audience. Branding (logo, primary colour) still applies to those emails —
     the CHROME is per-tenant, the WORDS are not.
 
+11. **RATIFIED 2026-10-11 (R1, R2 and P1-P10)** — organization currencies. R1, a platform `currencies` table
+    maintained by the superadmin is the only exchange-rate source (no external feed, no per-organization rates);
+    R2, amounts stay canonical in USD wherever they are computed and stored, and conversion happens only at
+    display time. P1-P10 of the design: a per-organization `currency_code`, default `USD`, with a real foreign
+    key; no `*_usd` field renamed and `/v1` unchanged; `GET /api/currencies`; converted amounts shown
+    approximately (`≈`) with the original USD amount, rate and date; stored costs never re-denominated; display
+    conversion on the four backoffice cost surfaces only; catalogue validation and in-use protection;
+    superadmin-only management through `currencies.manage`; admin-only exposure classification
+    (`T-EXPOSE-001`); one `formatMoney`.
+    **EUR rate CONFIRMED 2026-10-11 (supersedes P6):** 1 EUR = 1.1206 USD (ECB reference file published for
+    2026-10-09), `rate_per_usd` 0.892379. The migration still seeds EUR inactive with no rate; the confirmed rate
+    is applied by the owner-authorized `CurrencyRatesSeeder` (api `beai:sync-currency-rates`, run by
+    `beai:deploy`), which sets the rate and activates EUR ONLY while the stored rate is NULL and never overwrites
+    a superadmin edit. Applied locally and in production.
+    **Open owner items:** whether `/v1` should ever expose the organization currency; whether a dated rate
+    history is wanted later; and the missing audit of the other organization settings fields.
+
 ---
 
 ## SDD roadmap

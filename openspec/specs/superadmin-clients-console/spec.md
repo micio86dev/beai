@@ -274,3 +274,116 @@ being built, and unratified work that ships is how scope stops meaning anything.
 > `is_superadmin`. The ability is published and tested; consuming it is a
 > follow-up, and until then the inconsistency this requirement describes is
 > only half closed.
+
+### Requirement: BEAI's own people are managed from the all-clients scope
+
+The system MUST expose a superadmin-only surface for platform users at
+`/api/admin/platform-users`, supporting list, create, update, deactivate and activate.
+
+A platform user is defined structurally: `organization_id IS NULL` **and**
+`is_superadmin = true`. Every read and every write on this surface MUST reach a user
+through a single reader applying both predicates together, so an organization's user can
+never be reached here regardless of the id supplied.
+
+The surface MUST refuse any caller that is not a superadmin, with `403`. It carries no
+role field: `is_superadmin` is the only platform identity the system has, and a user
+created here is one.
+
+Deactivated platform users MUST be listed, so that reactivating one is possible.
+
+#### Scenario: A superadmin lists BEAI's own people
+
+- GIVEN an authenticated superadmin
+- WHEN they call `GET /api/admin/platform-users`
+- THEN every returned user has no organization and is a superadmin
+- AND deactivated platform users are included
+
+#### Scenario: An organization admin is refused
+
+- GIVEN an authenticated org admin
+- WHEN they call any `/api/admin/platform-users` route
+- THEN the response is 403 and no platform user is disclosed
+
+#### Scenario: An organization's user is unreachable by id
+
+- GIVEN a user belonging to an organization
+- WHEN a superadmin requests that id on the platform surface
+- THEN the response is 404, and the user is neither modified nor disclosed
+
+#### Scenario: A created platform user belongs to no organization
+
+- GIVEN a superadmin
+- WHEN they create a platform user
+- THEN the stored user has `organization_id` null and `is_superadmin` true
+- AND holds no organization-scoped role
+- AND is sent an invitation
+
+### Requirement: The last active superadmin cannot be deactivated
+
+Deactivating a platform user MUST be refused when it would leave the platform with zero
+active superadmins. The count and the write MUST happen inside one transaction, under a
+row lock, so two concurrent deactivations cannot both observe a survivor.
+
+The refusal MUST distinguish a caller deactivating themselves from a caller deactivating a
+peer, by machine-readable code, because the two are different mistakes.
+
+Losing every superadmin is unrecoverable from inside the product: no clients console, no
+platform settings, and no way to create a replacement short of shell access to the
+production container.
+
+#### Scenario: The last superadmin is refused
+
+- GIVEN exactly one active superadmin
+- WHEN a deactivation of that user is attempted
+- THEN it is refused, and the user remains active
+
+#### Scenario: A superadmin may stand down while another remains
+
+- GIVEN two active superadmins
+- WHEN one deactivates themselves
+- THEN it succeeds
+
+#### Scenario: Concurrent deactivations cannot both succeed
+
+- GIVEN exactly two active superadmins
+- WHEN both are deactivated concurrently
+- THEN at least one active superadmin remains
+
+### Requirement: Org-Scoped Abilities Are Suppressed With No Acting Organization
+
+Extends "Platform Capabilities Answer Through One Mechanism". `UserAbilities::for()` MUST derive the organization it
+answers for as the caller's own organization when they have one, and otherwise the acting organization resolved by
+`TenantResolver`. When the caller has no organization context at all (a superadmin with no acting organization),
+every ability of the groups `organization`, `apiClients`, `projects` and `participants` MUST be `false`.
+Suppression MUST live in `UserAbilities`, because `Gate::before` grants a superadmin every policy before any policy
+body runs, so no policy can answer "no organization is selected".
+
+The groups `users`, `llmCredentials`, `avatarTemplates`, `clients`, `platformSettings` and `catalogue` MUST NOT be
+suppressed: with no organization context they are platform-scope (the Users section lists BEAI's own people, the
+credentials are platform rows, the avatar-template pages are platform nav entries) and `users.viewAny` is the ability
+that guards `/settings`. The response shape is unchanged: the same groups and keys, only the values differ.
+
+#### Scenario: A superadmin with no acting organization has the org-scoped groups suppressed
+
+- GIVEN a superadmin with no acting organization
+- WHEN `GET /api/auth/me` is called
+- THEN every key of `abilities.organization`, `.apiClients`, `.projects` and `.participants` is `false`
+
+#### Scenario: Platform groups survive suppression
+
+- GIVEN the same superadmin
+- WHEN `GET /api/auth/me` is called
+- THEN `abilities.clients.viewAny`, `.platformSettings.viewAny`, `.catalogue.manage`, `.users.viewAny`,
+  `.llmCredentials.viewAny` and `.avatarTemplates.manageGlobal` are `true`
+
+#### Scenario: Selecting an acting organization restores the groups
+
+- GIVEN the same superadmin selects organization A as their acting organization
+- WHEN `GET /api/auth/me` is called again
+- THEN `abilities.organization`, `.apiClients`, `.projects` and `.participants` are `true`, as for an admin of A
+
+#### Scenario: An org-bound user is never subject to suppression
+
+- GIVEN an admin, operator or viewer of an organization
+- WHEN `GET /api/auth/me` is called
+- THEN no ability group is suppressed and the abilities are computed from their role alone

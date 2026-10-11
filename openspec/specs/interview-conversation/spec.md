@@ -28,7 +28,7 @@ manual smoke), never in a unit test.
 - Time-limit/deadline logic (open product decision #5); the domain retry (RT-B, ratified decision #4) is specified in `scoring-engine`, `participant-sso` and the re-interview opening requirement below
 - Per-turn server LLM inference (Option B)
 - Hardcoded per-tenant question or anchor text
-- Refactoring `ScoreEvaluationJob` (C9) — C8 introduces its own `BarsIndicatorLoader`
+- Refactoring `ScoreEvaluationJob` (C9) beyond calling the shared `BarsIndicatorLoader`
 
 ---
 
@@ -36,24 +36,46 @@ manual smoke), never in a unit test.
 
 ### Requirement: BARS Indicator Loading — BarsIndicatorLoader
 
-C8 MUST introduce a dedicated `BarsIndicatorLoader` class that scopes BARS indicators by
-BOTH `role_id` AND `competency_id`. This MUST be new code; the existing C9
-`ScoreEvaluationJob` inline indicator query MUST NOT be refactored or extracted.
+`BarsIndicatorLoader` MUST be the SINGLE shared implementation of
+role-and-competency-scoped BARS indicator lookup, consumed by BOTH the
+conversation (C8) prompt composer and the scoring (C9) `ScoreEvaluationJob`.
+The prior RV-2 carve-out — permitting C9 to keep an independent,
+competency-only inline query — is REVERSED: that duplicated, unscoped query
+was the root cause of cross-role indicator contamination in scoring. The
+loader MUST additionally support the `potential` assessment type via an
+explicit `whereNull('role_id')` branch when no role is pinned.
 
-The loader MUST prevent cross-role indicator contamination: indicators belonging to the same
-competency code but a different role MUST NOT be returned.
+The loader MUST prevent cross-role indicator contamination: indicators
+belonging to the same competency code but a different role MUST NOT be
+returned.
+(Previously: C9's inline competency-only query was explicitly carved out as
+untouched, non-refactorable code (RV-2), and the loader had no
+`potential`/null-role branch.)
 
 #### Scenario: Indicators filtered by both role and competency
 
 - GIVEN competency COL exists for roles FLL (3 indicators) and MLL (2 different indicators)
-- WHEN `BarsIndicatorLoader::load(role_id: FLL, competency_id: COL)` is called
+- WHEN `BarsIndicatorLoader::forRoleCompetency(role_id: FLL, competency_id: COL)` is called
 - THEN only the 3 FLL-COL indicators are returned; no MLL-COL indicators appear in the result
 
 #### Scenario: Cross-role contamination is impossible
 
 - GIVEN roles FLL and MLL share competency code COL with disjoint indicator sets
-- WHEN `BarsIndicatorLoader::load()` is called for each role independently
+- WHEN `BarsIndicatorLoader` is called for each role independently
 - THEN the two returned indicator sets are disjoint; no indicator from MLL appears in the FLL result and vice versa
+
+#### Scenario: C9 scoring consumes the same loader as C8 conversation
+
+- GIVEN `ScoreEvaluationJob` needs indicators for a role×competency pair
+- WHEN it requests them
+- THEN it calls the shared `BarsIndicatorLoader`, not an independent inline query
+- AND the result is identical to what C8's prompt composer would receive for the same pair
+
+#### Scenario: Null-role branch serves potential competencies
+
+- GIVEN competency MTG has 3 indicators with `role_id = null`
+- WHEN `BarsIndicatorLoader` is called with no role (potential path)
+- THEN it issues `whereNull('role_id')`, not `where('role_id', null)`, and returns the 3 MTG indicators
 
 ---
 
@@ -71,29 +93,76 @@ deterministic, side-effect-free function of the following inputs:
 | `follow_up_budget` (max N per competency) | Platform config `conversation.followup_budget`; default **N=4**, RATIFIED 2026-08-25 |
 | `min_questions` (floor, opening question included) | Platform config `conversation.min_questions`; default 4, CLAMPED by the composer |
 | `nudge_min_chars` | `Project.nudge_min_chars` |
-| `prompt_template_version` | `config/conversation.php`; bumped on any template change |
+| `prompt_version` | `config/conversation.php`; unchanged, returned as `question_context.prompt_version` |
+| **fragment set** (32 prose fragments, plus an optional per-code override) | Resolved at the CALL SITE from the active `conversation-prompt-templates` prompt set for `project_language` and passed into `compose()` as an immutable value object; absent (`null`) means the baseline text |
 
 The composition MUST:
 - Require NO LLM inference call.
-- Produce identical output for identical inputs (deterministic).
-- Emit a stable `prompt_version` string that uniquely identifies the template and its version.
+- Perform NO DB, HTTP, time, or random access inside the composer — the fragment set arrives as a
+  passed-in value and the composer is a pure function of its arguments.
+- Produce identical output for identical inputs (deterministic), including an identical fragment set.
+- Emit the `conversation.prompt_version` config string as `ComposedPrompt::version`. The identity of the
+  fragment set travels separately (see "Durable Conversation Prompt Stamp") and MUST NOT change `version`.
 - Contain NO hardcoded per-tenant text; all anchor text flows from the versioned framework catalog at the pinned `framework_version_id`.
 - Select the correct language (it/en binding) for all catalogue-derived text (see the i18n requirement for the exact scope).
 
-Purity is defined as: no LLM call, no HTTP, no time, no randomness, no IO. Reading
-`config/conversation.php` is NOT a purity violation — the composer already reads
-`prompt_version` from it. Identical inputs MUST still produce an identical prompt.
+Purity is defined as: no LLM call, no HTTP, no time, no randomness, no IO, evaluated ON THE COMPOSER
+ITSELF. Template resolution happens at the call site (`InterviewController::composePromptForCompetency()`);
+`compose()` receives an already-resolved value object. Reading `config/conversation.php` is NOT a purity
+violation — the composer already reads `prompt_version` from it. Branch selection, the clamped minimum,
+joins, numbering and the coverage line format remain in code; only prose is stored.
 
-(Previously: `assessment_type` was `standard` only — C8 and `role_code` / `role_id` was
-unconditional; the BARS source was always role-scoped. Earlier history, unchanged: `follow_up_budget`
-was `default N=2 [PROVISIONAL — OQ-1]`, awaiting product ratification, and no minimum-question
-input existed. OQ-1 was RATIFIED on 2026-08-25 at a platform default of 4; a nullable per-project
-override follows as `project-followup-budget` and is NOT part of this capability yet.)
+**Multi-competency mode (single-session, Tavus only).** When the single-session gate of `interview-session`
+applies, the system MUST ALSO compose a CONVERSATION PLAN through the action
+`App\Actions\Interview\ComposeConversationPlan`, which takes the ordered list of the competencies that remain
+(from the one being started through the end of the project's ordered list) and returns ONE combined context
+string, the per-competency snapshot list, the combined length and the prompt-set reference. The plan MUST be
+built from the same per-competency resolution `/start` performs for a single competency, sharing one
+implementation with it: the pinned catalogue revision, the role (null for `potential`, by rule), the
+competency, the operator-authored primary questions, the spoken opening, the advance phrase (the LAST
+competency of the project receives the final phrase, every other the intermediate one) and the STORED PROMPT
+SET: for each competency the call site resolves the active set exactly as it does for a single competency
+(`PromptSetResolver::resolveActive(locale, competency code, role code)` when the prompt source is `db`; the
+baseline fragments and no override for the `baseline` source) and the competency's own override, if any, renders
+inside that competency's segment only. It is therefore NOT a plain map of the single-competency composer over
+the codes. `SystemPromptComposer::composeMany` is a PURE assembler over those already-resolved inputs (templates
+and override included, no DB, no HTTP, no time, no randomness): it composes each entry with `compose()` and wraps
+the results in the global rules and segment markers. The combined string MUST:
+- be produced with no LLM call and be byte-identical for the same ordered, resolved inputs;
+- contain, for every competency, a segment that is byte-identical to what the single-competency composition
+  produces for that competency with the same inputs (so the fragment goldens keep pinning every segment);
+- be composed from ONE stored prompt set: every entry's set reference MUST be identical, and a plan whose entries
+  resolve to different sets (the active set changed between two resolutions) MUST fail closed with the existing
+  HTTP 422 `composition_error` before any session is created or provider called;
+- carry exactly ONE `prompt_version` (the configured string) and ONE set reference for the whole conversation,
+  stamped like a single competency's (`{prompt_version}+s{id}.{sha12}`, the bare string for the baseline source);
+- open with global rules ("do not begin any topic until told to begin it by topic code") and delimit each
+  competency's segment with stable machine markers (`=== TOPIC CODE: <code> ===` ... `=== END TOPIC <code> ===`),
+  each segment holding that competency's OWN coverage topics, anchors and override and nothing of another's; the
+  global rules and the markers are code constants (machine-facing, English), not operator-editable fragments;
+- carry, per segment, the "later competency does not greet again" clause by the competency's ordinal in the
+  project, exactly as the single-competency path does;
+- be bounded by `conversation.max_context_chars` (default 40 000, env-overridable), measured on the final
+  combined string: when the full remaining list exceeds the bound, the plan covers a PREFIX of the list that fits,
+  and the conversation is expected to be followed by a fresh one for the rest;
+- never be built for a single remaining competency (that path stays on the single-competency composer).
+A composition failure for any covered competency, and any `PromptTemplateUnresolvableException`, MUST answer
+exactly as it does today (HTTP 422 `composition_error` / `anchor_translation_missing`, with the existing error
+report for an unresolvable set), with no session created and no provider call made.
+
+(Previously: the prose was hardcoded in the composer, `prompt_template_version` was a config string
+"bumped on any template change", and the requirement said the composer emits "a stable `prompt_version`
+string that uniquely identifies the template and its version". The prose is now stored fragments; the
+config string keeps its role for PHP structure and for `OpeningTextComposer`; the identity of the stored
+fragments is the prompt-set reference. Earlier history, unchanged: `assessment_type` was `standard` only —
+C8 and `role_code` / `role_id` was unconditional; `follow_up_budget` was `default N=2 [PROVISIONAL —
+OQ-1]` until it was RATIFIED at 4 on 2026-08-25, with a nullable per-project override to follow as
+`project-followup-budget`. Before single-session, composition assumed exactly one competency per invocation and no multi-competency input shape existed.)
 
 #### Scenario: Deterministic composition — same inputs yield same output
 
-- GIVEN competency PRS, framework version V, role FLL, language `it`, N=2, nudge_min_chars=80, template v1
-- WHEN `ConversationService::composePrompt()` is called twice with identical inputs
+- GIVEN competency PRS, framework version V, role FLL, language `it`, N=2, nudge_min_chars=80, and a fragment set from prompt set S
+- WHEN `compose()` is called twice with identical inputs
 - THEN both calls return the identical prompt string and the same `prompt_version` value
 
 #### Scenario: Deterministic composition for a role-less potential competency
@@ -106,13 +175,25 @@ override follows as `project-followup-budget` and is NOT part of this capability
 
 - GIVEN any valid set of composition inputs
 - WHEN the prompt is composed
-- THEN `prompt_version` is a non-null, non-empty string reflecting the active template version from `config/conversation.php`
+- THEN `prompt_version` is a non-null, non-empty string equal to the value in `config/conversation.php`, whichever fragment set was used
+
+#### Scenario: Two fragment sets compose different text under the same prompt_version
+
+- GIVEN two prompt sets whose `budget` fragments differ
+- WHEN the same inputs are composed against each
+- THEN the prompt strings differ and `ComposedPrompt::version` is identical for both
 
 #### Scenario: No LLM call during composition
 
 - GIVEN the composition service is invoked at `/start`
-- WHEN `composePrompt()` runs
-- THEN no HTTP call is made to any LLM or external provider; the result is produced purely from in-memory template + catalog data
+- WHEN `compose()` runs
+- THEN no HTTP call is made to any LLM or external provider; the result is produced purely from in-memory fragment and catalog data
+
+#### Scenario: Composer performs no DB, HTTP, time, or random access
+
+- GIVEN the composer's implementation
+- WHEN its call graph is inspected
+- THEN it contains no query, no HTTP call, no time call, and no random-number call — all fragment content arrives via its parameters
 
 #### Scenario: Composition uses pinned framework_version_id, never live draft
 
@@ -128,6 +209,81 @@ override follows as `project-followup-budget` and is NOT part of this capability
 > migration, RV-1/RV-4). Closing it requires a dedicated **framework-versioning slice** that adds
 > the column + backfill and updates BOTH C8 and C9 loaders under their own tests. Until then this
 > scenario is aspirational, not verified.
+
+#### Scenario: Multi-competency composition is deterministic for the same ordered list
+
+- GIVEN competencies [CSF, INN] for role FLL, framework version V, language `it`, prompt set S
+- WHEN the plan is composed twice from the ordered list [CSF, INN]
+- THEN both calls return the identical combined string, the identical snapshot list and the same single `prompt_version`
+
+#### Scenario: Each segment is the single-competency composition of its competency
+
+- GIVEN a plan for [CSF, INN] composed from set S
+- WHEN each segment is extracted between its markers
+- THEN each equals what the single-competency path composes for that competency with the same inputs and set
+
+#### Scenario: Each segment holds only its own anchors
+
+- GIVEN a plan for [CSF, INN] where each competency's anchor text carries a distinct sentinel
+- WHEN the combined string is split on the segment markers
+- THEN the CSF segment contains CSF's sentinel and not INN's, and the INN segment the reverse
+
+#### Scenario: An override renders inside its own segment only
+
+- GIVEN set S carries an override for INN and none for CSF
+- WHEN the plan for [CSF, INN] is composed
+- THEN the override text appears inside the INN segment at the fixed position after COVERAGE TOPICS, and the CSF segment is byte-identical to the composition without any override step
+
+#### Scenario: A plan whose entries resolve to different sets fails closed
+
+- GIVEN the active set changes between the resolution of CSF and the resolution of INN
+- WHEN `ComposeConversationPlan` runs
+- THEN HTTP 422 `composition_error` is returned, no session row is created and no provider call is made
+
+#### Scenario: The baseline source composes a plan without a set or override
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=baseline`
+- WHEN a plan for [CSF, INN] is composed
+- THEN the baseline text is used for every segment, no override renders, and the set reference is null
+
+#### Scenario: The last competency of the project receives the final phrase
+
+- GIVEN a plan whose last entry is the last competency of the project
+- WHEN the plan is composed
+- THEN that segment carries the final advance phrase and every other segment the intermediate one
+
+#### Scenario: A role-less potential plan composes
+
+- GIVEN a `potential` project with competencies [MTG, LAT]
+- WHEN the plan is composed
+- THEN the BARS rows are read with `role_id IS NULL` for each segment, exactly as the single-competency path does
+
+#### Scenario: Later segments carry the no-greeting clause by ordinal
+
+- GIVEN a plan for the second and third competencies of a project (a conversation created mid-interview)
+- WHEN the plan is composed
+- THEN each segment's OPENING ends with the `opening.continuation` clause, as the single-competency path does for a competency whose ordinal is greater than 1
+
+#### Scenario: A plan over the size bound is truncated to a prefix
+
+- GIVEN a remaining list whose combined length exceeds `max_context_chars`
+- WHEN the plan is composed
+- THEN it covers the longest prefix that fits, its `chars` is within the bound, and the uncovered competencies are not in the context
+
+#### Scenario: A single-competency project never reaches the multi mode
+
+- GIVEN a project with exactly one competency left to cover
+- WHEN `/start` composes its context
+- THEN the single-competency composition path runs unchanged and `ComposeConversationPlan` is not invoked
+
+#### Scenario: A failure in any covered competency fails the whole create with the existing error
+
+- GIVEN a plan in which one covered competency has no BARS indicators for the role
+- WHEN `/start` composes the plan
+- THEN HTTP 422 `composition_error` is returned, no session row is created and no provider call is made
+
+
+---
 
 ### Requirement: OpeningTextComposer re-offer variant (Decision 6)
 
@@ -487,7 +643,8 @@ advance signal) belongs exclusively to the `@ai` integration suite.
 ### Requirement: QuestionContext Carries Composed Prompt
 
 The `QuestionContext` DTO MUST carry the composed `system_prompt` and `prompt_version`
-as additive fields. The extended `QuestionContext` flows through
+as additive fields, and a nullable prompt-set reference (`s{set id}.{sha12}`; null when the baseline text
+composed the prompt) that the durable stamp is built from. The extended `QuestionContext` flows through
 `ProviderSessionService::issue()` to the provider adapters (HeyGen, Tavus).
 
 The C7a `/start` control flow (create-or-resume, provider-outside-txn, failure matrix)
@@ -495,7 +652,21 @@ is UNCHANGED. This is a purely additive widening.
 
 The `/start` response body MUST include `prompt_version` in the `question_context` object
 as a non-null, non-empty string (audit and traceability). This field is additive to the
-existing `question_context` shape (C7a addendum: `end_phrase`, `final_phrase`).
+existing `question_context` shape (C7a addendum: `end_phrase`, `final_phrase`). Its value is the
+`conversation.prompt_version` config string and does NOT include the prompt-set reference; the response shape
+and the OpenAPI contract are unchanged.
+
+When the single-session gate applies and the conversation covers several competencies,
+`QuestionContext.system_prompt` MUST carry the plan's FULL combined context, composed ONCE at the `/start`
+that creates the conversation, and `QuestionContext.promptSetRef` MUST carry the ONE set reference of the plan. A
+later `/start` that is granted a continuation (`interview-session`) MUST NOT compose or carry a `system_prompt`
+destined for a provider create-call; its `question_context` is built from the stored plan entry (end/final
+phrase, ordinal, total, `prompt_version` of the conversation). `question_context.prompt_version` on a
+continuation MUST equal the `prompt_version` stamped when the conversation was created, and MUST NOT include the
+prompt-set reference.
+
+(Previously: the requirement carried `system_prompt` and `prompt_version` only. The prompt-set reference is
+added so the stamp site can record which set composed the prompt. Composition assumed one competency per `/start`; a multi-competency conversation composes once and later `/start` calls carry no prompt.)
 
 #### Scenario: /start response contains prompt_version
 
@@ -503,11 +674,31 @@ existing `question_context` shape (C7a addendum: `end_phrase`, `final_phrase`).
 - WHEN `POST /api/candidate/interview/start` returns HTTP 201
 - THEN `question_context.prompt_version` is a non-null, non-empty string in the response body
 
+#### Scenario: The response prompt_version excludes the prompt-set reference
+
+- GIVEN `/start` composed from a database-resolved prompt set
+- WHEN the response is inspected
+- THEN `question_context.prompt_version` equals the config string and contains no `+s` suffix
+
 #### Scenario: C7a failure matrix is unchanged after QuestionContext widening
 
 - GIVEN a provider 5xx/timeout hard-failure at `/start`
 - WHEN `ProviderSessionService::issue()` is invoked with the extended `QuestionContext`
 - THEN the failure matrix (session → error, participant → errore, HTTP 502) behaves identically to pre-C8 behavior
+
+#### Scenario: The combined context is composed once at conversation creation
+
+- GIVEN a live Tavus conversation covering [CSF, INN, DRV]
+- WHEN the conversation is created at the first `/start`
+- THEN `QuestionContext.system_prompt` carries all three competencies' content at that single call; the
+  second and third `/start` calls are continuations and compose no new context
+
+#### Scenario: A continuation reports the conversation's prompt_version
+
+- GIVEN a continuation for INN in a conversation created with `prompt_version` P under set S
+- WHEN `/start` returns
+- THEN `question_context.prompt_version` equals P, is non-null and non-empty, and contains no `+s` suffix
+
 
 ---
 
@@ -773,6 +964,7 @@ door.
 - WHEN an interview entry point is attempted again
 - THEN the project is interviewable and the composer proceeds normally for
   that competency, asking the restored question as its sole primary
+
 ### Requirement: Potential Composes And Starts Through The Same Adaptive Engine
 
 A project whose `assessment_type` is `potential` MUST compose and start its interview through the
@@ -1046,6 +1238,312 @@ greeting. The variant is wording only: it does not change the composed system pr
 - GIVEN a participant with no evaluation retry
 - WHEN any opening is composed
 - THEN the variant is selected exactly as before and is never `reinterview`
+
+### Requirement: Composed Prompt Is Byte-Identical Across The Move To Stored Fragments
+
+For every input combination covered by the golden set, the prompt composed from the database-resolved baseline prompt
+set MUST be byte-for-byte identical to the prompt composed by the pre-change composer. The golden set is: 17
+composer-level cases (G01 to G17: budget, nudge and phrase variants, the clamp at 0, authored primaries from 0 to 6,
+resumed openings, the fallback opening, a role-less `potential` case with the final phrase, an injection case, and
+configured minimums of 99 and -3) and 3 HTTP-level cases (H1 standard `en` fresh, H2 standard `it` resume, H3
+`potential` `it` on the last competency), captured on the pre-change tree; later additions are new fixtures and never
+change an existing one: G18 and G19 (the continuation clause, `en` and `it`) and H4 (the second competency over HTTP)
+for "A Later Competency Does Not Greet Again", and G20 (a prompt with an override). Fixtures MUST be captured once, MUST
+NOT be overwritten by the capture tool, and MUST be pinned by a directory hash in the test; adding a fixture re-pins
+that hash in one place and changes no existing fixture. The goldens MUST pass against both prompt sources. The harness MUST prove it can
+fail: mutating one byte of a fixture makes the comparison fail. Across the template test matrix, every fragment key except
+`label.override` MUST be rendered at least once, and `label.override` MUST be rendered only when an override is composed.
+
+#### Scenario: Every golden case matches its fixture
+
+- GIVEN the fixtures captured on the pre-change tree
+- WHEN each case is composed against the baseline set (and against the database-resolved baseline set after cut-over)
+- THEN the output equals the fixture byte for byte
+
+#### Scenario: A one-byte mutation is detected
+
+- GIVEN a fixture with one byte changed
+- WHEN the comparison runs
+- THEN it fails
+
+#### Scenario: Capture never overwrites
+
+- GIVEN a fixture already exists
+- WHEN capture mode runs
+- THEN it refuses and leaves the file unchanged
+
+#### Scenario: The fixtures directory is pinned
+
+- GIVEN any later slice
+- WHEN `git diff origin/develop -- api/tests/Fixtures/Conversation/prompts` is taken
+- THEN no existing fixture is modified: a new case is added through the capture mechanism (it never overwrites), and the pinned directory hash is re-pinned in one place with the justification in the commit message
+
+#### Scenario: Existing characterization and phrase tests pass unmodified
+
+- GIVEN `StandardPromptCharacterizationTest` (the `it` output at 4323 bytes), `SystemPromptComposerTest` and `EndPhraseInPromptTest`
+- WHEN they run against the changed code
+- THEN every one passes without an edited assertion
+
+---
+
+### Requirement: Placeholder Contract Enforced At Composition
+
+In addition to the publish-time guard (`conversation-prompt-templates`), composition MUST independently refuse —
+throwing `CompositionException` — any resolved fragment that lacks a required token, contains an unknown `{{x}}`
+or a stray `{{`. Rendering MUST be a single pass over templates; the composer MUST NOT scan rendered text for
+`:token` shapes, because rendered text includes operator-authored questions and phrases that may legitimately
+contain colons and words such as `budget`. The composed text MUST NOT contain the literal `end_phrase`, and an
+advance fragment MUST always yield the quoted closing phrase and the question floor.
+
+#### Scenario: A resolved advance fragment missing its phrase token fails composition
+
+- GIVEN an `advance.with_phrase` body without `{{advance_phrase}}` that bypassed publish (seeder or raw SQL)
+- WHEN composition runs
+- THEN `CompositionException` is thrown and no prompt is returned
+
+#### Scenario: Operator text containing token-like characters composes unchanged
+
+- GIVEN a primary question `Why did you say Re:think the :budget?` and an advance phrase containing `{{budget}}`
+- WHEN the prompt is composed
+- THEN both strings appear verbatim and composition succeeds
+
+#### Scenario: The closing phrase and floor are present
+
+- GIVEN a non-blank advance phrase and a minimum of 4 with no primaries
+- WHEN the prompt is composed
+- THEN the ADVANCE RULE section quotes the phrase and states the floor, and the text contains no literal `end_phrase`
+
+---
+
+### Requirement: An Unresolvable Prompt Set Fails Composition With The Existing 422
+
+When the fragment set cannot be resolved (no active set, more than one active set, a missing or unknown key, a missing
+locale, a seal mismatch, or a template or override that violates its contract), `/start` MUST answer HTTP 422 with the existing
+`composition_error` code. Resolution MUST run inside the existing composition `try`, before the session row is
+created and before any new provider session is issued, so a failure creates no `InterviewSession` row and issues no
+new provider session. The `db` source MUST NOT fall back to the baseline text, another set or another locale. The failure MUST be reported
+(it affects every candidate). A failure of the infrastructure while resolving, such as a database error, is not a
+resolution failure: it MUST surface as a server error (500), never as a 422 and never as the baseline text. No new API
+error code and no OpenAPI change are introduced. On the resume path the existing
+behaviour for any composition failure is unchanged: the outgoing provider session is released exactly once.
+
+#### Scenario: No active set
+
+- GIVEN no prompt set is active and `CONVERSATION_PROMPT_SOURCE=db`
+- WHEN `POST /api/candidate/interview/start` is called
+- THEN HTTP 422 with `error = composition_error` is returned, no `InterviewSession` row is created and no new provider session is issued
+
+#### Scenario: A missing project-locale fragment row blocks composition
+
+- GIVEN the active set has no `it` rows and the project language is `it`
+- WHEN composition is attempted
+- THEN it fails with 422 `composition_error`; no prompt mixing `it` and `en` fragments is produced
+
+#### Scenario: A tampered set blocks composition
+
+- GIVEN the active set's seal does not match its rows
+- WHEN `/start` is called
+- THEN HTTP 422 `composition_error` is returned
+
+#### Scenario: Two active sets block composition
+
+- GIVEN two prompt sets are active because the one-active index was bypassed
+- WHEN `/start` is called
+- THEN HTTP 422 `composition_error` is returned and neither set is used
+
+#### Scenario: A failing database is not a composition error
+
+- GIVEN the database fails while the active set is being resolved
+- WHEN `/start` is called
+- THEN the response is a server error (500) and no baseline text is composed
+
+#### Scenario: A resumed interview that fails composition releases the outgoing session once
+
+- GIVEN a live `in_corso` session and an unresolvable active set
+- WHEN `/start` resumes it
+- THEN 422 is returned and the outgoing provider session is torn down exactly once, as for any composition failure
+
+---
+
+### Requirement: Prompt Source Switch
+
+`config('conversation.prompt_source')` (environment variable `CONVERSATION_PROMPT_SOURCE`) MUST accept `db` and
+`baseline`. With `db` the active prompt set composes the prompt. With `baseline` the call site MUST pass no fragment
+set and the composer MUST render the baseline text, without a code change or a database read of the prompt set. Any other value, including an empty value and a
+differently-cased `db` or `baseline`, MUST fail composition with the same 422 `composition_error` rather than silently
+choosing a source. The default MUST be `db`.
+
+#### Scenario: baseline source composes the baseline text
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=baseline` and an active set whose `budget` fragment differs from the baseline
+- WHEN `/start` composes
+- THEN the baseline `budget` text is used
+
+#### Scenario: An unknown source value fails composition
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=nonsense`
+- WHEN `POST /api/candidate/interview/start` is called
+- THEN HTTP 422 `composition_error` is returned and no `InterviewSession` row is created
+
+#### Scenario: db source composes the active set
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=db` and the same active set
+- WHEN `/start` composes
+- THEN the active set's `budget` text is used (proving the database path is live)
+
+---
+
+### Requirement: Durable Conversation Prompt Stamp
+
+`interview_sessions.conversation_prompt_version` (nullable `varchar(255)`) MUST be written through
+`InterviewSessionLlmSnapshot::stamp()` at both of its call sites (plain issue and resume), write-once and never
+overwritten from a null, like `system_prompt_chars`. For a database-resolved set the value MUST be
+`{conversation.prompt_version}+s{set id}.{first 12 hex of the set seal}`; for the baseline source it MUST be the bare
+config string. A new set takes effect at the next `/start` or resume; activating a set MUST NOT alter the stamp of a
+session that already has one, so an interview whose composition spans an activation is a documented mixed record
+whose stamp names the FIRST set composed for the session, overrides included. The column MUST NOT be exposed through
+the public or admin API.
+
+#### Scenario: The stamp is written once
+
+- GIVEN a session stamped under set S1
+- WHEN set S2 is activated and the session is resumed
+- THEN `conversation_prompt_version` still names S1
+
+#### Scenario: A null never overwrites a stamp
+
+- GIVEN a session with a stamp
+- WHEN `stamp()` is called with no version
+- THEN the stored value is unchanged
+
+#### Scenario: The stamp names the set and the baseline source is distinguishable
+
+- GIVEN one session composed from set S and one composed with `CONVERSATION_PROMPT_SOURCE=baseline`
+- WHEN both stamps are read
+- THEN the first matches `{config}+s{id}.{sha12}` and the second equals the bare config string
+
+---
+
+### Requirement: Per-Code Override Rendered At A Fixed Position
+
+When an override exists for the resolved (role code, competency code, locale), it MUST render as one additional
+section headed by `label.override`, placed after COVERAGE TOPICS and before the STAR COVERAGE PROTOCOL section, and
+MUST change nothing else in the composed prompt. With no override the output MUST be byte-identical to composing
+without the override step; with one, the ADVANCE RULE bytes MUST be unchanged. At most one override applies (the
+role-specific row wins over the role-less row). The override MUST be appended verbatim after every other section is
+rendered, so no token in it is ever substituted. A body with no visible character (only whitespace or zero-width
+spaces), or whose bytes are not valid UTF-8, MUST count as no override. The `baseline` source MUST NOT print an
+override.
+
+#### Scenario: An override appears at the specified position only
+
+- GIVEN a competency with an override body
+- WHEN the prompt is composed
+- THEN the override text appears after COVERAGE TOPICS and before STAR COVERAGE PROTOCOL and every other section is unchanged
+
+#### Scenario: A competency with no override composes exactly the default
+
+- GIVEN a competency with no override row
+- WHEN the prompt is composed
+- THEN the output is identical to the golden fixture for the same inputs
+
+#### Scenario: A blank override is no override
+
+- GIVEN an override body that contains only whitespace or zero-width spaces
+- WHEN the prompt is composed
+- THEN the output is identical to the output composed without an override and no `label.override` heading appears
+
+#### Scenario: The baseline source never prints an override
+
+- GIVEN `CONVERSATION_PROMPT_SOURCE=baseline` and an active set carrying an override for the competency
+- WHEN `/start` composes
+- THEN the prompt contains no override section
+
+#### Scenario: The advance rule is unaffected by an override
+
+- GIVEN a competency with an override
+- WHEN the prompt is composed
+- THEN the text from `ADVANCE RULE:` to the end equals the text composed without the override
+
+---
+
+### Requirement: A Later Competency Does Not Greet Again
+
+Every `/start` opens a NEW provider session whose model has no memory of an earlier welcome. For a FRESH start of a
+competency whose ordinal in the project's order is greater than 1, the OPENING paragraph MUST end with the
+`opening.continuation` fragment (no tokens) as its last sentence, joined to the preceding text by one space, telling the
+avatar that the candidate has already been welcomed and must not be greeted, welcomed or introduced to again. The flag
+MUST be keyed on the competency's ordinal, not on whether the participant has started before (a candidate redoing
+competency 1 after an error is not on a later competency). A resumed opening, the fallback opening and every opening of
+competency 1 MUST be byte-identical to what they were before the clause existed. The spoken opening (the authored
+primary question) MUST NOT be modified.
+
+#### Scenario: The second competency carries the clause
+
+- GIVEN a standard project with two competencies and a fresh start of the second
+- WHEN `/start` composes
+- THEN the OPENING paragraph ends with the `opening.continuation` text and nothing else in the prompt moves
+
+#### Scenario: The first competency never carries the clause
+
+- GIVEN a fresh start of the first competency, including for a candidate recovered from an error
+- WHEN `/start` composes
+- THEN the prompt contains no continuation clause
+
+#### Scenario: A resume of a later competency never carries the clause
+
+- GIVEN a resumed session of the second competency
+- WHEN `/start` composes
+- THEN the prompt contains no continuation clause
+
+### Requirement: Multi-Competency Coverage Topics Are Never Revealed Verbatim To The Client
+
+The "internal; not revealed verbatim" property already required of a single competency's coverage topics
+extends unchanged to every competency's topics inside a combined context: no coverage topic, indicator
+name or anchor text for ANY covered competency MUST appear in any response the candidate's browser can read,
+in any persisted plan, or in any client-to-Tavus message, at any point in the conversation, including for
+competencies not yet reached and competencies already completed.
+
+#### Scenario: An unreached competency's anchors are as protected as the current one's
+
+- GIVEN a live conversation whose combined context already holds INN's anchors, currently on CSF
+- WHEN any candidate-facing response is inspected while CSF is active
+- THEN no fragment of INN's anchor or indicator text appears in it
+
+#### Scenario: A completed competency's anchors remain protected
+
+- GIVEN a conversation that has advanced past CSF onto INN
+- WHEN any candidate-facing response is inspected
+- THEN no fragment of CSF's anchor or indicator text appears in it either
+
+#### Scenario: The stored plan holds no anchors
+
+- GIVEN a created plan
+- WHEN `interview_sessions.conversation_plan` is inspected
+- THEN it holds only codes, authored primary questions, follow-up budgets and a length
+
+### Requirement: A Continuation Row Carries The Conversation's Prompt Stamp
+
+A row created by a granted continuation composes nothing, so it MUST NOT call the composer to obtain a stamp.
+Its `interview_sessions.conversation_prompt_version` MUST be copied from the row that created the conversation
+(the value `InterviewSessionLlmSnapshot::stamp()` wrote there: `{conversation.prompt_version}+s{set id}.{sha12}`,
+or the bare configured string for the baseline source), together with the rest of that row's LLM snapshot. Every
+row sharing one provider conversation therefore names the one prompt set the conversation was composed from, and
+activating another set mid-interview MUST NOT change the stamp of any row on a conversation already created. A
+conversation created later (after a ceiling handover) composes against the then-active set and stamps its own
+creating row, which is the documented mixed record of the durable-stamp requirement.
+
+#### Scenario: A continuation row copies the stamp
+
+- GIVEN a conversation created under set S1 and a granted continuation for INN
+- WHEN the INN row is read
+- THEN its `conversation_prompt_version` equals the creating row's value
+
+#### Scenario: A set activated mid-interview does not alter a shared conversation's stamps
+
+- GIVEN a live shared conversation stamped under S1 and set S2 activated before the next boundary
+- WHEN the next competency is granted a continuation
+- THEN the new row's stamp still names S1, and a fresh conversation created later stamps S2 on its own creating row
 ## Coverage Note
 
 The following paths MUST be held to ~95% test coverage (unit / Pest feature tests, no HTTP):

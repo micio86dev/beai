@@ -25,9 +25,9 @@ Feature: three owner requests of 2026-10-07 after the 0.67.1 / 0.48.1 / 0.23.1 /
 - Releases follow `api-first-release-order` (both api specs, consumer sync, SDK regeneration in the wrapper).
 
 ## Tasks
-- [ ] T1 e2e stability hotfix (backoffice, from main): reproduce the flake with a measured rate, remove the cause, prove it with a repeat run, hotfix release.
-- [ ] T2 Toaster (frontend): mount a localized, accessible Toaster, map every integrity event type to copy, test and verify on the brand canvas.
-- [ ] T3 "Prontezza" labels: backoffice i18n and app strings, api `lang` sentences, wrapper documents, tests and e2e text; English "Readiness".
+- [x] T1 e2e stability hotfix (backoffice, from main): reproduce the flake with a measured rate, remove the cause, prove it with a repeat run, hotfix release.
+- [x] T2 Toaster (frontend): mount a localized, accessible Toaster, map every integrity event type to copy, test and verify on the brand canvas.
+- [x] T3 "Prontezza" labels: backoffice i18n and app strings, api `lang` sentences, wrapper documents, tests and e2e text; English "Readiness".
 - [x] T4 Machine-value rename of `standard`: DECIDED NOT to rename (owner, 2026-10-07). No code change; the display-name mapping is documented in the wrapper docs by T3.
 
 ## Acceptance
@@ -42,4 +42,4 @@ Created 2026-10-07.
 Delegated writers in isolated worktrees, one per task; the api writer is the only one running Pest at a time.
 
 ## Next step
-T1, T2 and T3 in parallel (in progress); T4 closed.
+All tasks closed. Released 2026-10-07: api 0.68.0, frontend 0.24.0, backoffice 0.49.0 (hotfix 0.48.2 for the WebKit flake: backdrop-blur overlays), wrapper 0.53.0; production health 200 on all five Railway services. Open optional items: reduced-motion gating of vendored popovers (DESIGN.md §10), Lighthouse tooling, e2e sharding.

@@ -68,37 +68,46 @@ auditor asks about after the fact.
   organization B
 - THEN the created template's `organization_id` is A, not B
 
-### Requirement: Exactly one active template per organization, enforced at the database
+### Requirement: Exactly one active template per organization and provider, enforced at the database
 
 The database MUST enforce, via a partial unique index on
-`avatar_templates (organization_id) WHERE is_active`, that an organization can
-hold at most one row with `is_active = true` at a time. Enforcing this in
-application code alone is insufficient: two concurrent activations would each
-read "no other template is active," each write, and both win, leaving the
-organization with two active templates and the next interview picking
-whichever row a query happens to return first — a check that only holds when
-nobody is in a hurry is not a check.
+`avatar_templates (organization_id, provider) WHERE is_active`, that an
+organization can hold at most one row with `is_active = true` **per
+provider** at a time. Enforcing this in application code alone is
+insufficient: two concurrent activations would each read "no other template
+is active for this provider," each write, and both win, leaving the
+organization with two active templates on the same provider and the next
+interview picking whichever row a query happens to return first.
 
-The index MUST be partial (`WHERE is_active`), not a plain unique index on
-`(organization_id, is_active)`. A plain index would also cap each organization
-at exactly one INACTIVE template, which is absurd — organizations accumulate
-many draft or retired templates.
-
-The invariant MUST be per-organization, not global: two organizations MAY each
-hold their own active template simultaneously.
+The index MUST be partial (`WHERE is_active`) and scoped to
+`(organization_id, provider)`, not `(organization_id)` alone. Provider is
+resolved per project, not per organization: an organization running one
+project on HeyGen and another on Tavus needs two simultaneously active
+templates — one per provider — and a plain `(organization_id)` index would
+make that unconfigurable.
 
 A newly created template MUST default to `is_active = false`. Creating a
-template must never change what candidates are currently seeing; activation is
-a separate, deliberate act.
+template must never change what candidates are currently seeing; activation
+is a separate, deliberate act.
 
-#### Scenario: An organization cannot hold two active templates, asserted at the database
+(Previously: the partial unique index was scoped to `(organization_id)` alone,
+capping an organization at exactly one active template across ALL providers —
+insufficient once provider is chosen per project rather than per organization.)
 
-- GIVEN organization O already has one active template
-- WHEN a second `AvatarTemplate::create(['is_active' => true, ...])` is
+#### Scenario: An organization cannot hold two active templates on the same provider, asserted at the database
+
+- GIVEN organization O already has one active `tavus` template
+- WHEN a second `AvatarTemplate::create(['is_active' => true, 'provider' => 'tavus', ...])` is
   attempted directly against the database for organization O, bypassing the
   service layer
 - THEN the database raises `Illuminate\Database\QueryException` (unique
-  violation on `avatar_templates_one_active_per_org`)
+  violation on `avatar_templates_one_active_per_org_provider`)
+
+#### Scenario: One organization may hold an active template on each of its providers simultaneously
+
+- GIVEN organization O with an active `heygen` template
+- WHEN organization O also activates a `tavus` template
+- THEN both remain active — the constraint is scoped to `(organization_id, provider)`, not to `organization_id` alone
 
 #### Scenario: Two organizations may each hold an active template
 
@@ -190,44 +199,44 @@ Absence of a `required` field MUST be reported as `required`.
 - THEN the response is 422 carrying `config.language` coded `unknown` — the
   field spec no longer defines `language` for either provider
 
-### Requirement: Activation swaps the organization's active template atomically and re-validates
+### Requirement: Activation swaps the active template within the same provider, atomically, and re-validates
 
 `POST /api/avatar-templates/{id}/activate` MUST deactivate the organization's
-current active template (if any) and activate the requested one inside ONE
-database transaction, deactivate-then-activate in that order. The order is
-forced by the partial unique index: activating the new row first, before the
-old one is deactivated, would be refused by the index outright. Doing the swap
-outside a transaction would leave a window with no active template at all,
-during which a session start would silently fall back to environment
-defaults — precisely the behaviour this whole capability exists to replace.
+current active template **on the same provider** (if any) and activate the
+requested one inside ONE database transaction, deactivate-then-activate in
+that order. Activating a template on one provider MUST NOT deactivate an
+active template on a different provider within the same organization.
 
 The template's config MUST be re-validated against the current field spec at
-the moment of activation, not only at the moment it was last written. A field
-spec can change after a template was saved; activation is the last point
-before a candidate's session where a stale config can be caught, so an
-activation of a template whose config no longer validates MUST be rejected
-with 422 and MUST NOT change `is_active` on any row.
+the moment of activation. Activating an already-active template MUST be a
+no-op that succeeds (200).
 
-Activating an already-active template MUST be a no-op that succeeds (200),
-not an error — a double click is not a mistake worth surfacing.
+(Previously: deactivated the organization's single active template regardless
+of provider, which is now incorrect — an organization may hold one active
+template per provider.)
 
-#### Scenario: Activating a template deactivates the previous one
+#### Scenario: Activating a template deactivates the previous one on the same provider
 
-- GIVEN template A is active and template B is not, in the same organization
+- GIVEN template A (`tavus`) is active and template B (`tavus`) is not, in the same organization
 - WHEN template B is activated
 - THEN template B is active and template A is no longer active
 
-#### Scenario: Activation never leaves the organization with two active templates
+#### Scenario: Activating a Tavus template does not deactivate an active HeyGen template
 
-- GIVEN template A is active
-- WHEN template B is activated
-- THEN exactly one template in the organization has `is_active = true`
+- GIVEN organization O has an active `heygen` template and an inactive `tavus` template
+- WHEN the `tavus` template is activated
+- THEN the `heygen` template remains active and the `tavus` template becomes active — both are now active simultaneously
+
+#### Scenario: Activation never leaves the organization with two active templates on the same provider
+
+- GIVEN template A (`tavus`) is active
+- WHEN template B (`tavus`) is activated
+- THEN exactly one `tavus` template in the organization has `is_active = true`
 
 #### Scenario: A template with an invalid config cannot be activated
 
 - GIVEN a template whose config was written directly to the database and no
-  longer satisfies the current field spec (e.g. missing a since-added required
-  knob)
+  longer satisfies the current field spec
 - WHEN activation is attempted
 - THEN the response is 422 and the template's `is_active` remains `false`
 
@@ -488,13 +497,27 @@ provider default).
 
 ### Requirement: Field specs are served machine-facing, not localized text
 
-`GET /api/avatar-templates/field-specs` MUST return, for every provider, a list
-of fields carrying a stable `key`, a `type`, and a `label_key` (and, where
-applicable, `hint_key`, `required`, `options`, `min`, `max`, `step`) — never a
-rendered, human-readable label or hint string. The endpoint is machine-facing;
-translation happens in the backoffice, which is where the operator's locale
-lives, and a literal English string baked into the API response would sit
-untranslatable in front of an Italian operator while nothing failed loudly.
+`GET /api/avatar-templates/field-specs` MUST return, for every provider, a
+list of fields carrying a stable `key`, a `type`, and a `label_key` (and,
+where applicable, `hint_key`, `required`, `options`, `min`, `max`, `step`) —
+never a rendered, human-readable label or hint string. The endpoint is
+machine-facing; translation happens in the backoffice, which is where the
+operator's locale lives, and a literal English string baked into the API
+response would sit untranslatable in front of an Italian operator while
+nothing failed loudly.
+
+For `avatarId`, `voiceId` (HeyGen) and `faceId`, `palId` (Tavus), the field
+additionally carries `catalogue_resource: "voice"|"avatar"|"replica"`,
+naming which `resource` value to pass to the new catalogue endpoint for this
+field. `ttsExternalVoiceId` and every other field MUST carry no
+`catalogue_resource` key at all (absent, not `null`) — there is no provider
+catalogue for a 3rd-party TTS voice, and a present-but-null value would
+invite a client to call an endpoint that has nothing to return for it.
+`FieldType` remains `text | number | select | checkbox` — a catalogue-backed
+field stays `FieldType::Text`; `catalogue_resource` is an orthogonal hint
+that the STORED VALUE format and validation are unchanged, only that the
+backoffice may additionally offer a picker for it.
+(Previously: no field carried any catalogue-related metadata.)
 
 #### Scenario: The endpoint describes both providers
 
@@ -508,22 +531,32 @@ untranslatable in front of an Italian operator while nothing failed loudly.
 - THEN every field's `label_key` starts with `avatar_templates.field.` — an
   i18n key, never literal text
 
+#### Scenario: The four catalogue-backed fields name their resource type
+
+- WHEN the field specs are read
+- THEN `avatarId` and `voiceId` (heygen) carry `catalogue_resource` equal to
+  `"avatar"` and `"voice"` respectively, and `faceId` and `palId` (tavus)
+  carry `catalogue_resource` equal to `"replica"` and `"voice"`
+  respectively
+
+#### Scenario: A field with no catalogue omits the key entirely
+
+- WHEN the field specs are read
+- THEN `ttsExternalVoiceId`, and every HeyGen/Tavus field other than the
+  four named above, carries no `catalogue_resource` key at all
+
 ---
+
+> Informational (not a requirement change): the "avatar/voice catalogue"
+> deferral (`spec.md`, "Out of Scope (C14)", open item 7.3) is answered by
+> this change. Binding a 3rd-party TTS secret (so either provider's
+> catalogue actually contains an Italian voice) remains a separate, future
+> decision — this change ships the picker and the honest-empty state for
+> both providers until that secret exists.
 
 ## Out of Scope (C14)
 
-- **Per-project template override.** The requirement is one active template per
-  ORGANIZATION, not per project. A project-level override is a plausible next
-  step — projects already carry `language` and `role_code`, so a single
-  org-wide avatar may prove too coarse for a tenant running interviews in two
-  languages — but it is deliberately not designed in now, so it stays easy to
-  add without reworking the single-active invariant. Tracked as open item 7.2.
-- **An avatar/voice catalogue.** `avatarId`, `voiceId`, `faceId` and `palId`
-  stay free-text, validated for shape (`FieldType::Text`) only, never against
-  either provider's live inventory. Fetching and caching each provider's
-  inventory is a second integration per provider, technically independent of
-  the schema this change ships, and can be added later without a migration.
-  Tracked as open item 7.3.
+None at present. Items previously deferred here have been delivered or moved into their own changes.
 
 ---
 
@@ -693,3 +726,154 @@ change that ships this fix.
 - WHEN validation fails
 - THEN the response carries `config.voice_id` alone
 - AND the form places its message under the voice field, not a generic banner
+
+### Requirement: Provider catalogue is fetchable, cached, admin-only, and never leaks a secret
+
+The system MUST provide a read-only, admin-only endpoint
+(`GET /api/avatar-templates/catalogue`) that returns a normalized list of a
+provider's real inventory for one resource type at a time, selected by
+`provider` (`heygen` | `tavus`) and `resource` (`voice` | `avatar` for
+`heygen`; `voice` | `replica` for `tavus`). Every entry MUST carry
+`{id: string, label: string, language: string|null, preview_image_url:
+string|null, preview_audio_url: string|null}`. `language` MUST be `null`,
+never a guessed or defaulted value, when the provider's own resource carries
+no language attribute (Tavus's voices and replicas today) — a filter for a
+specific language MUST NOT match a `null`-language entry.
+
+The endpoint MUST require the `admin` role, mirroring `AvatarTemplatePolicy`.
+Provider API responses reaching this endpoint carry no secret material
+themselves, but the request to fetch them uses a platform API key
+(`config('interview.heygen.api_key')` / `config('interview.tavus.api_key')`);
+that key MUST NEVER reach the response body, an error message, or any log
+line reachable from this endpoint — same discipline as `TavusPalSync`'s
+existing secret-handling rule.
+
+Results MUST be cached server-side per `(provider, resource)` pair with a TTL,
+so that opening the avatar-template form repeatedly does not re-hit a paid,
+rate-limited 3rd-party API on every request. A cache miss or a provider
+failure MUST return an empty list with a distinguishable status rather than
+a 500 — the picker degrades to manual-entry-only, it does not break the form.
+
+An unknown `provider` or `resource` value MUST be rejected with 422, matching
+the existing unknown-provider-name convention on template create/update.
+
+#### Scenario: An admin fetches HeyGen's voice catalogue
+
+- GIVEN an admin, and HeyGen/LiveAvatar's account has preset voices
+- WHEN `GET /api/avatar-templates/catalogue?provider=heygen&resource=voice`
+  is called
+- THEN the response is 200 with a list of `{id, label, language,
+  preview_image_url, preview_audio_url}` entries, `language` populated from
+  the provider's own `language` field on each voice
+
+#### Scenario: A Tavus resource with no language attribute reports null, never a guess
+
+- GIVEN Tavus's own voice or replica catalogue, neither of which carries a
+  language field
+- WHEN `GET /api/avatar-templates/catalogue?provider=tavus&resource=voice`
+  (or `resource=replica`) is called
+- THEN every entry's `language` is `null` — never `"en"`, never inferred
+  from the entry's name or description
+
+#### Scenario: Operator and viewer are refused
+
+- GIVEN a user with the `operator` or `viewer` role
+- WHEN they call `GET /api/avatar-templates/catalogue?provider=heygen&resource=voice`
+- THEN the response is 403
+
+#### Scenario: An unauthenticated caller is refused
+
+- WHEN an unauthenticated request reaches the catalogue endpoint
+- THEN the response is 401
+
+#### Scenario: An unknown provider or resource is a 422
+
+- WHEN `GET /api/avatar-templates/catalogue?provider=openai&resource=voice`
+  is called
+- THEN the response is 422
+
+#### Scenario: Repeated requests within the cache TTL do not re-call the provider
+
+- GIVEN a successful catalogue fetch for `(heygen, voice)` already cached
+- WHEN the same `(provider, resource)` pair is requested again within the
+  cache TTL
+- THEN no HTTP request reaches `api.liveavatar.com`, and the response is
+  served from cache
+
+#### Scenario: A provider failure degrades to an empty list, not a 500
+
+- GIVEN the upstream provider (Tavus or LiveAvatar) is unreachable or
+  returns an error
+- WHEN the catalogue endpoint is called for that provider
+- THEN the response is 200 with an empty list and a status field indicating
+  the fetch failed, never a 500, and never the provider's own error text
+
+#### Scenario: No provider API key ever reaches the response
+
+- GIVEN any successful or failed catalogue fetch
+- WHEN the response body, headers, or any error path is inspected
+- THEN no substring of `config('interview.heygen.api_key')` or
+  `config('interview.tavus.api_key')`'s value appears anywhere in it
+
+### Requirement: Active template resolution requires an explicit provider and never crosses providers
+
+`ActiveTemplateResolver::resolve(string $provider)` MUST take a **required**
+`$provider` argument with no default value, and MUST filter on
+`->where('provider', $provider)` in addition to `is_active`. An optional
+argument would allow a future call site to omit it and reintroduce
+cross-provider template leakage.
+
+Resolving an organization's active template for a given provider MUST return
+`null` rather than throw when no template is active for that provider —
+including when the organization has an active template on a *different*
+provider. Resolution failures or a `null` result MUST be swallowed at the
+call site; a candidate session MUST NOT fail to start because a template
+could not be resolved, and the provider payload falls back to
+byte-identical pre-template behavior.
+
+(Previously: `resolve()` took no arguments and matched on `is_active` alone,
+returning an active template regardless of its provider — a project running
+on Tavus could silently receive a HeyGen-shaped active template.)
+
+#### Scenario: An active template on a different provider is not returned
+
+- GIVEN organization O has an active `heygen` template and no `tavus` template
+- WHEN `ActiveTemplateResolver::resolve('tavus')` is called for organization O
+- THEN the result is `null` — the active `heygen` template is never returned
+
+#### Scenario: resolve() has no default argument
+
+- WHEN `ActiveTemplateResolver::resolve()` is called with no `$provider` argument
+- THEN a compile/type error results — there is no legal no-argument call
+
+#### Scenario: An organization with no active template on any provider resolves to null
+
+- GIVEN an organization with zero templates
+- WHEN `resolve('heygen')` is called
+- THEN the result is `null`, not an exception
+
+#### Scenario: Resolution never crosses tenants
+
+- GIVEN organization B has an active `tavus` template and organization A has none
+- WHEN `resolve('tavus')` is called for organization A
+- THEN the result is `null` — organization B's template is never returned
+
+### Requirement: Unbinding a template clears only that template's binding
+
+`PATCH /avatar-templates/{id}` with both `llm_model_id` and
+`llm_credential_id` set to null MUST clear the binding on that template
+alone, leaving every other template referencing the same credential
+untouched. Unbinding a HeyGen-provider template MUST delete its
+`heygen_llm_configuration_id` resource.
+
+#### Scenario: Unbinding one template leaves siblings intact
+
+- GIVEN two templates bound to the same credential
+- WHEN one is unbound via PATCH with both binding ids null
+- THEN the other template's binding is unchanged
+
+#### Scenario: Unbinding a HeyGen template removes its configuration
+
+- GIVEN a bound HeyGen template with a stored `heygen_llm_configuration_id`
+- WHEN it is unbound
+- THEN the HeyGen `llm_configuration` is deleted and the stored id is cleared
