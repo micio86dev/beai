@@ -323,3 +323,17 @@ Open and deliberately not code: the live gates G-A to G-D (each needs the owner'
 ## Gate status (2026-10-11)
 
 G-A to G-D have all been run with the owner's go. Open owner decisions at the flip: Q1 threshold (the hardened header held 3/3 in a small sample, see G-A), canary scope and default flag value, mid-competency reconnect (Q5), `participant_left_timeout` value and scope (evidence supports the default 60), and the real Tavus bill (no usage endpoint: read the dashboard minutes for 2026-10-10 18:30-18:48 UTC, expected about 18, and 2026-10-11 09:35-09:50 UTC, expected about 10.5, and whether they drew on the plan or on overage). The change is ready to archive once those decisions are recorded.
+
+## Tavus usage derived from the API (2026-10-11)
+
+Tavus has no usage or billing endpoint (docs index), so minutes were DERIVED read-only from the account's `GET /v2/conversations` (`updated_at - created_at`, an upper bound that includes created-but-unjoined time; for 11 conversations `system.replica_joined -> system.shutdown` was about 11.6 s shorter on average). The key belongs to the client's Tavus account, so the invoice is theirs to read; these figures are not billed amounts.
+
+| Window (UTC) | Conversations | Derived minutes | At 0.37 USD/min | At 0.75 USD/min |
+|---|---|---|---|---|
+| G-A round 1, 2026-10-10 16:54-16:59 | 3 | 7.99 | 2.96 | 5.99 |
+| G-A round 2, 2026-10-10 18:30-18:46 | 9 | 19.45 | 7.20 | 14.59 |
+| G-B/C/D, 2026-10-11 09:35-09:48 | 11 | 11.49 | 4.25 | 8.62 |
+| Total of the three live test windows | 23 | 38.93 | 14.4 | 29.2 |
+
+Estimated connected time is about 34.7 minutes (about 12.8 USD at 0.37). Account totals: 67 conversations and 111.15 derived minutes in the last 30 days (about 41 USD at 0.37), 182 conversations and 305.93 minutes since 2026-07-13. The repo's `rates.tavus.usd_per_minute` stays 0.37 (the published overage rate); whether the minutes drew on the plan allowance or on overage is only visible in the client's invoice.
+
