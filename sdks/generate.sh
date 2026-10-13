@@ -27,6 +27,10 @@ cd "$ROOT/sdks"
 # after their position (`..._progress_inner`, `..._inner_answers_inner`). Give
 # them names that say what they are, in all three SDKs.
 INLINE_NAMES="PublicInterview_progress_inner=PublicInterviewProgressCompetency,PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer"
+# The same goes for the models shared across operations: the generator names a
+# schema after the first operation that uses it, so the RFC 9457 problem body
+# would read as an "exports index 400" model everywhere.
+INLINE_NAMES="$INLINE_NAMES,public_api_exports_index_400_response=PublicProblem,public_api_exports_index_400_response_errors_inner=PublicProblemError,public_api_webhooks_deliveries_index_200_response_data_inner=PublicWebhookDelivery,public_api_exports_index_200_response_data_inner=PublicExport,inline_object=PublicMessageError"
 
 # Skip docs and tests: they multiply the tree size without adding runtime code.
 SKIP="apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
@@ -105,6 +109,48 @@ rewrite(root / "README.md", [
     ("npm install\nnpm run build", "bun install\nbun run build"),
     ("publish it to npm:\n\n```bash\nnpm publish", "publish it to npm:\n\n```bash\nbun publish"),
 ])
+PY
+
+# typescript-fetch imports every model an operation or model mentions, whether or
+# not the generated code ends up using it, and its blanket `eslint-disable` header
+# hides the result. Drop the specifiers that are never referenced. Only identifiers
+# are matched, against the file body without its import statements, so a name
+# used in code or in a type position always survives.
+python3 - typescript/src <<'PY'
+import pathlib
+import re
+import sys
+
+IMPORT = re.compile(r"^import (type )?\{([^}]*)\} from '([^']+)';\n", re.M)
+
+
+def prune(text):
+    body = IMPORT.sub("", text)
+
+    def rewrite(match):
+        kind, raw, source = match.group(1) or "", match.group(2), match.group(3)
+        names = [n.strip() for n in raw.split(",") if n.strip()]
+        kept = [n for n in names if re.search(r"\b" + re.escape(n.removeprefix("type ")) + r"\b", body)]
+        if len(kept) == len(names):
+            return match.group(0)
+        if not kept:
+            return ""
+        if "\n" in raw:
+            inner = "".join(f"    {n},\n" for n in kept)
+            return f"import {kind}{{\n{inner}}} from '{source}';\n"
+        return f"import {kind}{{ {', '.join(kept)} }} from '{source}';\n"
+
+    return IMPORT.sub(rewrite, text)
+
+
+changed = 0
+for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
+    before = path.read_text()
+    after = prune(before)
+    if after != before:
+        path.write_text(after)
+        changed += 1
+print(f"pruned unused imports in {changed} typescript files")
 PY
 
 generate php "$TMP/openapi.json" -g php \
