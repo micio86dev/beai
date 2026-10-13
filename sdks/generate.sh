@@ -85,8 +85,28 @@ with open(sys.argv[2], "w") as target:
     json.dump(spec, target, indent=2, sort_keys=True)
 PY
 
+# Fails when a mapped inline schema did not become the model it was named after:
+# a generator upgrade that renames its inline schemas must stop here, in the SDK
+# where it happened, instead of silently shipping the old names.
+require_models() {
+  sdk=$1
+  for pair in $(printf '%s' "$INLINE_NAMES" | tr ',' ' '); do
+    model=${pair#*=}
+    case $sdk in
+      typescript) found=$([ -f "typescript/src/models/$model.ts" ] && echo yes || echo no) ;;
+      php) found=$([ -f "php/lib/Model/$model.php" ] && echo yes || echo no) ;;
+      python) found=$(grep -rq "^class $model(" python/beai/models && echo yes || echo no) ;;
+    esac
+    if [ "$found" != yes ]; then
+      echo "ERROR: inline schema mapping '$pair' produced no $sdk model $model" >&2
+      exit 1
+    fi
+  done
+}
+
 generate typescript "$TMP/openapi.json" -g typescript-fetch \
   --additional-properties="npmName=@beai/sdk,npmVersion=$VERSION,supportsES6=true,typescriptThreePlus=true"
+require_models typescript
 
 # Bun is the only package manager we run: the generator's `prepare` script
 # would shell out to npm on every install, and its README tells maintainers to
@@ -118,89 +138,14 @@ rewrite(root / "README.md", [
 PY
 
 # typescript-fetch imports every model an operation or model mentions, whether or
-# not the generated code ends up using it, and its blanket `eslint-disable` header
-# hides the result. Drop the specifiers that are never referenced. Only identifiers
-# are matched, against the file body without its import statements, so a name
-# used in code or in a type position always survives. The same pass removes the
-# backslashes the generator puts in front of quotes inside JSDoc comments.
-python3 - typescript/src <<'PY'
-import pathlib
-import re
-import sys
-
-IMPORT = re.compile(r"^import (type )?\{([^}]*)\} from '([^']+)';\n", re.M)
-
-
-def specifier_name(specifier):
-    """`type Foo` imports the type `Foo`; the identifier to look for is `Foo`."""
-    return specifier.removeprefix("type ")
-
-
-def prune(text):
-    body = IMPORT.sub("", text)
-
-    def rewrite(match):
-        kind, raw, source = match.group(1) or "", match.group(2), match.group(3)
-        names = [n.strip() for n in raw.split(",") if n.strip()]
-        kept = [n for n in names if re.search(r"\b" + re.escape(specifier_name(n)) + r"\b", body)]
-        if len(kept) == len(names):
-            return match.group(0)
-        if not kept:
-            return ""
-        if "\n" in raw:
-            inner = "".join(f"    {n},\n" for n in kept)
-            return f"import {kind}{{\n{inner}}} from '{source}';\n"
-        return f"import {kind}{{ {', '.join(kept)} }} from '{source}';\n"
-
-    return IMPORT.sub(rewrite, text)
-
-
-def unescape_comments(text):
-    """The generator escapes quotes inside JSDoc (`organization\\'s`); comments need no escaping."""
-    lines = text.split("\n")
-    for i, line in enumerate(lines):
-        if line.lstrip().startswith("*"):
-            lines[i] = line.replace("\\'", "'").replace('\\"', '"')
-    return "\n".join(lines)
-
-
-results = {}
-for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
-    before = path.read_text()
-    after = unescape_comments(prune(before))
-    # A second pass must find nothing left to do: this is what proves that every
-    # unused import and every escaped comment quote was handled, not just some.
-    if unescape_comments(prune(after)) != after:
-        sys.exit(f"ERROR: {path}: post-processing is not idempotent")
-    if after != before:
-        results[path] = after
-
-# Nothing is written until every file passed, so a failure never leaves the tree
-# half post-processed.
-for path, after in results.items():
-    path.write_text(after)
-changed = len(results)
-print(f"pruned unused imports in {changed} typescript files")
-PY
+# not it uses it, and escapes quotes inside JSDoc comments. Clean both up in
+# postprocess_typescript.py (tested by scripts/tests/sdk-postprocess.test.sh).
+python3 -B postprocess_typescript.py typescript/src
 
 generate php "$TMP/openapi.json" -g php \
   --additional-properties="composerVendorName=beai,composerProjectName=beai-php,packageName=Beai,invokerPackage=Beai,artifactVersion=$VERSION"
+require_models php
 
 generate python "$TMP/openapi.json" -g python \
   --additional-properties="packageName=beai,projectName=beai,packageVersion=$VERSION"
-
-# A generator upgrade that renames an inline schema must fail here, in every SDK,
-# instead of silently shipping the old names.
-for pair in $(printf '%s' "$INLINE_NAMES" | tr ',' ' '); do
-  model=${pair#*=}
-  for target in "typescript/src/models/$model.ts" "php/lib/Model/$model.php"; do
-    if [ ! -f "$target" ]; then
-      echo "ERROR: inline schema mapping '$pair' produced no $target" >&2
-      exit 1
-    fi
-  done
-  if ! grep -rq "^class $model(" python/beai/models; then
-    echo "ERROR: inline schema mapping '$pair' produced no python model $model" >&2
-    exit 1
-  fi
-done
+require_models python

@@ -17,7 +17,7 @@
 # itself, checked before anything sources it), scripts/verify-openapi-parity.sh,
 # which step (b) below now calls, AND sdks/generate.sh + sdks/smoke.sh, which
 # the third job below runs — and the
-# lint of every bash script under scripts/ with the docker-disk-check, stack-doctor and stack-drift-guard suites.
+# lint of every bash script under scripts/ with the docker-disk-check, stack-doctor, stack-drift-guard and sdk-postprocess (100% line coverage) suites.
 # The openapi-parity fixture suite runs LATER, immediately before step (b),
 # because it needs Bun and `Set up Bun` comes after these two. All are listed
 # here because a step absent from the index is a step nobody renumbers.
@@ -244,6 +244,9 @@ jobs:
           # Python 3 is preinstalled on ubuntu-latest; no Docker needed.
           bash scripts/tests/stack-doctor.test.sh
           bash scripts/tests/stack-drift-guards.test.sh
+          # The TypeScript SDK post-processing (sdks/postprocess_typescript.py):
+          # unit tests plus a line-coverage gate at 100%, stdlib only.
+          bash scripts/tests/sdk-postprocess.test.sh
 
       # -----------------------------------------------------------------------
       # (a) docker compose config — validates the compose file parses cleanly
