@@ -115,7 +115,8 @@ PY
 # not the generated code ends up using it, and its blanket `eslint-disable` header
 # hides the result. Drop the specifiers that are never referenced. Only identifiers
 # are matched, against the file body without its import statements, so a name
-# used in code or in a type position always survives.
+# used in code or in a type position always survives. The same pass removes the
+# backslashes the generator puts in front of quotes inside JSDoc comments.
 python3 - typescript/src <<'PY'
 import pathlib
 import re
@@ -143,10 +144,19 @@ def prune(text):
     return IMPORT.sub(rewrite, text)
 
 
+def unescape_comments(text):
+    """The generator escapes quotes inside JSDoc (`organization\\'s`); comments need no escaping."""
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("*"):
+            lines[i] = line.replace("\\'", "'").replace('\\"', '"')
+    return "\n".join(lines)
+
+
 changed = 0
 for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
     before = path.read_text()
-    after = prune(before)
+    after = unescape_comments(prune(before))
     if after != before:
         path.write_text(after)
         changed += 1
