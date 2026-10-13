@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from beai.models.public_api_exports_index200_response_data_inner import PublicApiExportsIndex200ResponseDataInner
+from beai.models.public_export import PublicExport
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class PublicApiExportsIndex200Response(BaseModel):
     """
     PublicApiExportsIndex200Response
     """ # noqa: E501
-    data: List[PublicApiExportsIndex200ResponseDataInner]
+    data: List[PublicExport]
     has_more: StrictBool
     next_cursor: Optional[StrictStr]
     __properties: ClassVar[List[str]] = ["data", "has_more", "next_cursor"]
@@ -95,7 +95,7 @@ class PublicApiExportsIndex200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "data": [PublicApiExportsIndex200ResponseDataInner.from_dict(_item) for _item in obj["data"]] if obj.get("data") is not None else None,
+            "data": [PublicExport.from_dict(_item) for _item in obj["data"]] if obj.get("data") is not None else None,
             "has_more": obj.get("has_more"),
             "next_cursor": obj.get("next_cursor")
         })

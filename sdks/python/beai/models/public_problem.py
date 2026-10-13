@@ -17,19 +17,25 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from beai.models.public_problem_error import PublicProblemError
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class InlineObject1(BaseModel):
+class PublicProblem(BaseModel):
     """
-    InlineObject1
+    PublicProblem
     """ # noqa: E501
-    errors: Dict[str, List[StrictStr]] = Field(description="A detailed description of each field that failed validation.")
-    message: StrictStr = Field(description="Errors overview.")
-    __properties: ClassVar[List[str]] = ["errors", "message"]
+    code: StrictStr
+    detail: Optional[StrictStr] = None
+    errors: Optional[List[PublicProblemError]] = None
+    request_id: StrictStr
+    status: StrictInt
+    title: StrictStr
+    type: StrictStr
+    __properties: ClassVar[List[str]] = ["code", "detail", "errors", "request_id", "status", "title", "type"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -49,7 +55,7 @@ class InlineObject1(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of InlineObject1 from a JSON string"""
+        """Create an instance of PublicProblem from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -70,11 +76,17 @@ class InlineObject1(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in errors (list)
+        _items = []
+        if self.errors:
+            for _item_errors in self.errors:
+                _items.append(_item_errors.to_dict() if _item_errors is not None else None)
+            _dict['errors'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of InlineObject1 from a dict"""
+        """Create an instance of PublicProblem from a dict"""
         if obj is None:
             return None
 
@@ -82,8 +94,13 @@ class InlineObject1(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "errors": obj.get("errors"),
-            "message": obj.get("message")
+            "code": obj.get("code"),
+            "detail": obj.get("detail"),
+            "errors": [PublicProblemError.from_dict(_item) for _item in obj["errors"]] if obj.get("errors") is not None else None,
+            "request_id": obj.get("request_id"),
+            "status": obj.get("status"),
+            "title": obj.get("title"),
+            "type": obj.get("type")
         })
         return _obj
 

@@ -20,7 +20,7 @@ from typing import Optional
 from typing_extensions import Annotated
 from beai.models.create_export_request import CreateExportRequest
 from beai.models.public_api_exports_index200_response import PublicApiExportsIndex200Response
-from beai.models.public_api_exports_index200_response_data_inner import PublicApiExportsIndex200ResponseDataInner
+from beai.models.public_export import PublicExport
 
 from beai.api_client import ApiClient, RequestSerialized
 from beai.api_response import ApiResponse
@@ -98,7 +98,7 @@ class ExportApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiExportsIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -169,7 +169,7 @@ class ExportApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiExportsIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -240,7 +240,7 @@ class ExportApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiExportsIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -336,7 +336,7 @@ class ExportApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> PublicApiExportsIndex200ResponseDataInner:
+    ) -> PublicExport:
         """public_api_exports_show
 
 
@@ -373,8 +373,8 @@ class ExportApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "PublicApiExportsIndex200ResponseDataInner",
-            '404': "InlineObject",
+            '200': "PublicExport",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -403,7 +403,7 @@ class ExportApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[PublicApiExportsIndex200ResponseDataInner]:
+    ) -> ApiResponse[PublicExport]:
         """public_api_exports_show
 
 
@@ -440,8 +440,8 @@ class ExportApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "PublicApiExportsIndex200ResponseDataInner",
-            '404': "InlineObject",
+            '200': "PublicExport",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -507,8 +507,8 @@ class ExportApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "PublicApiExportsIndex200ResponseDataInner",
-            '404': "InlineObject",
+            '200': "PublicExport",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -597,7 +597,7 @@ class ExportApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> PublicApiExportsIndex200ResponseDataInner:
+    ) -> PublicExport:
         """public_api_exports_store
 
 
@@ -634,9 +634,9 @@ class ExportApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '202': "PublicApiExportsIndex200ResponseDataInner",
-            '422': "InlineObject1",
-            '429': "PublicApiExportsIndex400Response",
+            '202': "PublicExport",
+            '422': "PublicMessageError",
+            '429': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -665,7 +665,7 @@ class ExportApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[PublicApiExportsIndex200ResponseDataInner]:
+    ) -> ApiResponse[PublicExport]:
         """public_api_exports_store
 
 
@@ -702,9 +702,9 @@ class ExportApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '202': "PublicApiExportsIndex200ResponseDataInner",
-            '422': "InlineObject1",
-            '429': "PublicApiExportsIndex400Response",
+            '202': "PublicExport",
+            '422': "PublicMessageError",
+            '429': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -770,9 +770,9 @@ class ExportApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '202': "PublicApiExportsIndex200ResponseDataInner",
-            '422': "InlineObject1",
-            '429': "PublicApiExportsIndex400Response",
+            '202': "PublicExport",
+            '422': "PublicMessageError",
+            '429': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
