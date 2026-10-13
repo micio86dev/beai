@@ -669,9 +669,12 @@ beai_test_…`), global `security: [apiKey]`, `security: []` on `GET /health`, a
 `servers[0]` = `https://api.beai.example/v1`. Generated SDKs now send
 `Authorization: Bearer <accessToken>` (asserted offline in `sdks/smoke.sh`).
 Open points:
-- The server host is the reference's placeholder (`.example`); it is
-  overridable through `PUBLIC_API_SPEC_SERVER_URL` (`public_api.spec_server_url`)
-  and must be set to the real host once G-03 is decided. The reference URL path
+- **Update 2026-10-13 (owner, provisional):** the server host is now the Railway
+  domain, `https://api-production-640e.up.railway.app/api/v1`, which is also how the
+  app is really mounted (`/api/v1`). It stays overridable through
+  `PUBLIC_API_SPEC_SERVER_URL` (`public_api.spec_server_url`); change the default
+  when a custom domain exists.
+- Original note: the server host was the reference's placeholder (`.example`). The reference URL path
   is `/v1` while the app serves `/api/v1`; the deployment must route one to the
   other or the reference must change.
 - The default (whole-`/api`) document `openapi.json` is intentionally NOT given
