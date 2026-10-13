@@ -12,13 +12,10 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { CreateInterviewRequestCandidate } from './CreateInterviewRequestCandidate';
 import {
     CreateInterviewRequestCandidateFromJSON,
-    CreateInterviewRequestCandidateFromJSONTyped,
     CreateInterviewRequestCandidateToJSON,
-    CreateInterviewRequestCandidateToJSONTyped,
 } from './CreateInterviewRequestCandidate';
 
 /**

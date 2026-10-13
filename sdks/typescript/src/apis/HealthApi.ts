@@ -16,7 +16,6 @@ import * as runtime from '../runtime';
 import {
     type PublicApiHealth200Response,
     PublicApiHealth200ResponseFromJSON,
-    PublicApiHealth200ResponseToJSON,
 } from '../models/PublicApiHealth200Response';
 
 /**

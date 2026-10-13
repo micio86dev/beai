@@ -12,13 +12,12 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface InlineObject1
+ * @interface PublicMessageError
  */
-export interface InlineObject1 {
+export interface PublicMessageError {
     /**
      * A detailed description of each field that failed validation.
      */
@@ -30,19 +29,19 @@ export interface InlineObject1 {
 }
 
 /**
- * Check if a given object implements the InlineObject1 interface.
+ * Check if a given object implements the PublicMessageError interface.
  */
-export function instanceOfInlineObject1(value: object): value is InlineObject1 {
+export function instanceOfPublicMessageError(value: object): value is PublicMessageError {
     if (!('errors' in value) || value['errors'] === undefined) return false;
     if (!('message' in value) || value['message'] === undefined) return false;
     return true;
 }
 
-export function InlineObject1FromJSON(json: any): InlineObject1 {
-    return InlineObject1FromJSONTyped(json, false);
+export function PublicMessageErrorFromJSON(json: any): PublicMessageError {
+    return PublicMessageErrorFromJSONTyped(json, false);
 }
 
-export function InlineObject1FromJSONTyped(json: any, ignoreDiscriminator: boolean): InlineObject1 {
+export function PublicMessageErrorFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicMessageError {
     if (json == null) {
         return json;
     }
@@ -53,11 +52,11 @@ export function InlineObject1FromJSONTyped(json: any, ignoreDiscriminator: boole
     };
 }
 
-export function InlineObject1ToJSON(json: any): InlineObject1 {
-    return InlineObject1ToJSONTyped(json, false);
+export function PublicMessageErrorToJSON(json: any): PublicMessageError {
+    return PublicMessageErrorToJSONTyped(json, false);
 }
 
-export function InlineObject1ToJSONTyped(value?: InlineObject1 | null, ignoreDiscriminator: boolean = false): any {
+export function PublicMessageErrorToJSONTyped(value?: PublicMessageError | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

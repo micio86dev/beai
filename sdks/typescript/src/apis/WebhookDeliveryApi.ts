@@ -14,25 +14,13 @@
 
 import * as runtime from '../runtime';
 import {
-    type InlineObject,
-    InlineObjectFromJSON,
-    InlineObjectToJSON,
-} from '../models/InlineObject';
-import {
-    type PublicApiExportsIndex400Response,
-    PublicApiExportsIndex400ResponseFromJSON,
-    PublicApiExportsIndex400ResponseToJSON,
-} from '../models/PublicApiExportsIndex400Response';
-import {
     type PublicApiWebhooksDeliveriesIndex200Response,
     PublicApiWebhooksDeliveriesIndex200ResponseFromJSON,
-    PublicApiWebhooksDeliveriesIndex200ResponseToJSON,
 } from '../models/PublicApiWebhooksDeliveriesIndex200Response';
 import {
-    type PublicApiWebhooksDeliveriesIndex200ResponseDataInner,
-    PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSON,
-    PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSON,
-} from '../models/PublicApiWebhooksDeliveriesIndex200ResponseDataInner';
+    type PublicWebhookDelivery,
+    PublicWebhookDeliveryFromJSON,
+} from '../models/PublicWebhookDelivery';
 
 export interface PublicApiWebhooksDeliveriesIndexRequest {
     /**
@@ -175,18 +163,18 @@ export class WebhookDeliveryApi extends runtime.BaseAPI {
      * Re-queues one delivery for immediate re-send. Allowed only from a terminal state: `delivered`, `failed_permanent` or `dead`.
      * Redeliver a webhook delivery
      */
-    async publicApiWebhooksDeliveriesRedeliverRaw(requestParameters: PublicApiWebhooksDeliveriesRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiWebhooksDeliveriesIndex200ResponseDataInner>> {
+    async publicApiWebhooksDeliveriesRedeliverRaw(requestParameters: PublicApiWebhooksDeliveriesRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicWebhookDelivery>> {
         const requestOptions = await this.publicApiWebhooksDeliveriesRedeliverRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => PublicWebhookDeliveryFromJSON(jsonValue));
     }
 
     /**
      * Re-queues one delivery for immediate re-send. Allowed only from a terminal state: `delivered`, `failed_permanent` or `dead`.
      * Redeliver a webhook delivery
      */
-    async publicApiWebhooksDeliveriesRedeliver(requestParameters: PublicApiWebhooksDeliveriesRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiWebhooksDeliveriesIndex200ResponseDataInner> {
+    async publicApiWebhooksDeliveriesRedeliver(requestParameters: PublicApiWebhooksDeliveriesRedeliverRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicWebhookDelivery> {
         const response = await this.publicApiWebhooksDeliveriesRedeliverRaw(requestParameters, initOverrides);
         return await response.value();
     }

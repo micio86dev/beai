@@ -12,13 +12,10 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicInterviewProgressAnswer } from './PublicInterviewProgressAnswer';
 import {
     PublicInterviewProgressAnswerFromJSON,
-    PublicInterviewProgressAnswerFromJSONTyped,
     PublicInterviewProgressAnswerToJSON,
-    PublicInterviewProgressAnswerToJSONTyped,
 } from './PublicInterviewProgressAnswer';
 
 /**

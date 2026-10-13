@@ -12,21 +12,18 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
-import type { PublicApiExportsIndex400ResponseErrorsInner } from './PublicApiExportsIndex400ResponseErrorsInner';
+import type { PublicProblemError } from './PublicProblemError';
 import {
-    PublicApiExportsIndex400ResponseErrorsInnerFromJSON,
-    PublicApiExportsIndex400ResponseErrorsInnerFromJSONTyped,
-    PublicApiExportsIndex400ResponseErrorsInnerToJSON,
-    PublicApiExportsIndex400ResponseErrorsInnerToJSONTyped,
-} from './PublicApiExportsIndex400ResponseErrorsInner';
+    PublicProblemErrorFromJSON,
+    PublicProblemErrorToJSON,
+} from './PublicProblemError';
 
 /**
  * 
  * @export
- * @interface PublicApiExportsIndex400Response
+ * @interface PublicProblem
  */
-export interface PublicApiExportsIndex400Response {
+export interface PublicProblem {
     /**
      * 
      */
@@ -38,7 +35,7 @@ export interface PublicApiExportsIndex400Response {
     /**
      * 
      */
-    errors?: Array<PublicApiExportsIndex400ResponseErrorsInner>;
+    errors?: Array<PublicProblemError>;
     /**
      * 
      */
@@ -58,9 +55,9 @@ export interface PublicApiExportsIndex400Response {
 }
 
 /**
- * Check if a given object implements the PublicApiExportsIndex400Response interface.
+ * Check if a given object implements the PublicProblem interface.
  */
-export function instanceOfPublicApiExportsIndex400Response(value: object): value is PublicApiExportsIndex400Response {
+export function instanceOfPublicProblem(value: object): value is PublicProblem {
     if (!('code' in value) || value['code'] === undefined) return false;
     if ((!('requestId' in (value as Record<string, any>)) && !('request_id' in (value as Record<string, any>))) || ((value as Record<string, any>)['requestId'] === undefined && (value as Record<string, any>)['request_id'] === undefined)) return false;
     if (!('status' in value) || value['status'] === undefined) return false;
@@ -69,11 +66,11 @@ export function instanceOfPublicApiExportsIndex400Response(value: object): value
     return true;
 }
 
-export function PublicApiExportsIndex400ResponseFromJSON(json: any): PublicApiExportsIndex400Response {
-    return PublicApiExportsIndex400ResponseFromJSONTyped(json, false);
+export function PublicProblemFromJSON(json: any): PublicProblem {
+    return PublicProblemFromJSONTyped(json, false);
 }
 
-export function PublicApiExportsIndex400ResponseFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicApiExportsIndex400Response {
+export function PublicProblemFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicProblem {
     if (json == null) {
         return json;
     }
@@ -81,7 +78,7 @@ export function PublicApiExportsIndex400ResponseFromJSONTyped(json: any, ignoreD
         
         'code': json['code'],
         'detail': json['detail'] == null ? undefined : json['detail'],
-        'errors': json['errors'] == null ? undefined : ((json['errors'] as Array<any>).map(PublicApiExportsIndex400ResponseErrorsInnerFromJSON)),
+        'errors': json['errors'] == null ? undefined : ((json['errors'] as Array<any>).map(PublicProblemErrorFromJSON)),
         'requestId': json['request_id'],
         'status': json['status'],
         'title': json['title'],
@@ -89,11 +86,11 @@ export function PublicApiExportsIndex400ResponseFromJSONTyped(json: any, ignoreD
     };
 }
 
-export function PublicApiExportsIndex400ResponseToJSON(json: any): PublicApiExportsIndex400Response {
-    return PublicApiExportsIndex400ResponseToJSONTyped(json, false);
+export function PublicProblemToJSON(json: any): PublicProblem {
+    return PublicProblemToJSONTyped(json, false);
 }
 
-export function PublicApiExportsIndex400ResponseToJSONTyped(value?: PublicApiExportsIndex400Response | null, ignoreDiscriminator: boolean = false): any {
+export function PublicProblemToJSONTyped(value?: PublicProblem | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
@@ -102,7 +99,7 @@ export function PublicApiExportsIndex400ResponseToJSONTyped(value?: PublicApiExp
         
         'code': value['code'],
         'detail': value['detail'],
-        'errors': value['errors'] == null ? undefined : ((value['errors'] as Array<any>).map(PublicApiExportsIndex400ResponseErrorsInnerToJSON)),
+        'errors': value['errors'] == null ? undefined : ((value['errors'] as Array<any>).map(PublicProblemErrorToJSON)),
         'request_id': value['requestId'],
         'status': value['status'],
         'title': value['title'],

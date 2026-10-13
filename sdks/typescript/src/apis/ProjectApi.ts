@@ -14,24 +14,12 @@
 
 import * as runtime from '../runtime';
 import {
-    type InlineObject,
-    InlineObjectFromJSON,
-    InlineObjectToJSON,
-} from '../models/InlineObject';
-import {
-    type PublicApiExportsIndex400Response,
-    PublicApiExportsIndex400ResponseFromJSON,
-    PublicApiExportsIndex400ResponseToJSON,
-} from '../models/PublicApiExportsIndex400Response';
-import {
     type PublicApiProjectsIndex200Response,
     PublicApiProjectsIndex200ResponseFromJSON,
-    PublicApiProjectsIndex200ResponseToJSON,
 } from '../models/PublicApiProjectsIndex200Response';
 import {
     type PublicProject,
     PublicProjectFromJSON,
-    PublicProjectToJSON,
 } from '../models/PublicProject';
 
 export interface PublicApiProjectsIndexRequest {
