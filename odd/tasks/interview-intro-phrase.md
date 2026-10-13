@@ -50,7 +50,7 @@ Closed 2026-10-13 and released: api v0.73.0, frontend v0.26.11 (spec sync only),
 - F3: api 2e8205b (optional `opening.intro_spoken` fragment: the sealed active prompt set keeps working, baseline stays at 32 required keys) and 5e499be (intro prepended inside the single opening string, only `first` variant, competency 1, with a primary to follow). Guards a881a73, eff990e, 5b611c3.
 - F4: api d7addbe (TurnClassifier suffix match keeps the primary as the tail; primary count and resume unchanged). No production change needed.
 - F5: backoffice 3b2faab, 7107503, 7409986, plus 5184f13 and 0bf6141 (counter on trimmed text, exact e2e assertions).
-- F6: no frontend code change. The providers speak the `opening_text` / `custom_greeting` string verbatim; this was confirmed by reading the code path, no dedicated frontend test was added.
+- F6: no frontend code change. The frontend never receives or builds the opening text (`opening_text` / `custom_greeting` appear nowhere in its code): the api hands it to the provider and the frontend only sees the avatar utterance and runs it through `matchesEndPhrase`. Proven by 14 tests in `tests/unit/opening-text-intro.spec.ts` (frontend a1d17fe): long intros with accents and quotes never complete the interview, the exact end/final phrase still does.
 - F7: releases above; production: api, worker, scheduler, frontend and backoffice deployments SUCCESS, health 200, environment 0 issues, `GET /api/admin/settings` answers 401 without a token.
 
 Checks observed: api 9511 tests at 98.2 percent (pint, phpstan clean); backoffice 4078 tests at 99.46/95.51/96.42, e2e on Chromium and WebKit; native review approved on every commit.
