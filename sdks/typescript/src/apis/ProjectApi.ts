@@ -14,24 +14,12 @@
 
 import * as runtime from '../runtime';
 import {
-    type InlineObject,
-    InlineObjectFromJSON,
-    InlineObjectToJSON,
-} from '../models/InlineObject';
-import {
-    type PublicApiExportsIndex400Response,
-    PublicApiExportsIndex400ResponseFromJSON,
-    PublicApiExportsIndex400ResponseToJSON,
-} from '../models/PublicApiExportsIndex400Response';
-import {
     type PublicApiProjectsIndex200Response,
     PublicApiProjectsIndex200ResponseFromJSON,
-    PublicApiProjectsIndex200ResponseToJSON,
 } from '../models/PublicApiProjectsIndex200Response';
 import {
     type PublicProject,
     PublicProjectFromJSON,
-    PublicProjectToJSON,
 } from '../models/PublicProject';
 
 export interface PublicApiProjectsIndexRequest {
@@ -117,7 +105,7 @@ export class ProjectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the organization\'s projects in cursor-paginated pages, newest first. The `status`, `role_code` and `assessment_type` filters are optional: an empty value is treated as not provided, and an unrecognised value answers `400 validation_failed`.
+     * Returns the organization's projects in cursor-paginated pages, newest first. The `status`, `role_code` and `assessment_type` filters are optional: an empty value is treated as not provided, and an unrecognised value answers `400 validation_failed`.
      * List projects
      */
     async publicApiProjectsIndexRaw(requestParameters: PublicApiProjectsIndexRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiProjectsIndex200Response>> {
@@ -128,7 +116,7 @@ export class ProjectApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the organization\'s projects in cursor-paginated pages, newest first. The `status`, `role_code` and `assessment_type` filters are optional: an empty value is treated as not provided, and an unrecognised value answers `400 validation_failed`.
+     * Returns the organization's projects in cursor-paginated pages, newest first. The `status`, `role_code` and `assessment_type` filters are optional: an empty value is treated as not provided, and an unrecognised value answers `400 validation_failed`.
      * List projects
      */
     async publicApiProjectsIndex(requestParameters: PublicApiProjectsIndexRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiProjectsIndex200Response> {

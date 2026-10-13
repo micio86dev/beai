@@ -12,13 +12,10 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInner } from './PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInner';
 import {
     PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInnerFromJSON,
-    PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInnerFromJSONTyped,
     PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInnerToJSON,
-    PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInnerToJSONTyped,
 } from './PublicApiInterviewsScoring200ResponseCompetenciesValueBehaviorsInner';
 
 /**

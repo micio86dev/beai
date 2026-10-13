@@ -12,14 +12,11 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
-import type { PublicApiWebhooksDeliveriesIndex200ResponseDataInner } from './PublicApiWebhooksDeliveriesIndex200ResponseDataInner';
+import type { PublicWebhookDelivery } from './PublicWebhookDelivery';
 import {
-    PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSON,
-    PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSONTyped,
-    PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSON,
-    PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSONTyped,
-} from './PublicApiWebhooksDeliveriesIndex200ResponseDataInner';
+    PublicWebhookDeliveryFromJSON,
+    PublicWebhookDeliveryToJSON,
+} from './PublicWebhookDelivery';
 
 /**
  * 
@@ -30,7 +27,7 @@ export interface PublicApiWebhooksDeliveriesIndex200Response {
     /**
      * 
      */
-    data: Array<PublicApiWebhooksDeliveriesIndex200ResponseDataInner>;
+    data: Array<PublicWebhookDelivery>;
     /**
      * 
      */
@@ -61,7 +58,7 @@ export function PublicApiWebhooksDeliveriesIndex200ResponseFromJSONTyped(json: a
     }
     return {
         
-        'data': ((json['data'] as Array<any>).map(PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSON)),
+        'data': ((json['data'] as Array<any>).map(PublicWebhookDeliveryFromJSON)),
         'hasMore': json['has_more'],
         'nextCursor': json['next_cursor'],
     };
@@ -78,7 +75,7 @@ export function PublicApiWebhooksDeliveriesIndex200ResponseToJSONTyped(value?: P
 
     return {
         
-        'data': ((value['data'] as Array<any>).map(PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSON)),
+        'data': ((value['data'] as Array<any>).map(PublicWebhookDeliveryToJSON)),
         'has_more': value['hasMore'],
         'next_cursor': value['nextCursor'],
     };

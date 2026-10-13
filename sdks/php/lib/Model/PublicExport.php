@@ -1,6 +1,6 @@
 <?php
 /**
- * PublicApiExportsIndex200ResponseDataInner
+ * PublicExport
  *
  * PHP version 8.1
  *
@@ -32,7 +32,7 @@ use \ArrayAccess;
 use \Beai\ObjectSerializer;
 
 /**
- * PublicApiExportsIndex200ResponseDataInner Class Doc Comment
+ * PublicExport Class Doc Comment
  *
  * @category Class
  * @package  Beai
@@ -40,7 +40,7 @@ use \Beai\ObjectSerializer;
  * @link     https://openapi-generator.tech
  * @implements \ArrayAccess<string, mixed>
  */
-class PublicApiExportsIndex200ResponseDataInner implements ModelInterface, ArrayAccess, \JsonSerializable
+class PublicExport implements ModelInterface, ArrayAccess, \JsonSerializable
 {
     public const DISCRIMINATOR = null;
 
@@ -49,7 +49,7 @@ class PublicApiExportsIndex200ResponseDataInner implements ModelInterface, Array
      *
      * @var string
      */
-    protected static $openAPIModelName = 'public_api_exports_index_200_response_data_inner';
+    protected static $openAPIModelName = 'PublicExport';
 
     /**
      * Array of property to type mappings. Used for (de)serialization

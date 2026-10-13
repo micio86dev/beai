@@ -19,7 +19,7 @@ from pydantic import Field, StrictInt, StrictStr
 from typing import Optional
 from typing_extensions import Annotated
 from beai.models.public_api_webhooks_deliveries_index200_response import PublicApiWebhooksDeliveriesIndex200Response
-from beai.models.public_api_webhooks_deliveries_index200_response_data_inner import PublicApiWebhooksDeliveriesIndex200ResponseDataInner
+from beai.models.public_webhook_delivery import PublicWebhookDelivery
 
 from beai.api_client import ApiClient, RequestSerialized
 from beai.api_response import ApiResponse
@@ -110,7 +110,7 @@ class WebhookDeliveryApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiWebhooksDeliveriesIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -194,7 +194,7 @@ class WebhookDeliveryApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiWebhooksDeliveriesIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -278,7 +278,7 @@ class WebhookDeliveryApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiWebhooksDeliveriesIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -389,7 +389,7 @@ class WebhookDeliveryApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> PublicApiWebhooksDeliveriesIndex200ResponseDataInner:
+    ) -> PublicWebhookDelivery:
         """Redeliver a webhook delivery
 
         Re-queues one delivery for immediate re-send. Allowed only from a terminal state: `delivered`, `failed_permanent` or `dead`.
@@ -427,9 +427,9 @@ class WebhookDeliveryApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '202': "PublicApiWebhooksDeliveriesIndex200ResponseDataInner",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '202': "PublicWebhookDelivery",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -458,7 +458,7 @@ class WebhookDeliveryApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[PublicApiWebhooksDeliveriesIndex200ResponseDataInner]:
+    ) -> ApiResponse[PublicWebhookDelivery]:
         """Redeliver a webhook delivery
 
         Re-queues one delivery for immediate re-send. Allowed only from a terminal state: `delivered`, `failed_permanent` or `dead`.
@@ -496,9 +496,9 @@ class WebhookDeliveryApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '202': "PublicApiWebhooksDeliveriesIndex200ResponseDataInner",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '202': "PublicWebhookDelivery",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -565,9 +565,9 @@ class WebhookDeliveryApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '202': "PublicApiWebhooksDeliveriesIndex200ResponseDataInner",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '202': "PublicWebhookDelivery",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,

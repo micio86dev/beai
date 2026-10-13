@@ -12,20 +12,15 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicInterviewProgressCompetency } from './PublicInterviewProgressCompetency';
 import {
     PublicInterviewProgressCompetencyFromJSON,
-    PublicInterviewProgressCompetencyFromJSONTyped,
     PublicInterviewProgressCompetencyToJSON,
-    PublicInterviewProgressCompetencyToJSONTyped,
 } from './PublicInterviewProgressCompetency';
 import type { PublicInterviewProject } from './PublicInterviewProject';
 import {
     PublicInterviewProjectFromJSON,
-    PublicInterviewProjectFromJSONTyped,
     PublicInterviewProjectToJSON,
-    PublicInterviewProjectToJSONTyped,
 } from './PublicInterviewProject';
 
 /**

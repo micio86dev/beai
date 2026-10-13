@@ -12,14 +12,11 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
-import type { PublicApiExportsIndex200ResponseDataInner } from './PublicApiExportsIndex200ResponseDataInner';
+import type { PublicExport } from './PublicExport';
 import {
-    PublicApiExportsIndex200ResponseDataInnerFromJSON,
-    PublicApiExportsIndex200ResponseDataInnerFromJSONTyped,
-    PublicApiExportsIndex200ResponseDataInnerToJSON,
-    PublicApiExportsIndex200ResponseDataInnerToJSONTyped,
-} from './PublicApiExportsIndex200ResponseDataInner';
+    PublicExportFromJSON,
+    PublicExportToJSON,
+} from './PublicExport';
 
 /**
  * 
@@ -30,7 +27,7 @@ export interface PublicApiExportsIndex200Response {
     /**
      * 
      */
-    data: Array<PublicApiExportsIndex200ResponseDataInner>;
+    data: Array<PublicExport>;
     /**
      * 
      */
@@ -61,7 +58,7 @@ export function PublicApiExportsIndex200ResponseFromJSONTyped(json: any, ignoreD
     }
     return {
         
-        'data': ((json['data'] as Array<any>).map(PublicApiExportsIndex200ResponseDataInnerFromJSON)),
+        'data': ((json['data'] as Array<any>).map(PublicExportFromJSON)),
         'hasMore': json['has_more'],
         'nextCursor': json['next_cursor'],
     };
@@ -78,7 +75,7 @@ export function PublicApiExportsIndex200ResponseToJSONTyped(value?: PublicApiExp
 
     return {
         
-        'data': ((value['data'] as Array<any>).map(PublicApiExportsIndex200ResponseDataInnerToJSON)),
+        'data': ((value['data'] as Array<any>).map(PublicExportToJSON)),
         'has_more': value['hasMore'],
         'next_cursor': value['nextCursor'],
     };

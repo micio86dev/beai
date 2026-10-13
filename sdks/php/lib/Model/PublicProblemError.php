@@ -1,6 +1,6 @@
 <?php
 /**
- * PublicApiExportsIndex400ResponseErrorsInner
+ * PublicProblemError
  *
  * PHP version 8.1
  *
@@ -32,7 +32,7 @@ use \ArrayAccess;
 use \Beai\ObjectSerializer;
 
 /**
- * PublicApiExportsIndex400ResponseErrorsInner Class Doc Comment
+ * PublicProblemError Class Doc Comment
  *
  * @category Class
  * @package  Beai
@@ -40,7 +40,7 @@ use \Beai\ObjectSerializer;
  * @link     https://openapi-generator.tech
  * @implements \ArrayAccess<string, mixed>
  */
-class PublicApiExportsIndex400ResponseErrorsInner implements ModelInterface, ArrayAccess, \JsonSerializable
+class PublicProblemError implements ModelInterface, ArrayAccess, \JsonSerializable
 {
     public const DISCRIMINATOR = null;
 
@@ -49,7 +49,7 @@ class PublicApiExportsIndex400ResponseErrorsInner implements ModelInterface, Arr
      *
      * @var string
      */
-    protected static $openAPIModelName = 'public_api_exports_index_400_response_errors_inner';
+    protected static $openAPIModelName = 'PublicProblemError';
 
     /**
      * Array of property to type mappings. Used for (de)serialization

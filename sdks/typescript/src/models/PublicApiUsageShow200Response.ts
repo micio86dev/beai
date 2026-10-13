@@ -12,27 +12,20 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicApiUsageShow200ResponseEvaluations } from './PublicApiUsageShow200ResponseEvaluations';
 import {
     PublicApiUsageShow200ResponseEvaluationsFromJSON,
-    PublicApiUsageShow200ResponseEvaluationsFromJSONTyped,
     PublicApiUsageShow200ResponseEvaluationsToJSON,
-    PublicApiUsageShow200ResponseEvaluationsToJSONTyped,
 } from './PublicApiUsageShow200ResponseEvaluations';
 import type { PublicApiUsageShow200ResponseLlmTokens } from './PublicApiUsageShow200ResponseLlmTokens';
 import {
     PublicApiUsageShow200ResponseLlmTokensFromJSON,
-    PublicApiUsageShow200ResponseLlmTokensFromJSONTyped,
     PublicApiUsageShow200ResponseLlmTokensToJSON,
-    PublicApiUsageShow200ResponseLlmTokensToJSONTyped,
 } from './PublicApiUsageShow200ResponseLlmTokens';
 import type { PublicApiUsageShow200ResponseInterviews } from './PublicApiUsageShow200ResponseInterviews';
 import {
     PublicApiUsageShow200ResponseInterviewsFromJSON,
-    PublicApiUsageShow200ResponseInterviewsFromJSONTyped,
     PublicApiUsageShow200ResponseInterviewsToJSON,
-    PublicApiUsageShow200ResponseInterviewsToJSONTyped,
 } from './PublicApiUsageShow200ResponseInterviews';
 
 /**

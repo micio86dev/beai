@@ -12,13 +12,10 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicInterview } from './PublicInterview';
 import {
     PublicInterviewFromJSON,
-    PublicInterviewFromJSONTyped,
     PublicInterviewToJSON,
-    PublicInterviewToJSONTyped,
 } from './PublicInterview';
 
 /**

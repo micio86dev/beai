@@ -1,6 +1,6 @@
 <?php
 /**
- * InlineObject1
+ * PublicMessageError
  *
  * PHP version 8.1
  *
@@ -32,7 +32,7 @@ use \ArrayAccess;
 use \Beai\ObjectSerializer;
 
 /**
- * InlineObject1 Class Doc Comment
+ * PublicMessageError Class Doc Comment
  *
  * @category Class
  * @package  Beai
@@ -40,7 +40,7 @@ use \Beai\ObjectSerializer;
  * @link     https://openapi-generator.tech
  * @implements \ArrayAccess<string, mixed>
  */
-class InlineObject1 implements ModelInterface, ArrayAccess, \JsonSerializable
+class PublicMessageError implements ModelInterface, ArrayAccess, \JsonSerializable
 {
     public const DISCRIMINATOR = null;
 
@@ -49,7 +49,7 @@ class InlineObject1 implements ModelInterface, ArrayAccess, \JsonSerializable
      *
      * @var string
      */
-    protected static $openAPIModelName = 'inline_object_1';
+    protected static $openAPIModelName = 'PublicMessageError';
 
     /**
      * Array of property to type mappings. Used for (de)serialization

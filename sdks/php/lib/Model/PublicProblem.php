@@ -1,6 +1,6 @@
 <?php
 /**
- * InlineObject
+ * PublicProblem
  *
  * PHP version 8.1
  *
@@ -32,7 +32,7 @@ use \ArrayAccess;
 use \Beai\ObjectSerializer;
 
 /**
- * InlineObject Class Doc Comment
+ * PublicProblem Class Doc Comment
  *
  * @category Class
  * @package  Beai
@@ -40,7 +40,7 @@ use \Beai\ObjectSerializer;
  * @link     https://openapi-generator.tech
  * @implements \ArrayAccess<string, mixed>
  */
-class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
+class PublicProblem implements ModelInterface, ArrayAccess, \JsonSerializable
 {
     public const DISCRIMINATOR = null;
 
@@ -49,7 +49,7 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      *
      * @var string
      */
-    protected static $openAPIModelName = 'inline_object';
+    protected static $openAPIModelName = 'PublicProblem';
 
     /**
      * Array of property to type mappings. Used for (de)serialization
@@ -57,7 +57,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $openAPITypes = [
-        'message' => 'string'
+        'code' => 'string',
+        'detail' => 'string',
+        'errors' => '\Beai\Model\PublicProblemError[]',
+        'request_id' => 'string',
+        'status' => 'int',
+        'title' => 'string',
+        'type' => 'string'
     ];
 
     /**
@@ -68,7 +74,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      * @psalm-var array<string, string|null>
      */
     protected static $openAPIFormats = [
-        'message' => null
+        'code' => null,
+        'detail' => null,
+        'errors' => null,
+        'request_id' => null,
+        'status' => null,
+        'title' => null,
+        'type' => null
     ];
 
     /**
@@ -77,7 +89,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var boolean[]
      */
     protected static array $openAPINullables = [
-        'message' => false
+        'code' => false,
+        'detail' => false,
+        'errors' => false,
+        'request_id' => false,
+        'status' => false,
+        'title' => false,
+        'type' => false
     ];
 
     /**
@@ -166,7 +184,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $attributeMap = [
-        'message' => 'message'
+        'code' => 'code',
+        'detail' => 'detail',
+        'errors' => 'errors',
+        'request_id' => 'request_id',
+        'status' => 'status',
+        'title' => 'title',
+        'type' => 'type'
     ];
 
     /**
@@ -175,7 +199,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $setters = [
-        'message' => 'setMessage'
+        'code' => 'setCode',
+        'detail' => 'setDetail',
+        'errors' => 'setErrors',
+        'request_id' => 'setRequestId',
+        'status' => 'setStatus',
+        'title' => 'setTitle',
+        'type' => 'setType'
     ];
 
     /**
@@ -184,7 +214,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $getters = [
-        'message' => 'getMessage'
+        'code' => 'getCode',
+        'detail' => 'getDetail',
+        'errors' => 'getErrors',
+        'request_id' => 'getRequestId',
+        'status' => 'getStatus',
+        'title' => 'getTitle',
+        'type' => 'getType'
     ];
 
     /**
@@ -244,7 +280,13 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     public function __construct(?array $data = null)
     {
-        $this->setIfExists('message', $data ?? [], null);
+        $this->setIfExists('code', $data ?? [], null);
+        $this->setIfExists('detail', $data ?? [], null);
+        $this->setIfExists('errors', $data ?? [], null);
+        $this->setIfExists('request_id', $data ?? [], null);
+        $this->setIfExists('status', $data ?? [], null);
+        $this->setIfExists('title', $data ?? [], null);
+        $this->setIfExists('type', $data ?? [], null);
     }
 
     /**
@@ -274,8 +316,20 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $invalidProperties = [];
 
-        if ($this->container['message'] === null) {
-            $invalidProperties[] = "'message' can't be null";
+        if ($this->container['code'] === null) {
+            $invalidProperties[] = "'code' can't be null";
+        }
+        if ($this->container['request_id'] === null) {
+            $invalidProperties[] = "'request_id' can't be null";
+        }
+        if ($this->container['status'] === null) {
+            $invalidProperties[] = "'status' can't be null";
+        }
+        if ($this->container['title'] === null) {
+            $invalidProperties[] = "'title' can't be null";
+        }
+        if ($this->container['type'] === null) {
+            $invalidProperties[] = "'type' can't be null";
         }
         return $invalidProperties;
     }
@@ -293,28 +347,190 @@ class InlineObject implements ModelInterface, ArrayAccess, \JsonSerializable
 
 
     /**
-     * Gets message
+     * Gets code
      *
      * @return string
      */
-    public function getMessage()
+    public function getCode()
     {
-        return $this->container['message'];
+        return $this->container['code'];
     }
 
     /**
-     * Sets message
+     * Sets code
      *
-     * @param string $message Error overview.
+     * @param string $code code
      *
      * @return self
      */
-    public function setMessage($message)
+    public function setCode($code)
     {
-        if (is_null($message)) {
-            throw new \InvalidArgumentException('non-nullable message cannot be null');
+        if (is_null($code)) {
+            throw new \InvalidArgumentException('non-nullable code cannot be null');
         }
-        $this->container['message'] = $message;
+        $this->container['code'] = $code;
+
+        return $this;
+    }
+
+    /**
+     * Gets detail
+     *
+     * @return string|null
+     */
+    public function getDetail()
+    {
+        return $this->container['detail'];
+    }
+
+    /**
+     * Sets detail
+     *
+     * @param string|null $detail detail
+     *
+     * @return self
+     */
+    public function setDetail($detail)
+    {
+        if (is_null($detail)) {
+            throw new \InvalidArgumentException('non-nullable detail cannot be null');
+        }
+        $this->container['detail'] = $detail;
+
+        return $this;
+    }
+
+    /**
+     * Gets errors
+     *
+     * @return \Beai\Model\PublicProblemError[]|null
+     */
+    public function getErrors()
+    {
+        return $this->container['errors'];
+    }
+
+    /**
+     * Sets errors
+     *
+     * @param \Beai\Model\PublicProblemError[]|null $errors errors
+     *
+     * @return self
+     */
+    public function setErrors($errors)
+    {
+        if (is_null($errors)) {
+            throw new \InvalidArgumentException('non-nullable errors cannot be null');
+        }
+        $this->container['errors'] = $errors;
+
+        return $this;
+    }
+
+    /**
+     * Gets request_id
+     *
+     * @return string
+     */
+    public function getRequestId()
+    {
+        return $this->container['request_id'];
+    }
+
+    /**
+     * Sets request_id
+     *
+     * @param string $request_id request_id
+     *
+     * @return self
+     */
+    public function setRequestId($request_id)
+    {
+        if (is_null($request_id)) {
+            throw new \InvalidArgumentException('non-nullable request_id cannot be null');
+        }
+        $this->container['request_id'] = $request_id;
+
+        return $this;
+    }
+
+    /**
+     * Gets status
+     *
+     * @return int
+     */
+    public function getStatus()
+    {
+        return $this->container['status'];
+    }
+
+    /**
+     * Sets status
+     *
+     * @param int $status status
+     *
+     * @return self
+     */
+    public function setStatus($status)
+    {
+        if (is_null($status)) {
+            throw new \InvalidArgumentException('non-nullable status cannot be null');
+        }
+        $this->container['status'] = $status;
+
+        return $this;
+    }
+
+    /**
+     * Gets title
+     *
+     * @return string
+     */
+    public function getTitle()
+    {
+        return $this->container['title'];
+    }
+
+    /**
+     * Sets title
+     *
+     * @param string $title title
+     *
+     * @return self
+     */
+    public function setTitle($title)
+    {
+        if (is_null($title)) {
+            throw new \InvalidArgumentException('non-nullable title cannot be null');
+        }
+        $this->container['title'] = $title;
+
+        return $this;
+    }
+
+    /**
+     * Gets type
+     *
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->container['type'];
+    }
+
+    /**
+     * Sets type
+     *
+     * @param string $type type
+     *
+     * @return self
+     */
+    public function setType($type)
+    {
+        if (is_null($type)) {
+            throw new \InvalidArgumentException('non-nullable type cannot be null');
+        }
+        $this->container['type'] = $type;
 
         return $this;
     }

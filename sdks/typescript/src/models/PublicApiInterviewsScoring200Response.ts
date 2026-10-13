@@ -16,9 +16,7 @@ import { mapValues } from '../runtime';
 import type { PublicApiInterviewsScoring200ResponseCompetenciesValue } from './PublicApiInterviewsScoring200ResponseCompetenciesValue';
 import {
     PublicApiInterviewsScoring200ResponseCompetenciesValueFromJSON,
-    PublicApiInterviewsScoring200ResponseCompetenciesValueFromJSONTyped,
     PublicApiInterviewsScoring200ResponseCompetenciesValueToJSON,
-    PublicApiInterviewsScoring200ResponseCompetenciesValueToJSONTyped,
 } from './PublicApiInterviewsScoring200ResponseCompetenciesValue';
 
 /**

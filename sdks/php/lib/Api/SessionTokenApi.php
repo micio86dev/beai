@@ -133,7 +133,7 @@ class SessionTokenApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsSessionTokensStore201Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiInterviewsSessionTokensStore201Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem
      */
     public function publicApiInterviewsSessionTokensStore($interview, string $contentType = self::contentTypes['publicApiInterviewsSessionTokensStore'][0])
     {
@@ -149,7 +149,7 @@ class SessionTokenApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsSessionTokensStore201Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsSessionTokensStore201Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsSessionTokensStoreWithHttpInfo($interview, string $contentType = self::contentTypes['publicApiInterviewsSessionTokensStore'][0])
     {
@@ -187,13 +187,13 @@ class SessionTokenApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 409:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -232,7 +232,7 @@ class SessionTokenApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -240,7 +240,7 @@ class SessionTokenApi
                 case 409:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);

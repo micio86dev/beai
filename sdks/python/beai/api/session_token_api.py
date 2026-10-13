@@ -90,8 +90,8 @@ class SessionTokenApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '201': "PublicApiInterviewsSessionTokensStore201Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -158,8 +158,8 @@ class SessionTokenApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '201': "PublicApiInterviewsSessionTokensStore201Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -226,8 +226,8 @@ class SessionTokenApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '201': "PublicApiInterviewsSessionTokensStore201Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,

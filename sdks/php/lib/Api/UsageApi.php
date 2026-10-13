@@ -134,7 +134,7 @@ class UsageApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiUsageShow200Response|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiUsageShow200Response|\Beai\Model\PublicProblem
      */
     public function publicApiUsageShow($from = null, $to = null, string $contentType = self::contentTypes['publicApiUsageShow'][0])
     {
@@ -151,7 +151,7 @@ class UsageApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiUsageShow200Response|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiUsageShow200Response|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiUsageShowWithHttpInfo($from = null, $to = null, string $contentType = self::contentTypes['publicApiUsageShow'][0])
     {
@@ -189,7 +189,7 @@ class UsageApi
                     );
                 case 400:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -228,7 +228,7 @@ class UsageApi
                 case 400:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
