@@ -87,14 +87,24 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
-package = root / "package.json"
-package.write_text(package.read_text().replace('"prepare": "npm run build"', '"prepare": "bun run build"'))
-readme = root / "README.md"
-text = readme.read_text()
-text = text.replace("you need to have Node.js and npm installed", "you need to have Bun installed")
-text = text.replace("npm install\nnpm run build", "bun install\nbun run build")
-text = text.replace("publish it to npm:\n\n```bash\nnpm publish", "publish it to npm:\n\n```bash\nbun publish")
-readme.write_text(text)
+
+
+def rewrite(path, pairs):
+    """Applies each replacement and fails loudly when the pattern is gone."""
+    text = path.read_text()
+    for old, new in pairs:
+        if old not in text:
+            sys.exit(f"ERROR: {path}: expected text not found: {old!r}")
+        text = text.replace(old, new)
+    path.write_text(text)
+
+
+rewrite(root / "package.json", [('"prepare": "npm run build"', '"prepare": "bun run build"')])
+rewrite(root / "README.md", [
+    ("you need to have Node.js and npm installed", "you need to have Bun installed"),
+    ("npm install\nnpm run build", "bun install\nbun run build"),
+    ("publish it to npm:\n\n```bash\nnpm publish", "publish it to npm:\n\n```bash\nbun publish"),
+])
 PY
 
 generate php "$TMP/openapi.json" -g php \
