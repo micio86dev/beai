@@ -105,7 +105,7 @@ export class WebhookDeliveryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the delivery attempts of the organization\'s webhooks, newest first, in cursor-paginated pages. The `status`, `event_type` and `interview_id` filters are optional: an empty value is treated as not provided, and an unrecognised `status` or `event_type` answers `400 validation_failed`.
+     * Returns the delivery attempts of the organization's webhooks, newest first, in cursor-paginated pages. The `status`, `event_type` and `interview_id` filters are optional: an empty value is treated as not provided, and an unrecognised `status` or `event_type` answers `400 validation_failed`.
      * List webhook deliveries
      */
     async publicApiWebhooksDeliveriesIndexRaw(requestParameters: PublicApiWebhooksDeliveriesIndexRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiWebhooksDeliveriesIndex200Response>> {
@@ -116,7 +116,7 @@ export class WebhookDeliveryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the delivery attempts of the organization\'s webhooks, newest first, in cursor-paginated pages. The `status`, `event_type` and `interview_id` filters are optional: an empty value is treated as not provided, and an unrecognised `status` or `event_type` answers `400 validation_failed`.
+     * Returns the delivery attempts of the organization's webhooks, newest first, in cursor-paginated pages. The `status`, `event_type` and `interview_id` filters are optional: an empty value is treated as not provided, and an unrecognised `status` or `event_type` answers `400 validation_failed`.
      * List webhook deliveries
      */
     async publicApiWebhooksDeliveriesIndex(requestParameters: PublicApiWebhooksDeliveriesIndexRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiWebhooksDeliveriesIndex200Response> {

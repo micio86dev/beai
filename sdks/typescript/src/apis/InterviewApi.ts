@@ -350,7 +350,7 @@ export class InterviewApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the organization\'s interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
+     * Returns the organization's interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
      * List interviews
      */
     async publicApiInterviewsIndexRaw(requestParameters: PublicApiInterviewsIndexRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiInterviewsIndex200Response>> {
@@ -361,7 +361,7 @@ export class InterviewApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the organization\'s interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
+     * Returns the organization's interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
      * List interviews
      */
     async publicApiInterviewsIndex(requestParameters: PublicApiInterviewsIndexRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiInterviewsIndex200Response> {
