@@ -153,7 +153,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsAnswers200Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiInterviewsAnswers200Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem
      */
     public function publicApiInterviewsAnswers($interview, string $contentType = self::contentTypes['publicApiInterviewsAnswers'][0])
     {
@@ -171,7 +171,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsAnswers200Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsAnswers200Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsAnswersWithHttpInfo($interview, string $contentType = self::contentTypes['publicApiInterviewsAnswers'][0])
     {
@@ -209,13 +209,13 @@ class InterviewApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 409:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -254,7 +254,7 @@ class InterviewApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -262,7 +262,7 @@ class InterviewApi
                 case 409:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -459,7 +459,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsEvents200Response|\Beai\Model\PublicApiExportsIndex400Response|\Beai\Model\InlineObject
+     * @return \Beai\Model\PublicApiInterviewsEvents200Response|\Beai\Model\PublicProblem|\Beai\Model\PublicMessageError
      */
     public function publicApiInterviewsEvents($interview, $cursor = null, $limit = null, string $contentType = self::contentTypes['publicApiInterviewsEvents'][0])
     {
@@ -479,7 +479,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsEvents200Response|\Beai\Model\PublicApiExportsIndex400Response|\Beai\Model\InlineObject, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsEvents200Response|\Beai\Model\PublicProblem|\Beai\Model\PublicMessageError, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsEventsWithHttpInfo($interview, $cursor = null, $limit = null, string $contentType = self::contentTypes['publicApiInterviewsEvents'][0])
     {
@@ -517,13 +517,13 @@ class InterviewApi
                     );
                 case 400:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
@@ -562,7 +562,7 @@ class InterviewApi
                 case 400:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -570,7 +570,7 @@ class InterviewApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -802,7 +802,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsIndex200Response|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiInterviewsIndex200Response|\Beai\Model\PublicProblem
      */
     public function publicApiInterviewsIndex($status = null, $project_id = null, $email = null, $candidate_ref = null, $metadata = null, $created_after = null, $created_before = null, $cursor = null, $limit = null, $external_id = null, $source = null, $expand = null, string $contentType = self::contentTypes['publicApiInterviewsIndex'][0])
     {
@@ -831,7 +831,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsIndex200Response|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsIndex200Response|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsIndexWithHttpInfo($status = null, $project_id = null, $email = null, $candidate_ref = null, $metadata = null, $created_after = null, $created_before = null, $cursor = null, $limit = null, $external_id = null, $source = null, $expand = null, string $contentType = self::contentTypes['publicApiInterviewsIndex'][0])
     {
@@ -869,7 +869,7 @@ class InterviewApi
                     );
                 case 400:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -908,7 +908,7 @@ class InterviewApi
                 case 400:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -1241,7 +1241,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsScoring200Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiInterviewsScoring200Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem
      */
     public function publicApiInterviewsScoring($interview, string $contentType = self::contentTypes['publicApiInterviewsScoring'][0])
     {
@@ -1259,7 +1259,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsScoring200Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsScoring200Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsScoringWithHttpInfo($interview, string $contentType = self::contentTypes['publicApiInterviewsScoring'][0])
     {
@@ -1297,13 +1297,13 @@ class InterviewApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 409:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -1342,7 +1342,7 @@ class InterviewApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -1350,7 +1350,7 @@ class InterviewApi
                 case 409:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -1544,7 +1544,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicInterview|\Beai\Model\InlineObject
+     * @return \Beai\Model\PublicInterview|\Beai\Model\PublicMessageError
      */
     public function publicApiInterviewsShow($interview, $expand = null, string $contentType = self::contentTypes['publicApiInterviewsShow'][0])
     {
@@ -1561,7 +1561,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicInterview|\Beai\Model\InlineObject, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicInterview|\Beai\Model\PublicMessageError, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsShowWithHttpInfo($interview, $expand = null, string $contentType = self::contentTypes['publicApiInterviewsShow'][0])
     {
@@ -1599,7 +1599,7 @@ class InterviewApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
@@ -1638,7 +1638,7 @@ class InterviewApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -1842,7 +1842,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsStore201Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response|\Beai\Model\InlineObject1
+     * @return \Beai\Model\PublicApiInterviewsStore201Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem|\Beai\Model\PublicMessageError
      */
     public function publicApiInterviewsStore($create_interview_request, string $contentType = self::contentTypes['publicApiInterviewsStore'][0])
     {
@@ -1860,7 +1860,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsStore201Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response|\Beai\Model\InlineObject1, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsStore201Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem|\Beai\Model\PublicMessageError, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsStoreWithHttpInfo($create_interview_request, string $contentType = self::contentTypes['publicApiInterviewsStore'][0])
     {
@@ -1898,19 +1898,19 @@ class InterviewApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 409:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
                 case 422:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject1',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
@@ -1949,7 +1949,7 @@ class InterviewApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -1957,7 +1957,7 @@ class InterviewApi
                 case 409:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -1965,7 +1965,7 @@ class InterviewApi
                 case 422:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject1',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -2163,7 +2163,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsTranscript200Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiInterviewsTranscript200Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem
      */
     public function publicApiInterviewsTranscript($interview, string $contentType = self::contentTypes['publicApiInterviewsTranscript'][0])
     {
@@ -2181,7 +2181,7 @@ class InterviewApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsTranscript200Response|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsTranscript200Response|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsTranscriptWithHttpInfo($interview, string $contentType = self::contentTypes['publicApiInterviewsTranscript'][0])
     {
@@ -2219,13 +2219,13 @@ class InterviewApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 409:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -2264,7 +2264,7 @@ class InterviewApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -2272,7 +2272,7 @@ class InterviewApi
                 case 409:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);

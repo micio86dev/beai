@@ -142,7 +142,7 @@ class ProjectApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiProjectsIndex200Response|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiProjectsIndex200Response|\Beai\Model\PublicProblem
      */
     public function publicApiProjectsIndex($cursor = null, $limit = null, $status = null, $role_code = null, $assessment_type = null, string $contentType = self::contentTypes['publicApiProjectsIndex'][0])
     {
@@ -164,7 +164,7 @@ class ProjectApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiProjectsIndex200Response|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiProjectsIndex200Response|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiProjectsIndexWithHttpInfo($cursor = null, $limit = null, $status = null, $role_code = null, $assessment_type = null, string $contentType = self::contentTypes['publicApiProjectsIndex'][0])
     {
@@ -202,7 +202,7 @@ class ProjectApi
                     );
                 case 400:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -241,7 +241,7 @@ class ProjectApi
                 case 400:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -483,7 +483,7 @@ class ProjectApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicProject|\Beai\Model\InlineObject
+     * @return \Beai\Model\PublicProject|\Beai\Model\PublicMessageError
      */
     public function publicApiProjectsShow($project, string $contentType = self::contentTypes['publicApiProjectsShow'][0])
     {
@@ -501,7 +501,7 @@ class ProjectApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicProject|\Beai\Model\InlineObject, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicProject|\Beai\Model\PublicMessageError, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiProjectsShowWithHttpInfo($project, string $contentType = self::contentTypes['publicApiProjectsShow'][0])
     {
@@ -539,7 +539,7 @@ class ProjectApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
@@ -578,7 +578,7 @@ class ProjectApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);

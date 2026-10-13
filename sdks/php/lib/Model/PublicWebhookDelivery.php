@@ -1,6 +1,6 @@
 <?php
 /**
- * PublicApiWebhooksDeliveriesIndex200ResponseDataInner
+ * PublicWebhookDelivery
  *
  * PHP version 8.1
  *
@@ -32,7 +32,7 @@ use \ArrayAccess;
 use \Beai\ObjectSerializer;
 
 /**
- * PublicApiWebhooksDeliveriesIndex200ResponseDataInner Class Doc Comment
+ * PublicWebhookDelivery Class Doc Comment
  *
  * @category Class
  * @package  Beai
@@ -40,7 +40,7 @@ use \Beai\ObjectSerializer;
  * @link     https://openapi-generator.tech
  * @implements \ArrayAccess<string, mixed>
  */
-class PublicApiWebhooksDeliveriesIndex200ResponseDataInner implements ModelInterface, ArrayAccess, \JsonSerializable
+class PublicWebhookDelivery implements ModelInterface, ArrayAccess, \JsonSerializable
 {
     public const DISCRIMINATOR = null;
 
@@ -49,7 +49,7 @@ class PublicApiWebhooksDeliveriesIndex200ResponseDataInner implements ModelInter
      *
      * @var string
      */
-    protected static $openAPIModelName = 'public_api_webhooks_deliveries_index_200_response_data_inner';
+    protected static $openAPIModelName = 'PublicWebhookDelivery';
 
     /**
      * Array of property to type mappings. Used for (de)serialization

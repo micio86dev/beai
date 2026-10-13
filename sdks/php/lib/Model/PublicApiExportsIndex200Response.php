@@ -57,7 +57,7 @@ class PublicApiExportsIndex200Response implements ModelInterface, ArrayAccess, \
      * @var string[]
      */
     protected static $openAPITypes = [
-        'data' => '\Beai\Model\PublicApiExportsIndex200ResponseDataInner[]',
+        'data' => '\Beai\Model\PublicExport[]',
         'has_more' => 'bool',
         'next_cursor' => 'string'
     ];
@@ -315,7 +315,7 @@ class PublicApiExportsIndex200Response implements ModelInterface, ArrayAccess, \
     /**
      * Gets data
      *
-     * @return \Beai\Model\PublicApiExportsIndex200ResponseDataInner[]
+     * @return \Beai\Model\PublicExport[]
      */
     public function getData()
     {
@@ -325,7 +325,7 @@ class PublicApiExportsIndex200Response implements ModelInterface, ArrayAccess, \
     /**
      * Sets data
      *
-     * @param \Beai\Model\PublicApiExportsIndex200ResponseDataInner[] $data data
+     * @param \Beai\Model\PublicExport[] $data data
      *
      * @return self
      */

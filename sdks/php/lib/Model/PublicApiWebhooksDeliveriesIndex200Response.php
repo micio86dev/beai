@@ -57,7 +57,7 @@ class PublicApiWebhooksDeliveriesIndex200Response implements ModelInterface, Arr
      * @var string[]
      */
     protected static $openAPITypes = [
-        'data' => '\Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner[]',
+        'data' => '\Beai\Model\PublicWebhookDelivery[]',
         'has_more' => 'bool',
         'next_cursor' => 'string'
     ];
@@ -315,7 +315,7 @@ class PublicApiWebhooksDeliveriesIndex200Response implements ModelInterface, Arr
     /**
      * Gets data
      *
-     * @return \Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner[]
+     * @return \Beai\Model\PublicWebhookDelivery[]
      */
     public function getData()
     {
@@ -325,7 +325,7 @@ class PublicApiWebhooksDeliveriesIndex200Response implements ModelInterface, Arr
     /**
      * Sets data
      *
-     * @param \Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner[] $data data
+     * @param \Beai\Model\PublicWebhookDelivery[] $data data
      *
      * @return self
      */

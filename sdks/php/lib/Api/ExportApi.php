@@ -140,7 +140,7 @@ class ExportApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiExportsIndex200Response|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiExportsIndex200Response|\Beai\Model\PublicProblem
      */
     public function publicApiExportsIndex($cursor = null, $limit = null, string $contentType = self::contentTypes['publicApiExportsIndex'][0])
     {
@@ -157,7 +157,7 @@ class ExportApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiExportsIndex200Response|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiExportsIndex200Response|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiExportsIndexWithHttpInfo($cursor = null, $limit = null, string $contentType = self::contentTypes['publicApiExportsIndex'][0])
     {
@@ -195,7 +195,7 @@ class ExportApi
                     );
                 case 400:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -234,7 +234,7 @@ class ExportApi
                 case 400:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -431,7 +431,7 @@ class ExportApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiExportsIndex200ResponseDataInner|\Beai\Model\InlineObject
+     * @return \Beai\Model\PublicExport|\Beai\Model\PublicMessageError
      */
     public function publicApiExportsShow($id, string $contentType = self::contentTypes['publicApiExportsShow'][0])
     {
@@ -447,7 +447,7 @@ class ExportApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiExportsIndex200ResponseDataInner|\Beai\Model\InlineObject, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicExport|\Beai\Model\PublicMessageError, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiExportsShowWithHttpInfo($id, string $contentType = self::contentTypes['publicApiExportsShow'][0])
     {
@@ -479,13 +479,13 @@ class ExportApi
             switch($statusCode) {
                 case 200:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex200ResponseDataInner',
+                        '\Beai\Model\PublicExport',
                         $request,
                         $response,
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
@@ -507,7 +507,7 @@ class ExportApi
             }
 
             return $this->handleResponseWithDataType(
-                '\Beai\Model\PublicApiExportsIndex200ResponseDataInner',
+                '\Beai\Model\PublicExport',
                 $request,
                 $response,
             );
@@ -516,7 +516,7 @@ class ExportApi
                 case 200:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex200ResponseDataInner',
+                        '\Beai\Model\PublicExport',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -524,7 +524,7 @@ class ExportApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -566,7 +566,7 @@ class ExportApi
      */
     public function publicApiExportsShowAsyncWithHttpInfo($id, string $contentType = self::contentTypes['publicApiExportsShow'][0])
     {
-        $returnType = '\Beai\Model\PublicApiExportsIndex200ResponseDataInner';
+        $returnType = '\Beai\Model\PublicExport';
         $request = $this->publicApiExportsShowRequest($id, $contentType);
 
         return $this->client
@@ -713,7 +713,7 @@ class ExportApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiExportsIndex200ResponseDataInner|\Beai\Model\InlineObject1|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicExport|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem
      */
     public function publicApiExportsStore($create_export_request, string $contentType = self::contentTypes['publicApiExportsStore'][0])
     {
@@ -729,7 +729,7 @@ class ExportApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiExportsIndex200ResponseDataInner|\Beai\Model\InlineObject1|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicExport|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiExportsStoreWithHttpInfo($create_export_request, string $contentType = self::contentTypes['publicApiExportsStore'][0])
     {
@@ -761,19 +761,19 @@ class ExportApi
             switch($statusCode) {
                 case 202:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex200ResponseDataInner',
+                        '\Beai\Model\PublicExport',
                         $request,
                         $response,
                     );
                 case 422:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject1',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 429:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -795,7 +795,7 @@ class ExportApi
             }
 
             return $this->handleResponseWithDataType(
-                '\Beai\Model\PublicApiExportsIndex200ResponseDataInner',
+                '\Beai\Model\PublicExport',
                 $request,
                 $response,
             );
@@ -804,7 +804,7 @@ class ExportApi
                 case 202:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex200ResponseDataInner',
+                        '\Beai\Model\PublicExport',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -812,7 +812,7 @@ class ExportApi
                 case 422:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject1',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -820,7 +820,7 @@ class ExportApi
                 case 429:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -862,7 +862,7 @@ class ExportApi
      */
     public function publicApiExportsStoreAsyncWithHttpInfo($create_export_request, string $contentType = self::contentTypes['publicApiExportsStore'][0])
     {
-        $returnType = '\Beai\Model\PublicApiExportsIndex200ResponseDataInner';
+        $returnType = '\Beai\Model\PublicExport';
         $request = $this->publicApiExportsStoreRequest($create_export_request, $contentType);
 
         return $this->client
