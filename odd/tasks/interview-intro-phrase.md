@@ -34,14 +34,25 @@ Git Flow release, Railway deploy, production check.
 
 ## Tasks
 
-- [ ] F1 `PlatformSettings` accessor + validation for `interview_intro_phrase` (locale map, length cap, forbidden phrases) (api).
-- [ ] F2 `GET/PATCH admin/settings` expose and update it, superadmin only, audit row, `@scramble-return`, OpenAPI export (api).
-- [ ] F3 Compose the first opening with the intro (variant `first` only), fallback chain, `SpokenOpening` so the prompt knows it was said (api).
-- [ ] F4 Verify transcript, scoring and primary-asked count are not disturbed by the extra utterance; fix or flag (api).
-- [ ] F5 `PlatformSettingsPanel`: per-locale textareas, character counter, estimated duration, i18n it/en (backoffice).
-- [ ] F6 Candidate app: no change expected (provider speaks `custom_greeting` / `opening_text` verbatim); confirm with tests and one E2E (frontend).
-- [ ] F7 Release: api, frontend (spec sync), backoffice, wrapper SDK regeneration; deploy and verify.
+- [x] F1 `PlatformSettings` accessor + validation for `interview_intro_phrase` (locale map, length cap, forbidden phrases) (api).
+- [x] F2 `GET/PATCH admin/settings` expose and update it, superadmin only, audit row, `@scramble-return`, OpenAPI export (api).
+- [x] F3 Compose the first opening with the intro (variant `first` only), fallback chain, `SpokenOpening` so the prompt knows it was said (api).
+- [x] F4 Verify transcript, scoring and primary-asked count are not disturbed by the extra utterance; fix or flag (api).
+- [x] F5 `PlatformSettingsPanel`: per-locale textareas, character counter, estimated duration, i18n it/en (backoffice).
+- [x] F6 Candidate app: no change expected (provider speaks `custom_greeting` / `opening_text` verbatim); confirm with tests and one E2E (frontend).
+- [x] F7 Release: api, frontend (spec sync), backoffice, wrapper SDK regeneration; deploy and verify.
 
 ## Evidence
 
-Filled in as each task closes.
+Closed 2026-10-13 and released: api v0.73.0, frontend v0.26.11 (spec sync only), backoffice v0.52.0, wrapper v0.56.0.
+
+- F1/F2: api 6b6cb8d (setting, validation incl. completion-phrase guard, audit row, transactional PATCH, spec).
+- F3: api 2e8205b (optional `opening.intro_spoken` fragment: the sealed active prompt set keeps working, baseline stays at 32 required keys) and 5e499be (intro prepended inside the single opening string, only `first` variant, competency 1, with a primary to follow). Guards a881a73, eff990e, 5b611c3.
+- F4: api d7addbe (TurnClassifier suffix match keeps the primary as the tail; primary count and resume unchanged). No production change needed.
+- F5: backoffice 3b2faab, 7107503, 7409986, plus 5184f13 and 0bf6141 (counter on trimmed text, exact e2e assertions).
+- F6: no frontend code change. The providers speak the `opening_text` / `custom_greeting` string verbatim; this was confirmed by reading the code path, no dedicated frontend test was added.
+- F7: releases above; production: api, worker, scheduler, frontend and backoffice deployments SUCCESS, health 200, environment 0 issues, `GET /api/admin/settings` answers 401 without a token.
+
+Checks observed: api 9511 tests at 98.2 percent (pint, phpstan clean); backoffice 4078 tests at 99.46/95.51/96.42, e2e on Chromium and WebKit; native review approved on every commit.
+
+Not verified: no real interview was run in production with an intro configured (it needs a superadmin login and a live avatar provider session). Known gaps: the caps write in `setMaxQuestionsPerCompetency` is a read-then-write without a row lock (pre-existing); retry and reinterview variants are covered only through the composer unit test.
