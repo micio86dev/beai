@@ -23,6 +23,11 @@ GENERATOR="$ROOT/tools/openapi-generator/node_modules/.bin/openapi-generator-cli
 
 cd "$ROOT/sdks"
 
+# The two inline item schemas of `Interview.progress` would otherwise be named
+# after their position (`..._progress_inner`, `..._inner_answers_inner`). Give
+# them names that say what they are, in all three SDKs.
+INLINE_NAMES="PublicInterview_progress_inner=PublicInterviewProgressCompetency,PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer"
+
 # Skip docs and tests: they multiply the tree size without adding runtime code.
 SKIP="apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
 
@@ -32,7 +37,8 @@ generate() {
   shift 2
   rm -rf "$name"
   "$GENERATOR" --openapitools ./openapitools.json generate \
-    -i "$spec" -o "$name" --global-property "$SKIP" "$@" >/dev/null
+    -i "$spec" -o "$name" --global-property "$SKIP" \
+    --inline-schema-name-mappings "$INLINE_NAMES" "$@" >/dev/null
   # Generator bookkeeping that embeds nothing useful and churns diffs.
   rm -rf "$name/.openapi-generator" "$name/.openapi-generator-ignore" "$name/git_push.sh"
   # CI templates for a standalone package repo: unused here, and the nested
@@ -81,14 +87,24 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
-package = root / "package.json"
-package.write_text(package.read_text().replace('"prepare": "npm run build"', '"prepare": "bun run build"'))
-readme = root / "README.md"
-text = readme.read_text()
-text = text.replace("you need to have Node.js and npm installed", "you need to have Bun installed")
-text = text.replace("npm install\nnpm run build", "bun install\nbun run build")
-text = text.replace("publish it to npm:\n\n```bash\nnpm publish", "publish it to npm:\n\n```bash\nbun publish")
-readme.write_text(text)
+
+
+def rewrite(path, pairs):
+    """Applies each replacement and fails loudly when the pattern is gone."""
+    text = path.read_text()
+    for old, new in pairs:
+        if old not in text:
+            sys.exit(f"ERROR: {path}: expected text not found: {old!r}")
+        text = text.replace(old, new)
+    path.write_text(text)
+
+
+rewrite(root / "package.json", [('"prepare": "npm run build"', '"prepare": "bun run build"')])
+rewrite(root / "README.md", [
+    ("you need to have Node.js and npm installed", "you need to have Bun installed"),
+    ("npm install\nnpm run build", "bun install\nbun run build"),
+    ("publish it to npm:\n\n```bash\nnpm publish", "publish it to npm:\n\n```bash\nbun publish"),
+])
 PY
 
 generate php "$TMP/openapi.json" -g php \
