@@ -23,6 +23,11 @@ GENERATOR="$ROOT/tools/openapi-generator/node_modules/.bin/openapi-generator-cli
 
 cd "$ROOT/sdks"
 
+# The two inline item schemas of `Interview.progress` would otherwise be named
+# after their position (`..._progress_inner`, `..._inner_answers_inner`). Give
+# them names that say what they are, in all three SDKs.
+INLINE_NAMES="PublicInterview_progress_inner=PublicInterviewProgressCompetency,PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer"
+
 # Skip docs and tests: they multiply the tree size without adding runtime code.
 SKIP="apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
 
@@ -32,7 +37,8 @@ generate() {
   shift 2
   rm -rf "$name"
   "$GENERATOR" --openapitools ./openapitools.json generate \
-    -i "$spec" -o "$name" --global-property "$SKIP" "$@" >/dev/null
+    -i "$spec" -o "$name" --global-property "$SKIP" \
+    --inline-schema-name-mappings "$INLINE_NAMES" "$@" >/dev/null
   # Generator bookkeeping that embeds nothing useful and churns diffs.
   rm -rf "$name/.openapi-generator" "$name/.openapi-generator-ignore" "$name/git_push.sh"
   # CI templates for a standalone package repo: unused here, and the nested
