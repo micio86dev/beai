@@ -23,14 +23,20 @@ GENERATOR="$ROOT/tools/openapi-generator/node_modules/.bin/openapi-generator-cli
 
 cd "$ROOT/sdks"
 
-# The two inline item schemas of `Interview.progress` would otherwise be named
-# after their position (`..._progress_inner`, `..._inner_answers_inner`). Give
-# them names that say what they are, in all three SDKs.
-INLINE_NAMES="PublicInterview_progress_inner=PublicInterviewProgressCompetency,PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer"
-# The same goes for the models shared across operations: the generator names a
-# schema after the first operation that uses it, so the RFC 9457 problem body
-# would read as an "exports index 400" model everywhere.
-INLINE_NAMES="$INLINE_NAMES,public_api_exports_index_400_response=PublicProblem,public_api_exports_index_400_response_errors_inner=PublicProblemError,public_api_webhooks_deliveries_index_200_response_data_inner=PublicWebhookDelivery,public_api_exports_index_200_response_data_inner=PublicExport,inline_object=PublicMessageError"
+# Inline schemas are named after their position (`..._progress_inner`) or after the
+# first operation that uses them (`..._exports_index_400_response`), which reads
+# wrongly everywhere else. Give them names that say what they are, in all three
+# SDKs. The keys are the generator's own inline names, so a generator upgrade that
+# renames them fails the check after the typescript step instead of silently
+# shipping the old names.
+INLINE_NAMES="\
+PublicInterview_progress_inner=PublicInterviewProgressCompetency,\
+PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer,\
+public_api_exports_index_400_response=PublicProblem,\
+public_api_exports_index_400_response_errors_inner=PublicProblemError,\
+public_api_webhooks_deliveries_index_200_response_data_inner=PublicWebhookDelivery,\
+public_api_exports_index_200_response_data_inner=PublicExport,\
+inline_object=PublicMessageError"
 
 # Skip docs and tests: they multiply the tree size without adding runtime code.
 SKIP="apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
@@ -82,6 +88,14 @@ PY
 generate typescript "$TMP/openapi.json" -g typescript-fetch \
   --additional-properties="npmName=@beai/sdk,npmVersion=$VERSION,supportsES6=true,typescriptThreePlus=true"
 
+for pair in $(printf '%s' "$INLINE_NAMES" | tr ',' ' '); do
+  model=${pair#*=}
+  if [ ! -f "typescript/src/models/$model.ts" ]; then
+    echo "ERROR: inline schema mapping '$pair' produced no typescript model $model" >&2
+    exit 1
+  fi
+done
+
 # Bun is the only package manager we run: the generator's `prepare` script
 # would shell out to npm on every install, and its README tells maintainers to
 # use npm. Rewrite both deterministically. (The consumer-facing
@@ -125,13 +139,18 @@ import sys
 IMPORT = re.compile(r"^import (type )?\{([^}]*)\} from '([^']+)';\n", re.M)
 
 
+def specifier_name(specifier):
+    """`type Foo` imports the type `Foo`; the identifier to look for is `Foo`."""
+    return specifier.removeprefix("type ")
+
+
 def prune(text):
     body = IMPORT.sub("", text)
 
     def rewrite(match):
         kind, raw, source = match.group(1) or "", match.group(2), match.group(3)
         names = [n.strip() for n in raw.split(",") if n.strip()]
-        kept = [n for n in names if re.search(r"\b" + re.escape(n.removeprefix("type ")) + r"\b", body)]
+        kept = [n for n in names if re.search(r"\b" + re.escape(specifier_name(n)) + r"\b", body)]
         if len(kept) == len(names):
             return match.group(0)
         if not kept:
@@ -157,6 +176,10 @@ changed = 0
 for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
     before = path.read_text()
     after = unescape_comments(prune(before))
+    # A second pass must find nothing left to do: this is what proves that every
+    # unused import and every escaped comment quote was handled, not just some.
+    if unescape_comments(prune(after)) != after:
+        sys.exit(f"ERROR: {path}: post-processing is not idempotent")
     if after != before:
         path.write_text(after)
         changed += 1
