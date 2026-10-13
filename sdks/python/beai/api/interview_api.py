@@ -100,8 +100,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsAnswers200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -169,8 +169,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsAnswers200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -238,8 +238,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsAnswers200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -375,8 +375,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsEvents200Response",
-            '400': "PublicApiExportsIndex400Response",
-            '404': "InlineObject",
+            '400': "PublicProblem",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -452,8 +452,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsEvents200Response",
-            '400': "PublicApiExportsIndex400Response",
-            '404': "InlineObject",
+            '400': "PublicProblem",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -529,8 +529,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsEvents200Response",
-            '400': "PublicApiExportsIndex400Response",
-            '404': "InlineObject",
+            '400': "PublicProblem",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -712,7 +712,7 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -824,7 +824,7 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -936,7 +936,7 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsIndex200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1121,8 +1121,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsScoring200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1190,8 +1190,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsScoring200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1259,8 +1259,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsScoring200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1391,7 +1391,7 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicInterview",
-            '404': "InlineObject",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1462,7 +1462,7 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicInterview",
-            '404': "InlineObject",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1533,7 +1533,7 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicInterview",
-            '404': "InlineObject",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1666,9 +1666,9 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '201': "PublicApiInterviewsStore201Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
-            '422': "InlineObject1",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
+            '422': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1736,9 +1736,9 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '201': "PublicApiInterviewsStore201Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
-            '422': "InlineObject1",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
+            '422': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1806,9 +1806,9 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '201': "PublicApiInterviewsStore201Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
-            '422': "InlineObject1",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
+            '422': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -1949,8 +1949,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsTranscript200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -2018,8 +2018,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsTranscript200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -2087,8 +2087,8 @@ class InterviewApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsTranscript200Response",
-            '404': "InlineObject",
-            '409': "PublicApiExportsIndex400Response",
+            '404': "PublicMessageError",
+            '409': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,

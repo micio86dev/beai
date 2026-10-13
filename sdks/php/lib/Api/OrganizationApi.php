@@ -132,7 +132,7 @@ class OrganizationApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicOrganization|\Beai\Model\InlineObject
+     * @return \Beai\Model\PublicOrganization|\Beai\Model\PublicMessageError
      */
     public function publicApiOrganizationShow(string $contentType = self::contentTypes['publicApiOrganizationShow'][0])
     {
@@ -147,7 +147,7 @@ class OrganizationApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicOrganization|\Beai\Model\InlineObject, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicOrganization|\Beai\Model\PublicMessageError, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiOrganizationShowWithHttpInfo(string $contentType = self::contentTypes['publicApiOrganizationShow'][0])
     {
@@ -185,7 +185,7 @@ class OrganizationApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
@@ -224,7 +224,7 @@ class OrganizationApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);

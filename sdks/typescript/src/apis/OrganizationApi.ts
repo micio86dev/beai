@@ -14,14 +14,8 @@
 
 import * as runtime from '../runtime';
 import {
-    type InlineObject,
-    InlineObjectFromJSON,
-    InlineObjectToJSON,
-} from '../models/InlineObject';
-import {
     type PublicOrganization,
     PublicOrganizationFromJSON,
-    PublicOrganizationToJSON,
 } from '../models/PublicOrganization';
 
 /**

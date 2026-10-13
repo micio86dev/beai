@@ -15,58 +15,35 @@
 import * as runtime from '../runtime';
 import {
     type CreateInterviewRequest,
-    CreateInterviewRequestFromJSON,
     CreateInterviewRequestToJSON,
 } from '../models/CreateInterviewRequest';
 import {
-    type InlineObject,
-    InlineObjectFromJSON,
-    InlineObjectToJSON,
-} from '../models/InlineObject';
-import {
-    type InlineObject1,
-    InlineObject1FromJSON,
-    InlineObject1ToJSON,
-} from '../models/InlineObject1';
-import {
-    type PublicApiExportsIndex400Response,
-    PublicApiExportsIndex400ResponseFromJSON,
-    PublicApiExportsIndex400ResponseToJSON,
-} from '../models/PublicApiExportsIndex400Response';
-import {
     type PublicApiInterviewsAnswers200Response,
     PublicApiInterviewsAnswers200ResponseFromJSON,
-    PublicApiInterviewsAnswers200ResponseToJSON,
 } from '../models/PublicApiInterviewsAnswers200Response';
 import {
     type PublicApiInterviewsEvents200Response,
     PublicApiInterviewsEvents200ResponseFromJSON,
-    PublicApiInterviewsEvents200ResponseToJSON,
 } from '../models/PublicApiInterviewsEvents200Response';
 import {
     type PublicApiInterviewsIndex200Response,
     PublicApiInterviewsIndex200ResponseFromJSON,
-    PublicApiInterviewsIndex200ResponseToJSON,
 } from '../models/PublicApiInterviewsIndex200Response';
 import {
     type PublicApiInterviewsScoring200Response,
     PublicApiInterviewsScoring200ResponseFromJSON,
-    PublicApiInterviewsScoring200ResponseToJSON,
 } from '../models/PublicApiInterviewsScoring200Response';
 import {
     type PublicApiInterviewsStore201Response,
     PublicApiInterviewsStore201ResponseFromJSON,
-    PublicApiInterviewsStore201ResponseToJSON,
 } from '../models/PublicApiInterviewsStore201Response';
 import {
     type PublicApiInterviewsTranscript200Response,
     PublicApiInterviewsTranscript200ResponseFromJSON,
-    PublicApiInterviewsTranscript200ResponseToJSON,
 } from '../models/PublicApiInterviewsTranscript200Response';
 import {
     type PublicInterview,
     PublicInterviewFromJSON,
-    PublicInterviewToJSON,
 } from '../models/PublicInterview';
 
 export interface PublicApiInterviewsAnswersRequest {
@@ -373,7 +350,7 @@ export class InterviewApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the organization\'s interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
+     * Returns the organization's interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
      * List interviews
      */
     async publicApiInterviewsIndexRaw(requestParameters: PublicApiInterviewsIndexRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiInterviewsIndex200Response>> {
@@ -384,7 +361,7 @@ export class InterviewApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns the organization\'s interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
+     * Returns the organization's interviews for the mode of the API key, newest first, in cursor-paginated pages. Every filter is optional: a filter sent with an empty value is treated as not provided, and the unfiltered list is returned.
      * List interviews
      */
     async publicApiInterviewsIndex(requestParameters: PublicApiInterviewsIndexRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiInterviewsIndex200Response> {

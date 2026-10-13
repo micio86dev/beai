@@ -90,8 +90,8 @@ class RecordingApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsRecording200Response",
-            '404': "PublicApiExportsIndex400Response",
-            '500': "PublicApiExportsIndex400Response",
+            '404': "PublicProblem",
+            '500': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -158,8 +158,8 @@ class RecordingApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsRecording200Response",
-            '404': "PublicApiExportsIndex400Response",
-            '500': "PublicApiExportsIndex400Response",
+            '404': "PublicProblem",
+            '500': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -226,8 +226,8 @@ class RecordingApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiInterviewsRecording200Response",
-            '404': "PublicApiExportsIndex400Response",
-            '500': "PublicApiExportsIndex400Response",
+            '404': "PublicProblem",
+            '500': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,

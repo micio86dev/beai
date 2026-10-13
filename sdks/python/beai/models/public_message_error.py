@@ -18,19 +18,18 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class PublicApiExportsIndex400ResponseErrorsInner(BaseModel):
+class PublicMessageError(BaseModel):
     """
-    PublicApiExportsIndex400ResponseErrorsInner
+    PublicMessageError
     """ # noqa: E501
-    code: StrictStr
-    var_field: StrictStr = Field(alias="field")
-    message: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["code", "field", "message"]
+    errors: Dict[str, List[StrictStr]] = Field(description="A detailed description of each field that failed validation.")
+    message: StrictStr = Field(description="Errors overview.")
+    __properties: ClassVar[List[str]] = ["errors", "message"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -50,7 +49,7 @@ class PublicApiExportsIndex400ResponseErrorsInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of PublicApiExportsIndex400ResponseErrorsInner from a JSON string"""
+        """Create an instance of PublicMessageError from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -75,7 +74,7 @@ class PublicApiExportsIndex400ResponseErrorsInner(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of PublicApiExportsIndex400ResponseErrorsInner from a dict"""
+        """Create an instance of PublicMessageError from a dict"""
         if obj is None:
             return None
 
@@ -83,8 +82,7 @@ class PublicApiExportsIndex400ResponseErrorsInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "code": obj.get("code"),
-            "field": obj.get("field"),
+            "errors": obj.get("errors"),
             "message": obj.get("message")
         })
         return _obj

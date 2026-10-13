@@ -15,34 +15,16 @@
 import * as runtime from '../runtime';
 import {
     type CreateExportRequest,
-    CreateExportRequestFromJSON,
     CreateExportRequestToJSON,
 } from '../models/CreateExportRequest';
 import {
-    type InlineObject,
-    InlineObjectFromJSON,
-    InlineObjectToJSON,
-} from '../models/InlineObject';
-import {
-    type InlineObject1,
-    InlineObject1FromJSON,
-    InlineObject1ToJSON,
-} from '../models/InlineObject1';
-import {
     type PublicApiExportsIndex200Response,
     PublicApiExportsIndex200ResponseFromJSON,
-    PublicApiExportsIndex200ResponseToJSON,
 } from '../models/PublicApiExportsIndex200Response';
 import {
-    type PublicApiExportsIndex200ResponseDataInner,
-    PublicApiExportsIndex200ResponseDataInnerFromJSON,
-    PublicApiExportsIndex200ResponseDataInnerToJSON,
-} from '../models/PublicApiExportsIndex200ResponseDataInner';
-import {
-    type PublicApiExportsIndex400Response,
-    PublicApiExportsIndex400ResponseFromJSON,
-    PublicApiExportsIndex400ResponseToJSON,
-} from '../models/PublicApiExportsIndex400Response';
+    type PublicExport,
+    PublicExportFromJSON,
+} from '../models/PublicExport';
 
 export interface PublicApiExportsIndexRequest {
     /**
@@ -162,16 +144,16 @@ export class ExportApi extends runtime.BaseAPI {
 
     /**
      */
-    async publicApiExportsShowRaw(requestParameters: PublicApiExportsShowRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiExportsIndex200ResponseDataInner>> {
+    async publicApiExportsShowRaw(requestParameters: PublicApiExportsShowRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicExport>> {
         const requestOptions = await this.publicApiExportsShowRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PublicApiExportsIndex200ResponseDataInnerFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => PublicExportFromJSON(jsonValue));
     }
 
     /**
      */
-    async publicApiExportsShow(requestParameters: PublicApiExportsShowRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiExportsIndex200ResponseDataInner> {
+    async publicApiExportsShow(requestParameters: PublicApiExportsShowRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicExport> {
         const response = await this.publicApiExportsShowRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -215,16 +197,16 @@ export class ExportApi extends runtime.BaseAPI {
 
     /**
      */
-    async publicApiExportsStoreRaw(requestParameters: PublicApiExportsStoreRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiExportsIndex200ResponseDataInner>> {
+    async publicApiExportsStoreRaw(requestParameters: PublicApiExportsStoreRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicExport>> {
         const requestOptions = await this.publicApiExportsStoreRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PublicApiExportsIndex200ResponseDataInnerFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => PublicExportFromJSON(jsonValue));
     }
 
     /**
      */
-    async publicApiExportsStore(requestParameters: PublicApiExportsStoreRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiExportsIndex200ResponseDataInner> {
+    async publicApiExportsStore(requestParameters: PublicApiExportsStoreRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicExport> {
         const response = await this.publicApiExportsStoreRaw(requestParameters, initOverrides);
         return await response.value();
     }

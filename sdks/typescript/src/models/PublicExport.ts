@@ -12,13 +12,12 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface PublicApiExportsIndex200ResponseDataInner
+ * @interface PublicExport
  */
-export interface PublicApiExportsIndex200ResponseDataInner {
+export interface PublicExport {
     /**
      * 
      */
@@ -82,9 +81,9 @@ export interface PublicApiExportsIndex200ResponseDataInner {
 }
 
 /**
- * Check if a given object implements the PublicApiExportsIndex200ResponseDataInner interface.
+ * Check if a given object implements the PublicExport interface.
  */
-export function instanceOfPublicApiExportsIndex200ResponseDataInner(value: object): value is PublicApiExportsIndex200ResponseDataInner {
+export function instanceOfPublicExport(value: object): value is PublicExport {
     if ((!('checksumSha256' in (value as Record<string, any>)) && !('checksum_sha256' in (value as Record<string, any>))) || ((value as Record<string, any>)['checksumSha256'] === undefined && (value as Record<string, any>)['checksum_sha256'] === undefined)) return false;
     if ((!('completedAt' in (value as Record<string, any>)) && !('completed_at' in (value as Record<string, any>))) || ((value as Record<string, any>)['completedAt'] === undefined && (value as Record<string, any>)['completed_at'] === undefined)) return false;
     if ((!('createdAt' in (value as Record<string, any>)) && !('created_at' in (value as Record<string, any>))) || ((value as Record<string, any>)['createdAt'] === undefined && (value as Record<string, any>)['created_at'] === undefined)) return false;
@@ -103,11 +102,11 @@ export function instanceOfPublicApiExportsIndex200ResponseDataInner(value: objec
     return true;
 }
 
-export function PublicApiExportsIndex200ResponseDataInnerFromJSON(json: any): PublicApiExportsIndex200ResponseDataInner {
-    return PublicApiExportsIndex200ResponseDataInnerFromJSONTyped(json, false);
+export function PublicExportFromJSON(json: any): PublicExport {
+    return PublicExportFromJSONTyped(json, false);
 }
 
-export function PublicApiExportsIndex200ResponseDataInnerFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicApiExportsIndex200ResponseDataInner {
+export function PublicExportFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicExport {
     if (json == null) {
         return json;
     }
@@ -131,11 +130,11 @@ export function PublicApiExportsIndex200ResponseDataInnerFromJSONTyped(json: any
     };
 }
 
-export function PublicApiExportsIndex200ResponseDataInnerToJSON(json: any): PublicApiExportsIndex200ResponseDataInner {
-    return PublicApiExportsIndex200ResponseDataInnerToJSONTyped(json, false);
+export function PublicExportToJSON(json: any): PublicExport {
+    return PublicExportToJSONTyped(json, false);
 }
 
-export function PublicApiExportsIndex200ResponseDataInnerToJSONTyped(value?: PublicApiExportsIndex200ResponseDataInner | null, ignoreDiscriminator: boolean = false): any {
+export function PublicExportToJSONTyped(value?: PublicExport | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

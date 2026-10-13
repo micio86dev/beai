@@ -12,13 +12,10 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicProject } from './PublicProject';
 import {
     PublicProjectFromJSON,
-    PublicProjectFromJSONTyped,
     PublicProjectToJSON,
-    PublicProjectToJSONTyped,
 } from './PublicProject';
 
 /**

@@ -133,7 +133,7 @@ class RecordingApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiInterviewsRecording200Response|\Beai\Model\PublicApiExportsIndex400Response|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiInterviewsRecording200Response|\Beai\Model\PublicProblem|\Beai\Model\PublicProblem
      */
     public function publicApiInterviewsRecording($interview, string $contentType = self::contentTypes['publicApiInterviewsRecording'][0])
     {
@@ -149,7 +149,7 @@ class RecordingApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiInterviewsRecording200Response|\Beai\Model\PublicApiExportsIndex400Response|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiInterviewsRecording200Response|\Beai\Model\PublicProblem|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiInterviewsRecordingWithHttpInfo($interview, string $contentType = self::contentTypes['publicApiInterviewsRecording'][0])
     {
@@ -187,13 +187,13 @@ class RecordingApi
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
                 case 500:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -232,7 +232,7 @@ class RecordingApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -240,7 +240,7 @@ class RecordingApi
                 case 500:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);

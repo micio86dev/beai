@@ -12,20 +12,15 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicInterviewProjectCompetenciesInner } from './PublicInterviewProjectCompetenciesInner';
 import {
     PublicInterviewProjectCompetenciesInnerFromJSON,
-    PublicInterviewProjectCompetenciesInnerFromJSONTyped,
     PublicInterviewProjectCompetenciesInnerToJSON,
-    PublicInterviewProjectCompetenciesInnerToJSONTyped,
 } from './PublicInterviewProjectCompetenciesInner';
 import type { PublicInterviewProjectFrameworkVersion } from './PublicInterviewProjectFrameworkVersion';
 import {
     PublicInterviewProjectFrameworkVersionFromJSON,
-    PublicInterviewProjectFrameworkVersionFromJSONTyped,
     PublicInterviewProjectFrameworkVersionToJSON,
-    PublicInterviewProjectFrameworkVersionToJSONTyped,
 } from './PublicInterviewProjectFrameworkVersion';
 
 /**

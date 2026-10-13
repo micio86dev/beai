@@ -85,7 +85,7 @@ class OrganizationApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicOrganization",
-            '404': "InlineObject",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -148,7 +148,7 @@ class OrganizationApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicOrganization",
-            '404': "InlineObject",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -211,7 +211,7 @@ class OrganizationApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicOrganization",
-            '404': "InlineObject",
+            '404': "PublicMessageError",
         }
         response_data = self.api_client.call_api(
             *_param,

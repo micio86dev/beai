@@ -12,13 +12,12 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface PublicApiWebhooksDeliveriesIndex200ResponseDataInner
+ * @interface PublicWebhookDelivery
  */
-export interface PublicApiWebhooksDeliveriesIndex200ResponseDataInner {
+export interface PublicWebhookDelivery {
     /**
      * 
      */
@@ -82,9 +81,9 @@ export interface PublicApiWebhooksDeliveriesIndex200ResponseDataInner {
 }
 
 /**
- * Check if a given object implements the PublicApiWebhooksDeliveriesIndex200ResponseDataInner interface.
+ * Check if a given object implements the PublicWebhookDelivery interface.
  */
-export function instanceOfPublicApiWebhooksDeliveriesIndex200ResponseDataInner(value: object): value is PublicApiWebhooksDeliveriesIndex200ResponseDataInner {
+export function instanceOfPublicWebhookDelivery(value: object): value is PublicWebhookDelivery {
     if ((!('attemptCount' in (value as Record<string, any>)) && !('attempt_count' in (value as Record<string, any>))) || ((value as Record<string, any>)['attemptCount'] === undefined && (value as Record<string, any>)['attempt_count'] === undefined)) return false;
     if ((!('candidateRef' in (value as Record<string, any>)) && !('candidate_ref' in (value as Record<string, any>))) || ((value as Record<string, any>)['candidateRef'] === undefined && (value as Record<string, any>)['candidate_ref'] === undefined)) return false;
     if ((!('createdAt' in (value as Record<string, any>)) && !('created_at' in (value as Record<string, any>))) || ((value as Record<string, any>)['createdAt'] === undefined && (value as Record<string, any>)['created_at'] === undefined)) return false;
@@ -103,11 +102,11 @@ export function instanceOfPublicApiWebhooksDeliveriesIndex200ResponseDataInner(v
     return true;
 }
 
-export function PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSON(json: any): PublicApiWebhooksDeliveriesIndex200ResponseDataInner {
-    return PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSONTyped(json, false);
+export function PublicWebhookDeliveryFromJSON(json: any): PublicWebhookDelivery {
+    return PublicWebhookDeliveryFromJSONTyped(json, false);
 }
 
-export function PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicApiWebhooksDeliveriesIndex200ResponseDataInner {
+export function PublicWebhookDeliveryFromJSONTyped(json: any, ignoreDiscriminator: boolean): PublicWebhookDelivery {
     if (json == null) {
         return json;
     }
@@ -131,11 +130,11 @@ export function PublicApiWebhooksDeliveriesIndex200ResponseDataInnerFromJSONType
     };
 }
 
-export function PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSON(json: any): PublicApiWebhooksDeliveriesIndex200ResponseDataInner {
-    return PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSONTyped(json, false);
+export function PublicWebhookDeliveryToJSON(json: any): PublicWebhookDelivery {
+    return PublicWebhookDeliveryToJSONTyped(json, false);
 }
 
-export function PublicApiWebhooksDeliveriesIndex200ResponseDataInnerToJSONTyped(value?: PublicApiWebhooksDeliveriesIndex200ResponseDataInner | null, ignoreDiscriminator: boolean = false): any {
+export function PublicWebhookDeliveryToJSONTyped(value?: PublicWebhookDelivery | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }

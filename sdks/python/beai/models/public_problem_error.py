@@ -17,25 +17,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from beai.models.public_api_exports_index400_response_errors_inner import PublicApiExportsIndex400ResponseErrorsInner
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class PublicApiExportsIndex400Response(BaseModel):
+class PublicProblemError(BaseModel):
     """
-    PublicApiExportsIndex400Response
+    PublicProblemError
     """ # noqa: E501
     code: StrictStr
-    detail: Optional[StrictStr] = None
-    errors: Optional[List[PublicApiExportsIndex400ResponseErrorsInner]] = None
-    request_id: StrictStr
-    status: StrictInt
-    title: StrictStr
-    type: StrictStr
-    __properties: ClassVar[List[str]] = ["code", "detail", "errors", "request_id", "status", "title", "type"]
+    var_field: StrictStr = Field(alias="field")
+    message: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["code", "field", "message"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -55,7 +50,7 @@ class PublicApiExportsIndex400Response(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of PublicApiExportsIndex400Response from a JSON string"""
+        """Create an instance of PublicProblemError from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -76,17 +71,11 @@ class PublicApiExportsIndex400Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in errors (list)
-        _items = []
-        if self.errors:
-            for _item_errors in self.errors:
-                _items.append(_item_errors.to_dict() if _item_errors is not None else None)
-            _dict['errors'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of PublicApiExportsIndex400Response from a dict"""
+        """Create an instance of PublicProblemError from a dict"""
         if obj is None:
             return None
 
@@ -95,12 +84,8 @@ class PublicApiExportsIndex400Response(BaseModel):
 
         _obj = cls.model_validate({
             "code": obj.get("code"),
-            "detail": obj.get("detail"),
-            "errors": [PublicApiExportsIndex400ResponseErrorsInner.from_dict(_item) for _item in obj["errors"]] if obj.get("errors") is not None else None,
-            "request_id": obj.get("request_id"),
-            "status": obj.get("status"),
-            "title": obj.get("title"),
-            "type": obj.get("type")
+            "field": obj.get("field"),
+            "message": obj.get("message")
         })
         return _obj
 

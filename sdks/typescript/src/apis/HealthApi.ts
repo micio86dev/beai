@@ -16,7 +16,6 @@ import * as runtime from '../runtime';
 import {
     type PublicApiHealth200Response,
     PublicApiHealth200ResponseFromJSON,
-    PublicApiHealth200ResponseToJSON,
 } from '../models/PublicApiHealth200Response';
 
 /**
@@ -44,7 +43,7 @@ export class HealthApi extends runtime.BaseAPI {
     }
 
     /**
-     * Unauthenticated liveness check for client monitors. It always answers `200` with the literal body `{\"status\":\"ok\"}`, whatever the locale.
+     * Unauthenticated liveness check for client monitors. It always answers `200` with the literal body `{"status":"ok"}`, whatever the locale.
      * Check that the API answers
      */
     async publicApiHealthRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PublicApiHealth200Response>> {
@@ -55,7 +54,7 @@ export class HealthApi extends runtime.BaseAPI {
     }
 
     /**
-     * Unauthenticated liveness check for client monitors. It always answers `200` with the literal body `{\"status\":\"ok\"}`, whatever the locale.
+     * Unauthenticated liveness check for client monitors. It always answers `200` with the literal body `{"status":"ok"}`, whatever the locale.
      * Check that the API answers
      */
     async publicApiHealth(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PublicApiHealth200Response> {

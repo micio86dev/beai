@@ -96,7 +96,7 @@ class UsageApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiUsageShow200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -167,7 +167,7 @@ class UsageApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiUsageShow200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -238,7 +238,7 @@ class UsageApi:
 
         _response_types_map: Dict[str, Optional[str]] = {
             '200': "PublicApiUsageShow200Response",
-            '400': "PublicApiExportsIndex400Response",
+            '400': "PublicProblem",
         }
         response_data = self.api_client.call_api(
             *_param,

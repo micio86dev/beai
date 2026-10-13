@@ -23,10 +23,20 @@ GENERATOR="$ROOT/tools/openapi-generator/node_modules/.bin/openapi-generator-cli
 
 cd "$ROOT/sdks"
 
-# The two inline item schemas of `Interview.progress` would otherwise be named
-# after their position (`..._progress_inner`, `..._inner_answers_inner`). Give
-# them names that say what they are, in all three SDKs.
-INLINE_NAMES="PublicInterview_progress_inner=PublicInterviewProgressCompetency,PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer"
+# Inline schemas are named after their position (`..._progress_inner`) or after the
+# first operation that uses them (`..._exports_index_400_response`), which reads
+# wrongly everywhere else. Give them names that say what they are, in all three
+# SDKs. The keys are the generator's own inline names, so a generator upgrade that
+# renames them fails the check after the typescript step instead of silently
+# shipping the old names.
+INLINE_NAMES="\
+PublicInterview_progress_inner=PublicInterviewProgressCompetency,\
+PublicInterview_progress_inner_answers_inner=PublicInterviewProgressAnswer,\
+public_api_exports_index_400_response=PublicProblem,\
+public_api_exports_index_400_response_errors_inner=PublicProblemError,\
+public_api_webhooks_deliveries_index_200_response_data_inner=PublicWebhookDelivery,\
+public_api_exports_index_200_response_data_inner=PublicExport,\
+inline_object=PublicMessageError"
 
 # Skip docs and tests: they multiply the tree size without adding runtime code.
 SKIP="apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
@@ -107,8 +117,90 @@ rewrite(root / "README.md", [
 ])
 PY
 
+# typescript-fetch imports every model an operation or model mentions, whether or
+# not the generated code ends up using it, and its blanket `eslint-disable` header
+# hides the result. Drop the specifiers that are never referenced. Only identifiers
+# are matched, against the file body without its import statements, so a name
+# used in code or in a type position always survives. The same pass removes the
+# backslashes the generator puts in front of quotes inside JSDoc comments.
+python3 - typescript/src <<'PY'
+import pathlib
+import re
+import sys
+
+IMPORT = re.compile(r"^import (type )?\{([^}]*)\} from '([^']+)';\n", re.M)
+
+
+def specifier_name(specifier):
+    """`type Foo` imports the type `Foo`; the identifier to look for is `Foo`."""
+    return specifier.removeprefix("type ")
+
+
+def prune(text):
+    body = IMPORT.sub("", text)
+
+    def rewrite(match):
+        kind, raw, source = match.group(1) or "", match.group(2), match.group(3)
+        names = [n.strip() for n in raw.split(",") if n.strip()]
+        kept = [n for n in names if re.search(r"\b" + re.escape(specifier_name(n)) + r"\b", body)]
+        if len(kept) == len(names):
+            return match.group(0)
+        if not kept:
+            return ""
+        if "\n" in raw:
+            inner = "".join(f"    {n},\n" for n in kept)
+            return f"import {kind}{{\n{inner}}} from '{source}';\n"
+        return f"import {kind}{{ {', '.join(kept)} }} from '{source}';\n"
+
+    return IMPORT.sub(rewrite, text)
+
+
+def unescape_comments(text):
+    """The generator escapes quotes inside JSDoc (`organization\\'s`); comments need no escaping."""
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("*"):
+            lines[i] = line.replace("\\'", "'").replace('\\"', '"')
+    return "\n".join(lines)
+
+
+results = {}
+for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
+    before = path.read_text()
+    after = unescape_comments(prune(before))
+    # A second pass must find nothing left to do: this is what proves that every
+    # unused import and every escaped comment quote was handled, not just some.
+    if unescape_comments(prune(after)) != after:
+        sys.exit(f"ERROR: {path}: post-processing is not idempotent")
+    if after != before:
+        results[path] = after
+
+# Nothing is written until every file passed, so a failure never leaves the tree
+# half post-processed.
+for path, after in results.items():
+    path.write_text(after)
+changed = len(results)
+print(f"pruned unused imports in {changed} typescript files")
+PY
+
 generate php "$TMP/openapi.json" -g php \
   --additional-properties="composerVendorName=beai,composerProjectName=beai-php,packageName=Beai,invokerPackage=Beai,artifactVersion=$VERSION"
 
 generate python "$TMP/openapi.json" -g python \
   --additional-properties="packageName=beai,projectName=beai,packageVersion=$VERSION"
+
+# A generator upgrade that renames an inline schema must fail here, in every SDK,
+# instead of silently shipping the old names.
+for pair in $(printf '%s' "$INLINE_NAMES" | tr ',' ' '); do
+  model=${pair#*=}
+  for target in "typescript/src/models/$model.ts" "php/lib/Model/$model.php"; do
+    if [ ! -f "$target" ]; then
+      echo "ERROR: inline schema mapping '$pair' produced no $target" >&2
+      exit 1
+    fi
+  done
+  if ! grep -rq "^class $model(" python/beai/models; then
+    echo "ERROR: inline schema mapping '$pair' produced no python model $model" >&2
+    exit 1
+  fi
+done

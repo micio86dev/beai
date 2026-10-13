@@ -142,7 +142,7 @@ class WebhookDeliveryApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiWebhooksDeliveriesIndex200Response|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicApiWebhooksDeliveriesIndex200Response|\Beai\Model\PublicProblem
      */
     public function publicApiWebhooksDeliveriesIndex($status = null, $event_type = null, $interview_id = null, $cursor = null, $limit = null, string $contentType = self::contentTypes['publicApiWebhooksDeliveriesIndex'][0])
     {
@@ -164,7 +164,7 @@ class WebhookDeliveryApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiWebhooksDeliveriesIndex200Response|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicApiWebhooksDeliveriesIndex200Response|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiWebhooksDeliveriesIndexWithHttpInfo($status = null, $event_type = null, $interview_id = null, $cursor = null, $limit = null, string $contentType = self::contentTypes['publicApiWebhooksDeliveriesIndex'][0])
     {
@@ -202,7 +202,7 @@ class WebhookDeliveryApi
                     );
                 case 400:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -241,7 +241,7 @@ class WebhookDeliveryApi
                 case 400:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -483,7 +483,7 @@ class WebhookDeliveryApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response
+     * @return \Beai\Model\PublicWebhookDelivery|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem
      */
     public function publicApiWebhooksDeliveriesRedeliver($id, string $contentType = self::contentTypes['publicApiWebhooksDeliveriesRedeliver'][0])
     {
@@ -501,7 +501,7 @@ class WebhookDeliveryApi
      *
      * @throws \Beai\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner|\Beai\Model\InlineObject|\Beai\Model\PublicApiExportsIndex400Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Beai\Model\PublicWebhookDelivery|\Beai\Model\PublicMessageError|\Beai\Model\PublicProblem, HTTP status code, HTTP response headers (array of strings)
      */
     public function publicApiWebhooksDeliveriesRedeliverWithHttpInfo($id, string $contentType = self::contentTypes['publicApiWebhooksDeliveriesRedeliver'][0])
     {
@@ -533,19 +533,19 @@ class WebhookDeliveryApi
             switch($statusCode) {
                 case 202:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner',
+                        '\Beai\Model\PublicWebhookDelivery',
                         $request,
                         $response,
                     );
                 case 404:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $request,
                         $response,
                     );
                 case 409:
                     return $this->handleResponseWithDataType(
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $request,
                         $response,
                     );
@@ -567,7 +567,7 @@ class WebhookDeliveryApi
             }
 
             return $this->handleResponseWithDataType(
-                '\Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner',
+                '\Beai\Model\PublicWebhookDelivery',
                 $request,
                 $response,
             );
@@ -576,7 +576,7 @@ class WebhookDeliveryApi
                 case 202:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner',
+                        '\Beai\Model\PublicWebhookDelivery',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -584,7 +584,7 @@ class WebhookDeliveryApi
                 case 404:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\InlineObject',
+                        '\Beai\Model\PublicMessageError',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -592,7 +592,7 @@ class WebhookDeliveryApi
                 case 409:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\Beai\Model\PublicApiExportsIndex400Response',
+                        '\Beai\Model\PublicProblem',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -638,7 +638,7 @@ class WebhookDeliveryApi
      */
     public function publicApiWebhooksDeliveriesRedeliverAsyncWithHttpInfo($id, string $contentType = self::contentTypes['publicApiWebhooksDeliveriesRedeliver'][0])
     {
-        $returnType = '\Beai\Model\PublicApiWebhooksDeliveriesIndex200ResponseDataInner';
+        $returnType = '\Beai\Model\PublicWebhookDelivery';
         $request = $this->publicApiWebhooksDeliveriesRedeliverRequest($id, $contentType);
 
         return $this->client

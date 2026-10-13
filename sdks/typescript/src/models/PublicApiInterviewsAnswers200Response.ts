@@ -12,13 +12,10 @@
  * Do not edit the class manually.
  */
 
-import { mapValues } from '../runtime';
 import type { PublicApiInterviewsAnswers200ResponseAnswersInner } from './PublicApiInterviewsAnswers200ResponseAnswersInner';
 import {
     PublicApiInterviewsAnswers200ResponseAnswersInnerFromJSON,
-    PublicApiInterviewsAnswers200ResponseAnswersInnerFromJSONTyped,
     PublicApiInterviewsAnswers200ResponseAnswersInnerToJSON,
-    PublicApiInterviewsAnswers200ResponseAnswersInnerToJSONTyped,
 } from './PublicApiInterviewsAnswers200ResponseAnswersInner';
 
 /**

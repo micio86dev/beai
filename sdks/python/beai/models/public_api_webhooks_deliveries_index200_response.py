@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from beai.models.public_api_webhooks_deliveries_index200_response_data_inner import PublicApiWebhooksDeliveriesIndex200ResponseDataInner
+from beai.models.public_webhook_delivery import PublicWebhookDelivery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class PublicApiWebhooksDeliveriesIndex200Response(BaseModel):
     """
     PublicApiWebhooksDeliveriesIndex200Response
     """ # noqa: E501
-    data: List[PublicApiWebhooksDeliveriesIndex200ResponseDataInner]
+    data: List[PublicWebhookDelivery]
     has_more: StrictBool
     next_cursor: Optional[StrictStr]
     __properties: ClassVar[List[str]] = ["data", "has_more", "next_cursor"]
@@ -95,7 +95,7 @@ class PublicApiWebhooksDeliveriesIndex200Response(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "data": [PublicApiWebhooksDeliveriesIndex200ResponseDataInner.from_dict(_item) for _item in obj["data"]] if obj.get("data") is not None else None,
+            "data": [PublicWebhookDelivery.from_dict(_item) for _item in obj["data"]] if obj.get("data") is not None else None,
             "has_more": obj.get("has_more"),
             "next_cursor": obj.get("next_cursor")
         })

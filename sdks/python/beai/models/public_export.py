@@ -23,9 +23,9 @@ from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
 
-class PublicApiExportsIndex200ResponseDataInner(BaseModel):
+class PublicExport(BaseModel):
     """
-    PublicApiExportsIndex200ResponseDataInner
+    PublicExport
     """ # noqa: E501
     checksum_sha256: Optional[StrictStr]
     completed_at: Optional[StrictStr]
@@ -62,7 +62,7 @@ class PublicApiExportsIndex200ResponseDataInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of PublicApiExportsIndex200ResponseDataInner from a JSON string"""
+        """Create an instance of PublicExport from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -132,7 +132,7 @@ class PublicApiExportsIndex200ResponseDataInner(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of PublicApiExportsIndex200ResponseDataInner from a dict"""
+        """Create an instance of PublicExport from a dict"""
         if obj is None:
             return None
 
