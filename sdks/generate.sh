@@ -88,14 +88,6 @@ PY
 generate typescript "$TMP/openapi.json" -g typescript-fetch \
   --additional-properties="npmName=@beai/sdk,npmVersion=$VERSION,supportsES6=true,typescriptThreePlus=true"
 
-for pair in $(printf '%s' "$INLINE_NAMES" | tr ',' ' '); do
-  model=${pair#*=}
-  if [ ! -f "typescript/src/models/$model.ts" ]; then
-    echo "ERROR: inline schema mapping '$pair' produced no typescript model $model" >&2
-    exit 1
-  fi
-done
-
 # Bun is the only package manager we run: the generator's `prepare` script
 # would shell out to npm on every install, and its README tells maintainers to
 # use npm. Rewrite both deterministically. (The consumer-facing
@@ -172,7 +164,7 @@ def unescape_comments(text):
     return "\n".join(lines)
 
 
-changed = 0
+results = {}
 for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
     before = path.read_text()
     after = unescape_comments(prune(before))
@@ -181,8 +173,13 @@ for path in sorted(pathlib.Path(sys.argv[1]).rglob("*.ts")):
     if unescape_comments(prune(after)) != after:
         sys.exit(f"ERROR: {path}: post-processing is not idempotent")
     if after != before:
-        path.write_text(after)
-        changed += 1
+        results[path] = after
+
+# Nothing is written until every file passed, so a failure never leaves the tree
+# half post-processed.
+for path, after in results.items():
+    path.write_text(after)
+changed = len(results)
 print(f"pruned unused imports in {changed} typescript files")
 PY
 
@@ -191,3 +188,19 @@ generate php "$TMP/openapi.json" -g php \
 
 generate python "$TMP/openapi.json" -g python \
   --additional-properties="packageName=beai,projectName=beai,packageVersion=$VERSION"
+
+# A generator upgrade that renames an inline schema must fail here, in every SDK,
+# instead of silently shipping the old names.
+for pair in $(printf '%s' "$INLINE_NAMES" | tr ',' ' '); do
+  model=${pair#*=}
+  for target in "typescript/src/models/$model.ts" "php/lib/Model/$model.php"; do
+    if [ ! -f "$target" ]; then
+      echo "ERROR: inline schema mapping '$pair' produced no $target" >&2
+      exit 1
+    fi
+  done
+  if ! grep -rq "^class $model(" python/beai/models; then
+    echo "ERROR: inline schema mapping '$pair' produced no python model $model" >&2
+    exit 1
+  fi
+done
