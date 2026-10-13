@@ -30,7 +30,7 @@ both use it; verified the proxy answers), `backoffice` `BEAI_API_ORIGIN`.
 |---|---|---|---|
 | `EMBED_CDN_URL` | api, worker, scheduler | none (docs show no CDN snippet) | The public URL of the published `@beai/embed` IIFE bundle. Publish the package first (npm, or upload `embed/dist/embed.iife.js` to a CDN/bucket) and use that URL. |
 | `PUBLIC_API_CONTRACT_PATH` | api, worker, scheduler | `base_path('public-api/openapi.yaml')` | Only for contract validation against a vendored spec. Leave empty in production. |
-| `PUBLIC_API_SPEC_SERVER_URL` | api | `https://api.beai.example/v1` placeholder in the exported spec | Decision G-03: the real public API host (custom domain). Only matters when re-exporting `openapi.v1.json`. |
+| `PUBLIC_API_SPEC_SERVER_URL` | api | `https://api-production-640e.up.railway.app/api/v1` (the Railway domain; provisional) | Decision G-03: the public API host written into the exported spec and the SDK default base path. Change the config default (and re-export, regenerate the SDKs) when a custom domain exists; the variable only overrides it. |
 | `PUBLIC_API_RATE_LIMIT_LIVE` / `_TEST` | api | 600 / 120 requests per minute per org | Tune under real load (decision 7). Per-org overrides live in the database. |
 | `PUBLIC_API_IDEMPOTENCY_RECORD_TTL_SECONDS` | api | 86400 | Idempotency record lifetime. |
 | `PUBLIC_API_IDEMPOTENCY_LOCK_TTL_SECONDS` | api | 30 | Concurrent-request lock TTL. |
