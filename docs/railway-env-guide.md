@@ -54,5 +54,6 @@ with `0` or `''`. Set them only with a real value.
 | Resend (`RESEND_API_KEY`) | resend.com > API Keys. Production mail also needs a verified sending domain (quint.org) in Resend. |
 | Sentry DSN / auth token | sentry.io > Project Settings > Client Keys (DSN); Organization Settings > Auth Tokens (`SENTRY_AUTH_TOKEN`). |
 | Clarity / GA4 ids (`NUXT_PUBLIC_CLARITY_PROJECT_ID`, `NUXT_PUBLIC_GA_MEASUREMENT_ID`) | clarity.microsoft.com > Settings > Overview; analytics.google.com > Admin > Data streams. |
+| Privacy Policy link (`NUXT_PUBLIC_PRIVACY_POLICY_URL`, `frontend`) | An `https:` URL to the policy document, shown in the candidate footer. Empty or any other scheme renders no link. Production value is set to the dated PDF on `demo.beai.quint.org`; change it here when the policy is republished. |
 | Railway service URLs | Railway > service > Settings > Networking, or `railway domain --service <name>`. |
 | Database / Redis credentials | Railway > `pgvector` / `Redis` > Variables (referenced by the services; do not copy by hand). |
