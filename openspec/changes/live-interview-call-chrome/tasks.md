@@ -165,16 +165,16 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice A2: `feature/licc-bo-persona-name` -> backoffice tracker
 
-- [ ] T-A2.1b Sync contract
+- [x] T-A2.1b Sync contract
   - Files: `backoffice/openapi.json` (copy from api), `backoffice/types/api.ts` (`bun run codegen`).
   - Acceptance: `check-client-drift.sh` clean. Commit: `chore(backoffice): sync openapi for persona display name`
 
-- [ ] T-A2.2b RED: form tests
+- [x] T-A2.2b RED: form tests
   - Files: `backoffice/tests/unit/` avatar template form spec (modify the existing one or create `avatar-template-form-persona.spec.ts`).
   - Test-first: input labelled "Nome dell'intervistatore" / "Interviewer display name" with associated label, helper text, `maxlength=60` (80 typed chars hold 60); stored value loads on edit; editing an unrelated field submits the same `persona.display_name`; clearing submits `persona: {}` on update and NO `persona` on create (no empty string, M4); a 422 keyed `persona.display_name` renders next to the input, linked by `aria-describedby`, keeps the typed value and resets nothing else; no literal strings outside `it` / `en` locale files (existing locale-parity test).
   - Acceptance: red for the right reason.
 
-- [ ] T-A2.3 GREEN + REFACTOR: form field
+- [x] T-A2.3 GREEN + REFACTOR: form field
   - Files: `backoffice/app/components/organisms/AvatarTemplateForm.vue` (draft field, input, `persona` in `submit` near `:1124-1132`, 422 key mapping); `backoffice/app/types/avatar-template.ts`; `backoffice/i18n/locales/{it,en}.json` (`avatar_templates.form.persona_display_name`, `_hint`, `errors.personaDisplayNameInvalid`, generic copy that names no vendor).
   - Acceptance: T-A2.2b green; `bun run lint`, `bun run typecheck`, full vitest green; `bun run test:e2e` avatar-template specs green (Chromium and WebKit); coverage not below 85%.
   - Commit: `feat(avatar-templates): add the interviewer display name to the template form`

@@ -6,7 +6,8 @@ Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no
 
 Completed: T0.0, T0.1, T-A1.1, T-A1.2 (batch 1); T-A2.1 to T-A2.4, T-A3.1 to T-A3.6 (batch 2). The whole api phase
 (slices A.i, A.ii, A.iii and the split A.iv) is done except T-A3.7 (release gate, orchestrator-owned).
-Remaining: Phase 2 backoffice (A2) onward. Nothing pushed, no PR opened.
+Batch 3 (backoffice slice A2): T-A2.1b, T-A2.2b, T-A2.3 complete.
+Remaining: Phase 3 frontend data (B.i) onward, plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
 
 ## Batch 1 (Phase 0 + Slice A.i): complete
 
@@ -117,3 +118,53 @@ or accept that the per-slice estimates were low (tests were ~60% of the diff).
 - **Backoffice contract note for A2.** The persona payload to clear the name is `persona: {}` (or `persona: {display_name: null}`); both unset the key. Do not send an empty string.
 - Spec wording to fix at archive time: avatar-templates says the resource inherits; in fact both resource docblocks carry the field.
 - Denylist note: `daily` in the provider denylist also refuses a name like "Daily Coach" (word-bounded, per D7); accepted by the design.
+
+## Batch 3 (Slice A2, backoffice): complete
+
+Completed: T-A2.1b, T-A2.2b, T-A2.3. Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no PR opened. api/ and frontend/ untouched.
+
+### Branch and commits (backoffice)
+
+| Branch | Base | Commit | Task |
+|---|---|---|---|
+| `feature/licc-bo-persona-name` | backoffice tracker `feature/live-interview-call-chrome` | 048d5c3 `chore(backoffice): sync openapi for persona display name` | T-A2.1b |
+| `feature/licc-bo-persona-name` | | efe46e7 `feat(avatar-templates): add the interviewer display name to the template form` | T-A2.2b + T-A2.3 |
+
+The contract came from `git show feature/licc-a4-persona-import:openapi.json` (never the api working tree), then `bun run codegen`.
+
+### TDD Cycle Evidence
+
+| Task | RED (observed) | GREEN | REFACTOR / triangulation |
+|---|---|---|---|
+| T-A2.1b | n/a (generated contract) | `check-client-drift.sh` stage 2 OK ("generated client matches committed snapshot"); `openapi.json` is byte-identical to the api branch file (`cmp`) | stage 1 compares with the api WORKING TREE, which a concurrent process switches between branches, so it reports drift against whatever branch is checked out there; run with the api snapshot disabled and verified with `cmp` against the branch instead |
+| T-A2.2b | `vitest run tests/unit/avatar-template-form-persona.spec.ts`: 12 failed / 2 passed (the two that pass at birth: no `persona` on create when empty, and the no-vendor-in-copy guard that is vacuous until the keys exist) | see T-A2.3 | one weak test dropped after the review gate: "holds at most 60 of 80 typed characters" only re-asserted the `maxlength` attribute (jsdom does not truncate programmatic input) |
+| T-A2.3 | page wiring: `avatar-templates-page.spec.ts -t "forwards the persona payload"` RED with the page change stashed (1 failed) | persona spec 13/13 (after dropping the weak one); `avatar-template*` + page specs: 343 passed; full vitest 237 files, 4092 passed | create-with-name, create-empty (no key), edit-unrelated-field (same name), clear (`{}`, never an empty string), whitespace-only (`{}`), untouched-without-name (`{}`), 422 mapped to i18n copy with `aria-describedby`/`aria-invalid`, it/en key parity, no vendor word in the copy. Payload type `PersonaWrite` derived from the generated store body (review gate rejected a hand-written copy) |
+
+### Work Unit Evidence (A2)
+
+| Evidence | Value |
+|---|---|
+| Focused test command | `node node_modules/.bin/vitest run tests/unit/avatar-template-form-persona.spec.ts tests/unit/avatar-templates-page.spec.ts`: green; full `node node_modules/.bin/vitest run`: 237 files, 4092 tests passed |
+| Other gates | `bun run lint`: clean; `bun run typecheck`: no errors; `prettier --check`: clean; Playwright `avatar-templates-forecast`, `avatar-templates-heygen-voice`, `platform-templates` specs (Chromium and WebKit): 38 passed |
+| Runtime harness | Playwright against the dev server with mocked API routes (above); no local stack started, so a real round trip against the api validator was not exercised |
+| Rollback boundary | revert efe46e7 (form, two pages, composable types, locale keys) and 048d5c3 (contract); saved names stay in the template JSON |
+
+### Authored size (git diff --numstat; insertions + deletions)
+
+| Commit | Lines | Note |
+|---|---|---|
+| 048d5c3 | 262 + 80 | generated `openapi.json` and `types/api.ts`, excluded from the count |
+| efe46e7 | 295 | 113 app and locale lines, 182 tests; forecast ~140 |
+
+### Deviations from design/tasks
+
+1. **Pages and composable were touched.** tasks.md lists only the form, the type file and the locales, but both template pages build the API payload field by field, so `persona` would never have reached the api. `app/pages/avatar-templates/index.vue`, `app/pages/platform-templates/index.vue` and `useAvatarTemplates.ts` forward it (platform: superadmin surface, same form).
+2. **Update with no name sends `persona: {}`** (M4), including for a template that never had a name; harmless, the api unsets nothing. Create sends no `persona` when empty.
+3. **Refusal copy.** A `persona.display_name` 422 shows the form's own i18n sentence (`errors.personaDisplayNameInvalid`), never the api's English sentence, which keeps the vendor-free promise in both languages.
+4. **`maxlength=60` is native only.** The review gate noted the form's other fields validate in JS; the spec scenario ("holds at most 60 characters") is met by the attribute. A JS length check is a possible follow-up.
+5. **No new Playwright spec** for the form: the existing avatar-template e2e specs pass, and the new behaviour is covered by component and page specs. Coverage was not re-measured in this batch.
+
+### Issues found
+
+- gga reviewed the first feat commit and refused it for a hand-maintained write type; fixed by deriving `PersonaWrite` from `paths`. The second pass was accepted. No hook bypassed.
+- The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
