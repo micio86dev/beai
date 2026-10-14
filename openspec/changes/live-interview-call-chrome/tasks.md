@@ -105,21 +105,21 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice A.ii: `feature/licc-a2-outline` -> `feature/licc-a1-competency-progress`
 
-- [ ] T-A2.1 RED: outline feature tests
+- [x] T-A2.1 RED: outline feature tests
   - Files: `api/tests/Feature/Candidate/InterviewOutlineTest.php` (create).
   - Test-first (each is a spec scenario): standard shape (6 top-level keys, no `code`, `candidate_name` trimmed, `primary_total_all = 6`); potential -> `role_name` null; unset and invalid stored `avatar_name` (61 chars, `<`) -> null; blank participant name -> null; statuses `done,current,upcoming`; errored-with-attempts-left next -> `current`; evaluation-retry reset `done,current,done,retry`; exhausted attempts -> `done` then `current`; all closed while `in_corso` -> no `current`; terminal participant refused by `ParticipantStatusGuard`; unsupported `assessment_type` -> `422 assessment_type_not_supported`; frozen `primary_questions` snapshot beats live count; competency without primaries -> 0; English project + Italian `Accept-Language` -> English names; blank project-language translation falls back to `en`, both blank -> `null` name, never the code; cross-tenant (two orgs, same codes, org A sees only A); no token and expired token -> same status as `/candidate/session` (read-only); foreign `participant_id` / `session_id` query ignored and tables unchanged. Observe RED (404 route).
   - Acceptance: all fail for the right reason. No commit yet.
 
-- [ ] T-A2.2 GREEN: `BuildInterviewOutline`
+- [x] T-A2.2 GREEN: `BuildInterviewOutline`
   - Files: `api/app/Actions/Interview/BuildInterviewOutline.php` (create, D3/D4/D5; private name rule helper; one sessions query keyed by `competency_code`; `ResolvePrimaryQuestions` for rows without a snapshot, with the `// ponytail:` (read-only) comment from D4).
   - Acceptance: the status and field tests of T-A2.1 pass.
 
-- [ ] T-A2.3 GREEN: controller, route, contract
+- [x] T-A2.3 GREEN: controller, route, contract
   - Files: `api/app/Http/Controllers/Candidate/OutlineController.php` (create, `show()`, `@scramble-return` per D4, `@internal` notes); `api/routes/api.php` (`Route::get('/outline', ...)` inside the nested `interview` group, `:930-953`).
   - Acceptance: all of T-A2.1 green including 401/terminal/422; `composer analyse`, Pint clean.
   - Commit (T-A2.1 to T-A2.3): `feat(interview): add the candidate interview outline endpoint`
 
-- [ ] T-A2.4 Contract export
+- [x] T-A2.4 Contract export
   - Files: `api/openapi.json` (generated), plus the second api spec file named in the release recipe if the repo keeps one.
   - Command: `DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=beai_test DB_USERNAME=postgres DB_PASSWORD=postgres DB_URL= php artisan scramble:export`; then run `ResourceMatchesSpecTest`.
   - Acceptance: spec diff contains only `outline.show`; `ResourceMatchesSpecTest` green. Never export against SQLite.
@@ -127,33 +127,33 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice A.iii: `feature/licc-a3-utterance-persona` -> `feature/licc-a2-outline`
 
-- [ ] T-A3.1 `/utterance` (read-only) returns `primary_index`
+- [x] T-A3.1 `/utterance` (read-only) returns `primary_index`
   - Files: `api/tests/Feature/C7a/` utterance test (modify or create `UtterancePrimaryIndexTest.php`); `api/app/Http/Controllers/Candidate/UtteranceController.php` (D6: compute `matchedCount()` once after commit, pass to `recordUtteranceEvent()` as `max(0, $primaryIndex - 1)`, return `['boundary_due' => ..., 'primary_index' => ...]`, `#[Response(202, type: 'array{boundary_due: bool, primary_index: int}')]` at `:95`).
   - Test-first (RED first): 1 after the first primary; unchanged after a follow-up and a candidate turn; unchanged after a verbatim re-ask, next distinct primary yields 3; 0 before any primary; always 0 with no primaries; restarts at 1 after a re-offer; scoped to its own session; 409 body unchanged; `question_asked` event index unchanged; locked section still three statements (existing test).
   - Acceptance: tests green; existing utterance suite unmodified and green.
   - Commit: `feat(interview): return primary_index from the utterance endpoint`
 
-- [ ] T-A3.2 `PersonaDisplayName` rule
+- [x] T-A3.2 `PersonaDisplayName` rule
   - Files: `api/app/Rules/PersonaDisplayName.php` (create: `MAX = 60`, `problem()`, provider denylist regex from D7); `api/tests/Unit/Rules/PersonaDisplayNameTest.php` (create).
   - Test-first: 60 ok / 61 refused (`mb_strlen` after trim); `<`, `>`, `\n`, a format character refused; "HeyGen", "Hey Gen", "LiveAvatar", "live avatar", "Tavus Coach", "daily", "My LiveKit agent", "live kit" refused case-insensitively; a non-vendor word that merely contains none of them accepted; non-string refused; the message never contains the matched word.
   - Acceptance: truth table green. Commit: `feat(avatar-templates): add the PersonaDisplayName validation rule`
 
-- [ ] T-A3.3 Form rules, `mergePersona`, four write paths
+- [x] T-A3.3 Form rules, `mergePersona`, four write paths
   - Files: `api/app/Http/Controllers/Concerns/ValidatesAvatarTemplateWrites.php` (rules on store AND update: `'persona' => ['sometimes','nullable','array:display_name']`, `'persona.display_name' => ['nullable', new PersonaDisplayName]`; widen both docblocks to `list<string|ValidationRule>`; add `mergePersona()` per D7 and M4); `api/app/Http/Controllers/AvatarTemplateController.php` (`store` / `update` `:224`, `:256`); `api/app/Http/Controllers/Api/PlatformAvatarTemplateController.php` (`:145`, `:188`); tests under `api/tests/Feature/AvatarTemplates/` (create `PersonaDisplayNameWriteTest.php`).
   - Test-first (RED): 422 on create AND update for 61 chars, `<`, control char, provider name, unknown persona key; 422 body never contains the vendor name; error listed together with another invalid field; `"  Giulia  "` stored as `Giulia`; persona absent -> column untouched; `persona: {}` or `display_name: null` -> key UNSET (no stored `null`, no empty string) and the column becomes `null` when nothing is left; imported extra keys kept on update; platform controller behaves identically.
   - Acceptance: green; existing avatar template tests unmodified. Commit: `feat(avatar-templates): validate and merge persona.display_name on every write`
 
-- [ ] T-A3.4 Import validation
+- [x] T-A3.4 Import validation (delivered on `feature/licc-a4-persona-import`, split from A.iii: the slice forecast exceeded 400 lines)
   - Files: `api/app/Support/AvatarTemplates/TemplateDocument.php` (`flatten()` `:74` trims a string `display_name`, unsets a blank one); `api/app/Http/Controllers/AvatarTemplatePortabilityController.php` (`reject()` `:117` returns `"persona.display_name: {problem}"`); test `api/tests/Feature/AvatarTemplates/PersonaImportTest.php` (create).
   - Test-first (RED): import with `Tavus`, 61 chars, `<b>` each fails with a `persona.display_name` error and creates no template; blank is dropped; export then import round-trips `Giulia` (inactive template); duplicate keeps the name and leaves the original unchanged.
   - Acceptance: green. Commit: `feat(avatar-templates): refuse an invalid persona display name on import`
 
-- [ ] T-A3.5 Accessor, resource, exposure
+- [x] T-A3.5 Accessor, resource, exposure
   - Files: `api/app/Models/AvatarTemplate.php` (`personaDisplayName()` returns trimmed value or `null` when `PersonaDisplayName::problem()` refuses it); `api/app/Http/Resources/AvatarTemplateResource.php` (`'persona' => ['display_name' => ...]` in `toArray()` and `@scramble-return`; inherited by `PlatformAvatarTemplateResource`); `api/tests/Helpers/PublicApi/ExposureCatalogue.php` (add `avatar_template.persona.display_name` to `exclusions()['Project']`, admin-only); tests `PersonaResourceTest.php`.
   - Test-first (RED): resource returns `persona.display_name` and no other persona key; a stored invalid legacy value degrades to `null`; `/v1` (read-only) project payloads never contain it; `ExposureTest` red until the catalogue entry exists, then green; no provider request body or header contains the name (existing avatar session issue tests extended).
   - Acceptance: `ExposureTest`, `ParticipantArchTest`, `ResourceMatchesSpecTest` green. Commit: `feat(avatar-templates): expose persona.display_name to admins and classify it`
 
-- [ ] T-A3.6 Contract export
+- [x] T-A3.6 Contract export
   - Files: `api/openapi.json` (generated), then copy into `frontend/openapi.json` and `backoffice/openapi.json` (done in A2 and B.i, not here).
   - Command: the PostgreSQL `scramble:export` above. Acceptance: diff contains `primary_index` and `persona.display_name` only; `ResourceMatchesSpecTest` green.
   - Commit: `chore(api): export openapi for primary_index and persona display name`
