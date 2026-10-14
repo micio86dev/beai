@@ -78,12 +78,12 @@ slice 0 merged into the wrapper tracker.
 
 ## Phase 0: Trackers and wrapper docs (slice 0)
 
-- [ ] T0.0 Trackers and artifacts (wrapper; docs-only, outside the review budget)
+- [x] T0.0 Trackers and artifacts (wrapper; docs-only, outside the review budget)
   - Slice 0, repo wrapper. Files: create branch `feature/live-interview-call-chrome` from `develop` in the wrapper, `api`, `backoffice`; in `frontend` create it from `feature/seamless-primary-transition` (R8) or from `develop` once frontend PR #95 is merged. `openspec/changes/live-interview-call-chrome/{proposal,design,tasks}.md`, `specs/**/spec.md` (existing, uncommitted).
   - Test-first: N/A (branching and docs). Acceptance: `git -C frontend merge-base --is-ancestor <#95 tip> HEAD` is true; `rg -n "boundaryInFlight" frontend/app/composables/useInterviewSession.ts` matches; the frontend tracker PR is never merged before #95.
   - Commit (wrapper tracker): `docs(openspec): add live-interview-call-chrome change artifacts`
 
-- [ ] T0.1 Amend `DESIGN.md` and fix `design.md` drift
+- [x] T0.1 Amend `DESIGN.md` and fix `design.md` drift
   - Slice 0, repo wrapper, branch `feature/licc-0-design-docs` -> wrapper tracker. Files: `DESIGN.md` (§3.1 `--color-primary-caption` 4.5:1 on avatar-bg; §3.3 `--spacing-call-panel` 22rem; §7.0.1 bare logo while live, `header-end` spans the row, `CallHeader`, clock with accessible name and no live region, tab order; §7.3 diagram and bullets: header controls and title, captions overlay replaces the question band, "Intervista" panel sections, bands as guidance only, answer timer counts from the end of the question, approximate plus exact remaining time, storyboard names competencies (reversal recorded), competency progress kept, persona name with generic fallback, `bg-black/60` chips, mute is silence to the provider, mute persists across boundaries and resets on reload, forced mutes disable the toggle (M2), Exit visible "Esci" with the resume hint as accessible name); `openspec/changes/live-interview-call-chrome/design.md` (D9 rule 5 -> spec wording per M2; Open Question 2 closed per M1/M8; D14 section 3 gate per M3).
   - Test-first: RED = `rg -n "never a competency name|no status pill|min/ideal/max" DESIGN.md` still matches the old rules; GREEN = it no longer matches and `rg -n "22rem" DESIGN.md` matches §3.3.
   - Acceptance: the five old rules (empty live header, no status pill, no band, no competency name, 18rem) are gone; every new rule cites D-number or spec requirement; no UI file is touched.
@@ -93,12 +93,12 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice A.i: `feature/licc-a1-competency-progress` -> api tracker
 
-- [ ] T-A1.1 RED: `CompetencyProgress` tests
+- [x] T-A1.1 RED: `CompetencyProgress` tests
   - Files: `api/tests/Unit/Support/Interview/CompetencyProgressTest.php` (create).
   - Test-first: `isOpen()` truth table: null session, `pending`, `in_corso`, `error` with attempts left (`< InterviewSession::MAX_ERROR_ATTEMPTS`), `error` exhausted, `completed`, `timeout`, `skipped`; `ordered($projectId)` returns rows by `pc.position` and only that project's rows (two projects, same codes); `resolveNext()` equals the current controller output on the fixtures of the four existing tests (including `reoffer` flag, `competency_ordinal`, `total_competencies`). Observe RED (class missing).
   - Acceptance: fails for the right reason only. No commit yet (committed with T-A1.2).
 
-- [ ] T-A1.2 GREEN + REFACTOR: extract `CompetencyProgress`, rewire the controller
+- [x] T-A1.2 GREEN + REFACTOR: extract `CompetencyProgress`, rewire the controller
   - Files: `api/app/Support/Interview/CompetencyProgress.php` (create: `ordered()`, static `isOpen()`, `resolveNext()`); `api/app/Http/Controllers/Candidate/InterviewController.php` (move `resolveNextCompetency` / `competencyPayload` `:1003-1068` into the helper; call site `:241` uses `$this->competencyProgress->resolveNext(...)`; `freshRemainingCompetencies` `:897-920` uses `ordered()`; inject via constructor).
   - Acceptance: T-A1.1 green; `QuestionIndexZeroBasedTest`, `CompletionCasTest`, `RecoverFailedParticipantTest`, `DraftContentIsolationTest` pass UNMODIFIED (`git diff --stat` shows no edit to them); `composer analyse` and Pint clean; full `php artisan test --parallel` green. Run one Pest invocation at a time (shared test DB).
   - Commit: `refactor(interview): extract competency order and open rule into CompetencyProgress`
