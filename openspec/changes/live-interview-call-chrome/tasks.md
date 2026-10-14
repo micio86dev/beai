@@ -210,16 +210,16 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice B.ii: `feature/licc-b2-mic-answer-timer` -> `feature/licc-b1-outline-data`
 
-- [ ] T-B2.1 RED: microphone intent tests
+- [x] T-B2.1 RED: microphone intent tests
   - Files: `frontend/tests/unit/use-interview-session-mic.spec.ts` (create).
   - Test-first (provider fakes): default `micMuted = false`; `setMicMuted(true)` calls the active provider; with `handoverInFlight` or `boundaryInFlight` set, `setMicMuted` records the intent and touches NO provider; intent survives a `noop` boundary AND a `sessionId` change AND a continuation; `restoreMic` re-applies the intent at each re-open site (incoming promotion `:1280`, handover directives `:1506` / `:1518`, `assertBoundary` finally `:1582`, `applyContinuation` `:1616` / `:1620`); a muted candidate stays muted after a handover; an unmuted candidate returns to unmuted; reload (new instance) starts unmuted; mute never calls `/end` (read-only).
   - Acceptance: red for the right reason.
 
-- [ ] T-B2.2 GREEN: `setMicMuted`, `restoreMic`
+- [x] T-B2.2 GREEN: `setMicMuted`, `restoreMic`
   - Files: `frontend/app/composables/useInterviewSession.ts` (`micMuted` ref, `setMicMuted`, internal `restoreMic(handle)`, six call sites; forced mutes at `:1182` and `:1566` untouched; export `micMuted` read-only and `setMicMuted`).
   - Acceptance: T-B2.1 green; all existing `use-interview-session-*.spec.ts` unmodified and green.
 
-- [ ] T-B2.3 `AvatarPlayer` seed
+- [x] T-B2.3 `AvatarPlayer` seed
   - Files: `frontend/tests/unit/avatar-player-mic.spec.ts` (create); `frontend/app/components/AvatarPlayer.client.vue` (`micMuted?: boolean`, default `false`; seed at `:258` becomes `setMicMuted(props.muted || props.micMuted)`; keep the doc rule that `muted` is never bound to the candidate mic); `frontend/app/components/InterviewSession.vue` (bind `:mic-muted="session.micMuted.value"` on the live and incoming players).
   - Test-first: seeds `true` when `micMuted` true and `muted` false; `true` when `muted` true and `micMuted` false; `false` when both false; the prop is read once after `start()` resolves.
   - Commit (T-B2.1 to T-B2.3): `feat(interview): keep the candidate's microphone choice across boundaries`

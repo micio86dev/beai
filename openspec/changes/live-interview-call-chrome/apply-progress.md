@@ -8,7 +8,8 @@ Completed: T0.0, T0.1, T-A1.1, T-A1.2 (batch 1); T-A2.1 to T-A2.4, T-A3.1 to T-A
 (slices A.i, A.ii, A.iii and the split A.iv) is done except T-A3.7 (release gate, orchestrator-owned).
 Batch 3 (backoffice slice A2): T-A2.1b, T-A2.2b, T-A2.3 complete.
 Batch 4 (frontend slice B.i): T-B1.1 to T-B1.5 complete.
-Remaining: B.ii (T-B2.x) onward, plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
+Batch 5 (frontend slice B.ii, partial): T-B2.1, T-B2.2, T-B2.3 complete; T-B2.4 and T-B2.5 pending (size split requested).
+Remaining: T-B2.4, T-B2.5, then C1a onward, plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
 
 ## Batch 1 (Phase 0 + Slice A.i): complete
 
@@ -249,3 +250,46 @@ Branch `feature/licc-a5-review-followups` (base `feature/licc-a4-persona-import`
 Verification: `php artisan test --parallel` 9716 tests, 9704 passed, 12 skipped, lines 98.24%; `vendor/bin/pint --test` and `composer analyse` clean.
 
 Open: `InterviewController` re-offer path reads the session with an unordered `first()`, and `CompetencyProgress::resolveNext` uses an unordered `keyBy`; both are unreachable duplicates for the same DB-constraint reason, left untouched.
+
+## Batch 5 (Slice B.ii, frontend, part 1): T-B2.1 to T-B2.3 complete; T-B2.4, T-B2.5 pending
+
+Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no PR opened. api/ and backoffice/ untouched.
+Stopped at a clean task boundary: this commit alone is 474 authored lines (about 415 tests), over the 400 budget, so the orchestrator splits the rest (timer, captions preference) into its own unit.
+
+### Branch and commit (frontend)
+
+| Branch | Base | Commit | Task |
+|---|---|---|---|
+| `feature/licc-b2-mic-answer-timer` | `feature/licc-b1-outline-data` (023d43e) | 8584d60 `feat(interview): keep the candidate's microphone choice across boundaries` | T-B2.1 to T-B2.3 |
+
+### TDD Cycle Evidence
+
+| Task | Test file | Safety net | RED (observed) | GREEN | Triangulation / refactor |
+|---|---|---|---|---|---|
+| T-B2.1/T-B2.2 | `tests/unit/use-interview-session-mic.spec.ts` (14 tests) | the 5 `use-interview-session*` specs: 237/237 | 15 failed (`session.setMicMuted is not a function`; the rest of the 252 passed) | same files: 252/252 | muted and unmuted at each of: lost `/end` race (boundary and handover), steering ack, promotion; plus failed steering, pause directive at boundary and handover, choice made mid-boundary and mid-handover, reload. Mutation: promotion reverted to an unconditional `setMicMuted(false)` fails the muted-promotion test |
+| T-B2.3 | `tests/unit/avatar-player-mic.spec.ts` (7 tests) | `avatar-player.spec.ts` 28/28 | 2 failed (`micMuted only`, `reads the prop once`); the other rows pass at birth by design (existing `muted` seed) | 35/35 | 5 seed rows, prop read once after a pending `start()` resolves and later flips ignored, video never muted by `micMuted` |
+
+### Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command | `node node_modules/.bin/vitest run tests/unit/avatar-player tests/unit/use-interview-session tests/unit/interview-session tests/unit/interview-handover`: 12 files, 430 passed |
+| Full suite (once) | `node node_modules/.bin/vitest run`: 134 files, 3186 tests passed |
+| Other gates | `bun run lint`: exit 0; `bun run typecheck`: exit 0; `prettier --check`: clean; pre-commit review gate (gga) passed |
+| Runtime harness | N/A: no UI toggles the choice yet (C1a). The mock providers drive the real composable through boundary, continuation and handover paths; no local stack started |
+| Rollback boundary | revert 8584d60; inert without UI |
+
+### Authored size (git show --numstat; insertions + deletions)
+
+8584d60: 474 (app 49: composable 36, player 12, page 1; tests 425: new mic specs 408, edited existing specs 17). Over the 400 budget; it cannot shrink without dropping tests. Recommend `size:exception` for this unit or accept the ~330 B.ii forecast was low.
+
+### Deviations from design/tasks
+
+1. **Line numbers moved** (B.i shifted them); the six re-open sites were found by search: promotion, handover `noop` and `pause/done` branches, `assertBoundary` finally, and both `applyContinuation` reopen points.
+2. **Existing specs touched.** `avatar-player.spec.ts` asserted the exact prop list and `not.toContain('micMuted')`; it now lists `micMuted` (uplink-only prop, D9 rule 3). The three page specs that stub the session (`interview-session.spec.ts`, `-guards`, `-page`) gained `micMuted: ref(false)` because `InterviewSession.vue` now reads `session.micMuted.value`. No assertion was weakened.
+3. **No test for the unreachable "restore failure" rejection path.** `restoreMic` swallows a provider rejection like every other call site.
+
+### Issues found
+
+- The mute toggle is not rendered yet (C1a), so `setMicMuted` has no UI caller; the gate review noted it and accepted it.
+- The wrapper working tree still has pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
