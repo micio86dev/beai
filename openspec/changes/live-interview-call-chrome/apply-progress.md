@@ -232,3 +232,20 @@ Over the 400 budget; it cannot shrink without dropping tests (strict TDD). Recom
 - Existing UI behaviour changes slightly by design (M1): `InterviewSession.vue` progress now reads `0 / N` from the first competency instead of `0 / 0`. The full suite stayed green, so no existing test pinned the old value.
 - gga flagged two unrelated pre-existing comment inaccuracies in `useInterviewSession.ts` (the "D5" block above `UTTERANCE_DRAIN_CEILING_MS`); left alone as separate cleanup.
 - The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
+
+## Review follow-ups (A.v, api)
+
+Branch `feature/licc-a5-review-followups` (base `feature/licc-a4-persona-import`), commits `811f68d` and `16201bd`. 69 authored lines excluding `openapi.json` (103 added / 8 deleted including it). Strict TDD.
+
+| # | Finding | RED | GREEN |
+|---|---|---|---|
+| 1 | Outline session pick not deterministic | Not reproducible: `interview_sessions` has `unique(participant_id, competency_code)`, so duplicate rows cannot exist (the seeding insert hit SQLSTATE 23505). Nothing changed, test dropped. | n/a |
+| 2 | Outline documents only 200/401 | `InterviewOutlineDocumentedTest` 1 failed | 3/3; `#[Response]` 200/403/422 replace `@scramble-return`; export against PostgreSQL now lists 200, 401, 403, 422 |
+| 3 | `persona: null` accepted | `PersonaDisplayNameWriteTest` 2 failed (one per surface) | passes; `nullable` removed from the persona rule, `persona: {}` still clears |
+| 4 | Non-string imported display_name | Passed at birth (characterization): `isset` + `PersonaDisplayName::problem` already yield a clean 422 | 3 dataset cases pass |
+| 5 | Unicode-space-only name | `PersonaDisplayNameTest` 3 failed | passes; length check trims `[\s\p{Z}]` |
+| 6 | Separator-split provider names | `PersonaDisplayNameTest` 4 failed | passes; `LiveKitBot`, `Dailyn`, `Heygenie`, `Taverna`, `Live Aviator` stay accepted (documented in the rule docblock) |
+
+Verification: `php artisan test --parallel` 9716 tests, 9704 passed, 12 skipped, lines 98.24%; `vendor/bin/pint --test` and `composer analyse` clean.
+
+Open: `InterviewController` re-offer path reads the session with an unordered `first()`, and `CompetencyProgress::resolveNext` uses an unordered `keyBy`; both are unreachable duplicates for the same DB-constraint reason, left untouched.
