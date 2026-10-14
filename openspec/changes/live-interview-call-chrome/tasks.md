@@ -291,56 +291,56 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice C2a.1: `feature/licc-c2a1-storyboard` -> `feature/licc-c1b-captions-overlay`
 
-- [ ] T-C2a1.1 `CallStoryboard` molecule
+- [x] T-C2a1.1 `CallStoryboard` molecule
   - Files: `frontend/tests/unit/call-storyboard.spec.ts` (create); `frontend/app/components/molecules/CallStoryboard.vue` (create, D14 section 2); `frontend/i18n/locales/{it,en}.json` (`storyboard.*`).
   - Test-first: `<ol>` in outline order; `aria-current="step"` on the current item only; done = check + sr "completata"; upcoming = ordinal numeral; retry = icon + "Da ripetere" (differs from upcoming by text in forced colours); `k` clamp table: `null` -> "In corso", `0` -> "domanda 1 di 3", `5` of 3 -> "domanda 3 di 3", `n = 0` -> "In corso"; verbatim re-ask keeps "domanda 2 di 3"; markup in a name inert; no `code` / `competency_code` in the file or DOM; internal scroll with `tabindex="0"` only when overflowing.
   - Commit: `feat(interview): add the named competency storyboard`
 
-- [ ] T-C2a1.2 Panel restructure: Percorso
+- [x] T-C2a1.2 Panel restructure: Percorso
   - Files: `frontend/tests/unit/call-panel.spec.ts` (modify); `frontend/app/components/organisms/CallPanel.vue` (three `<section aria-labelledby>` with `<p>` labels; Percorso = competency progress text "Competenza {n} di {total}" + `ProgressBar` + `CallStoryboard`; props `storyboard`, `primary-index`; numerator `min(max(ended ?? (ordinal-1), 0) + 1, total)` per M1; panel title key value "Intervista"; remove `progress` key, label "Domanda n di total").
   - Test-first: "Competenza 2 di 5" from `ended=1,total=5` with `aria-valuenow=1`, `aria-valuemax=5`, valuetext of position 2 of 5; first competency shows "Competenza 1 di 5" from the `/start` (read-only) total (M1); outline with 4 entries never changes the denominator 5; hidden while total is null or 0; storyboard omitted (no empty frame) when the outline is missing and the rest renders; panel has no Exit and the help link is the LAST focusable element.
   - Commit: `feat(interview): restructure the call panel around the named path`
 
-- [ ] T-C2a1.3 Panel Durata section (M3)
+- [x] T-C2a1.3 Panel Durata section (M3)
   - Files: `frontend/tests/unit/call-panel.spec.ts`; `frontend/app/components/organisms/CallPanel.vue` (duration gate = `maxSeconds` only; drop the `secondsPerQuestion` fallback; `ProgressBar` elapsed/max clamped; "03:12 / 20:00" with sr "03:12 trascorsi su un massimo di 20:00"; sentence "Restano circa {N} minuti" with `N = ceil(remaining/60)` as a vue-i18n plural, hidden when `remaining <= 0`, never "0 minutes"; `InterviewTimer` labelled `remaining_label` beside it, wrapped in `v-show` so it stays mounted and enforcing while `maxSeconds` is unknown); `frontend/i18n/locales/{it,en}.json` (`duration.*`, `remaining_label`; remove `duration_label`, `question_timer_label`).
   - Test-first: `1200 s` + 3:12 elapsed -> "03:12 / 20:00", "Restano circa 17 minuti", "Tempo rimanente 16:48"; `5400` -> "90:00"; no `maxSeconds` -> no bar, maximum, sentence or visible countdown and "05:00" appears nowhere as a maximum, but the `InterviewTimer` is still mounted and `expired` still reaches the page; past max -> full bar, clamped text, no error styling; elapsed equals the header clock; boundary does not restart the countdown (keyed on session in the page, existing); exactly one `role="timer"` (arch test from C1a stays green).
   - Commit: `feat(interview): show the interview duration against the server maximum`
 
-- [ ] T-C2a1.4 Page bindings and arch (panel, part 1)
+- [x] T-C2a1.4 Page bindings and arch (panel, part 1)
   - Files: `frontend/app/components/InterviewSession.vue` (build `storyboard` items `{name: outline.name ?? t('interview.call.storyboard.unnamed',{ordinal}), ordinal, status, primaryTotal}`; pass `primary-index`, `ended`, `total`); `frontend/tests/unit/arch/call-ui-arch.spec.ts`.
   - Test-first (RED): inventory 9 files (adds `molecules/CallStoryboard.vue`); `CallPanel` and `CallStoryboard` contain no `/\bcode\b/` (read-only) and no `competency_code`; no `Call*.vue` imports `useInterviewSession`, `useInterviewOutline` or `useCandidateSession`; `CallPanel` imports exactly `vue`, `InterviewTimer`, `ProgressBar`, `useInterviewClock`, `CallStoryboard` (tightened again in C2a.2); `<CallPanel>` binding list is the exact current list; the old "panel names no competency" rule is REPLACED by "panel names competencies, never a code" (never simply deleted). Unit: a session store holding code `COL` renders no `COL` anywhere on the live screen.
   - Acceptance: lint, typecheck, vitest green. Commit: `test(arch): replace the no-competency rule with a no-code rule for the panel`
 
 ### Slice C2a.2: `feature/licc-c2a2-answer-timer` -> `feature/licc-c2a1-storyboard`
 
-- [ ] T-C2a2.1 `CallAnswerTimer` molecule
+- [x] T-C2a2.1 `CallAnswerTimer` molecule
   - Files: `frontend/tests/unit/call-answer-timer.spec.ts` (create); `frontend/app/components/molecules/CallAnswerTimer.vue` (create, D14 section 1); `frontend/i18n/locales/{it,en}.json` (`answer.*`).
   - Test-first: `<time>` shows `formatClock(seconds)`; no `role` and no `aria-live` anywhere in the component; chip text for `listening` / `waiting` / `answering`, no chip while `idle`; muted hint (plain text, icon `aria-hidden`) only while `micMuted` (intent); with `budget === null` neither bar nor labels render; with a budget: track `aria-hidden`, zone widths for `[0,min)`, `[min,idealFrom)`, `[idealFrom,idealTo]`, `(idealTo,max]`, text "Min 0:50 · Ideale 1:15–2:30 · Max 3:20" (spec example values), "Tempi suggeriti, non vincolanti" note; fill clamped at max with no error treatment; `prefers-reduced-motion` -> no transition on the fill.
   - Commit: `feat(interview): add the answer timer with the suggested length bar`
 
-- [ ] T-C2a2.2 Panel section 1 and page wiring
+- [x] T-C2a2.2 Panel section 1 and page wiring
   - Files: `frontend/tests/unit/call-panel.spec.ts`, `frontend/tests/unit/interview-session.spec.ts`; `frontend/app/components/organisms/CallPanel.vue` (section "Tempo di risposta" first; props `answer-seconds`, `answer-phase`, `mic-muted`, `budget`); `frontend/app/components/InterviewSession.vue` (`useAnswerTimer({ speaker, sessionId, live })`; `answerBudget(session.interviewMaxSeconds, outline.primary_total_all)`; `:mic-muted="session.micMuted.value"` — the INTENT, not the visual state).
   - Test-first: panel DOM order is Tempo di risposta, Percorso, Durata, help link; budget hidden until both inputs exist; timer past the max sends no `/end` (read-only) and leaves the countdown unaffected; muting 10 s leaves the timer advancing (20 s -> 30 s) and the countdown advancing; suspend stops the timer; chip follows candidate then avatar and resets on avatar.
   - Commit: `feat(interview): show the answer time section in the interview panel`
 
-- [ ] T-C2a2.3 Arch rules (panel, part 2)
+- [x] T-C2a2.3 Arch rules (panel, part 2)
   - Files: `frontend/tests/unit/arch/call-ui-arch.spec.ts`.
   - Test-first (RED): inventory 10 files (adds `molecules/CallAnswerTimer.vue`); `CallPanel` imports exactly `vue`, `InterviewTimer`, `ProgressBar`, `useInterviewClock`, `CallAnswerTimer`, `CallStoryboard`; `<CallPanel>` bindings are exactly `ended, total, elapsed-seconds, max-seconds, question-seconds, timer-key, tick, expired, answer-seconds, answer-phase, mic-muted, budget, storyboard, primary-index`; `CallAnswerTimer` has no `role="timer"`; literal-word rule covers all 10 files.
   - Acceptance: lint, typecheck, vitest green. Commit: `test(arch): finish the call panel inventory and binding guards`
 
 ### Slice C2b: `feature/licc-c2b-stage-sizing` -> `feature/licc-c2a2-answer-timer`
 
-- [ ] T-C2b.1 Stage grid and panel width
+- [x] T-C2b.1 Stage grid and panel width
   - Files: `frontend/tests/unit/call-stage.spec.ts` (modify); `frontend/app/components/organisms/CallStage.vue` (single row `grid-cols-[minmax(0,1fr)_var(--spacing-call-panel)]` at `xl`, `[grid-template-areas:'layer_panel']`, panel cell `xl:h-0 xl:min-h-full`; `HOSTED_HEIGHT_CAP` chrome term `9rem` beside the panel / `22rem` as a strip, plus `xl:min-h-[calc(100dvh_-_9rem)]` inside the same array; embedded: no viewport unit); `frontend/app/assets/css/main.css` (`--spacing-call-panel: 22rem` at `:121`).
   - Test-first: class assertions for the `xl` single row, `< xl` one column `'layer' 'panel'`; embedded variant contains no `vh` / `dvh` / `svh`; viewport-unit arch rule (single use inside `HOSTED_HEIGHT_CAP`) stays green and unchanged.
   - Commit: `feat(interview): size the call stage for the wider interview panel`
 
-- [ ] T-C2b.2 E2E fit, width, boundary mute, snapshots
+- [x] T-C2b.2 E2E fit, width, boundary mute, snapshots
   - Files: `frontend/tests/e2e/interview-call.spec.ts`, `frontend/tests/e2e/browser-gate-middleware.spec.ts` and the 1440x900 snapshot images (regenerated on purpose, excluded from the line count).
   - Test-first (RED then calibrate the `9rem` / `22rem` knob in T-C2b.1): no vertical scroll at 1280x800, 1440x900, 1920x1080 in Chromium and WebKit; panel is 352 px at 1440; layout valid at 1024 and the mobile gate unchanged; mute persists across a competency boundary with the mock provider (control still pressed afterwards); panel strip below 1280 shows the same sections; axe zero violations on live, exit dialog and suspended at `#ffd400` and `#771aaf`; pre-interview pages pixel-unchanged (plate present); embed resize heights equal twice.
   - Commit: `test(e2e): cover the live call layout, width and mute persistence`
 
-- [ ] T-C2b.3 Final guard audit and gates (no new code unless a gap is found)
+- [x] T-C2b.3 Final guard audit and gates (no new code unless a gap is found)
   - Files: `frontend/tests/unit/arch/call-ui-arch.spec.ts` (read-only audit; edit only to close a gap).
   - Acceptance: a rule-by-rule table in the PR description maps every D18 row to a passing assertion and shows no row of the original spec was removed or weakened (diff reviewed against `develop`); `bun run lint`, `bun run typecheck`, `node node_modules/.bin/vitest run --coverage` (>= 85% overall), `bun run test:e2e` (Chromium + WebKit, plus the mobile-gate project) all green; manual check at 1440x900 and 1024x768 against the owner screenshot; timeout, pause/resume, `next_action`, proctoring and snapshot suites pass unmodified in intent.
   - Commit (only if a gap is closed): `test(arch): close the remaining call ui guard gaps`

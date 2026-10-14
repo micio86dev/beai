@@ -10,7 +10,8 @@ Batch 3 (backoffice slice A2): T-A2.1b, T-A2.2b, T-A2.3 complete.
 Batch 4 (frontend slice B.i): T-B1.1 to T-B1.5 complete.
 Batch 5 (frontend slice B.ii, partial): T-B2.1, T-B2.2, T-B2.3 complete; T-B2.4 and T-B2.5 pending (size split requested).
 Batch 6 (frontend): T-B2.4, T-B2.5, T-C1a.1 to T-C1a.5, T-C1b.1 to T-C1b.4 complete (slices B.ii part 2, C1a, C1b).
-Remaining: C2a.1, C2a.2, C2b (T-C2a1.*, T-C2a2.*, T-C2b.*), plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
+Batch 7 (frontend, final): T-C2a1.1 to T-C2a1.4, T-C2a2.1 to T-C2a2.3, T-C2b.1 to T-C2b.3 complete (slices C2a.1, C2a.2, C2b), plus the DESIGN.md section 7.3 drift fix and the regenerated linux snapshots.
+Remaining: T-A3.7 and R.1-R.3 (orchestrator-owned). Every task of the change is done; nothing pushed, no PR opened.
 
 ## Batch 1 (Phase 0 + Slice A.i): complete
 
@@ -358,3 +359,87 @@ Every slice is over or near 400 because tests are about 60% of each diff (strict
 - The `unsupported-gate` and `root-landing` WebKit failures in the full run are load-related flakes (pass alone), unrelated to this change.
 - gga flagged nothing blocking; it suggested typing the e2e outline fixture with `satisfies` against the generated contract (optional, not done).
 - The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged. Last commit of the previous batch (b2 branch, 8584d60) was left untouched.
+
+## Batch 7 (frontend: C2a.1, C2a.2, C2b): complete
+
+Completed: T-C2a1.1 to T-C2a1.4, T-C2a2.1 to T-C2a2.3, T-C2b.1 to T-C2b.3. Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no PR opened. api/ and backoffice/ untouched.
+Owner format for the suggested-length labels: "1:00 min · ideale 1:30–3:00 · 4:00 max" (`m:ss`, minutes unpadded), which supersedes the "Min 0:50 · Ideale ..." example in tasks.md/DESIGN.md (DESIGN.md corrected).
+
+### Branches, bases and authored size (insertions + deletions, excluding PNG snapshots and the regenerated `theme.spec.ts.snap` line)
+
+| Branch | Base | Commits | Authored lines |
+|---|---|---|---|
+| `feature/licc-c2a1-storyboard` | `feature/licc-c1b-captions-overlay-2` (d5aaa07) | 6c8d3bd `feat(interview): add the named competency storyboard` (T-C2a1.1, 412) | 412 |
+| `feature/licc-c2a1-storyboard-2` | `feature/licc-c2a1-storyboard` | bb17de0 `feat(interview): restructure the call panel around the named path` (T-C2a1.2, 330) | 330 |
+| `feature/licc-c2a1-storyboard-3` | `feature/licc-c2a1-storyboard-2` | 2832b42 `feat(interview): show the interview duration against the server maximum` (T-C2a1.3, 410) | 410 |
+| `feature/licc-c2a1-storyboard-4` | `feature/licc-c2a1-storyboard-3` | 1cb5ede `test(arch): replace the no-competency rule with a no-code rule for the panel` (T-C2a1.4, 222) | 222 |
+| `feature/licc-c2a2-answer-timer` | `feature/licc-c2a1-storyboard-4` | 3a65043 `feat(interview): add the answer timer with the suggested length bar` (T-C2a2.1, 501) | 501 |
+| `feature/licc-c2a2-answer-timer-2` | `feature/licc-c2a2-answer-timer` | 9396a79 `feat(interview): show the answer time section in the interview panel` (T-C2a2.2, 350), f782bc5 `test(arch): finish the call panel inventory and binding guards` (T-C2a2.3, 33) | 383 |
+| `feature/licc-c2b-stage-sizing` | `feature/licc-c2a2-answer-timer-2` | b1b5c20 `feat(interview): size the call stage for the wider interview panel` (T-C2b.1, 132), 4c3aea5 `fix(interview): keep the panel title from claiming the column height` (10), 466689f `test(e2e): cover the live call layout, width and mute persistence` (T-C2b.2, 112), 6af767d `test(e2e): regenerate linux live-screen snapshots` (4 PNGs) | 254 |
+| wrapper `feature/licc-0-design-docs` | previous slice-0 commits | 6426902 `docs(design): fix the call title and the answer-length label format in section 7.3` | 11 |
+
+The C2a.1 work unit was cut into four branches at whole-task commit boundaries (the plan was decided before building; each task alone is 222-412 lines, tests about 60%). Over 400: storyboard 412, duration 410, answer timer 501 (tests are 60-65% of each); none can shrink without dropping tests. Recommend `size:exception` for those three, or accept the ~230/~230 forecasts were low.
+
+### TDD Cycle Evidence
+
+| Task | Test file(s) | Safety net | RED (observed) | GREEN | Triangulation / refactor |
+|---|---|---|---|---|---|
+| T-C2a1.1 | `call-storyboard.spec.ts` (25) | arch 31 | module not found; arch inventory expected 9 files | 25/25 + arch 33 | order, `aria-current` on one item only, done/upcoming/retry marker and text, 10-row clamp table (null, 0, -4, 5 of 3, n=0, NaN, re-ask), inert markup, no code in source or DOM, tabindex only when overflowing, locale parity. Mutation: dropping `Math.max(k, 1)` fails 2 |
+| T-C2a1.2 | `call-panel.spec.ts` rewritten (progress -> Percorso), `call-ui-arch.spec.ts`, `interview-session.spec.ts` key | 425 across 5 files | 20 failed (old copy, no title, no storyboard); arch imports expected CallStoryboard | 425/425 | "Competenza n di 5" it/en, first competency from `/start` total, 4-entry outline never changes the denominator, storyboard omitted with no empty frame, Percorso hidden with neither total nor outline, "Intervista" title names the aside. The no-competency arch rule is REPLACED by the no-code rule here (see Deviations) |
+| T-C2a1.3 | `call-panel.spec.ts` (duration, remaining, past max, hidden until max), `interview-components.spec.ts` (+1 ProgressBar `label`), `answer-budget` n/a | 60 + 27 | 20 failed + 1 (no plural, section always shown, `question_timer_label` copy) | 60/60, ProgressBar 27/27; wider 964 | `1200 s` + 3:12 -> "03:12 / 20:00", "Restano circa 17 minuti" (plural wired through the REAL vue-i18n, it and en), 1/59/60/61 s, 0 and -3 hide the sentence, past max clamps with calm bar, 5 invalid maxima hide the section, countdown STAYS MOUNTED while hidden (tick and expired still emitted), appears on the same mounted node when the max arrives. Mutation: `v-show` -> `v-if` fails 7 |
+| T-C2a1.4 | `interview-session.spec.ts` (+9), `call-ui-arch.spec.ts` | 142 | 5 failed (no storyboard in the page, no ordinal fallback, exact bindings) | 92/92 page; arch 53 | outline names in order, `primary_index` through the real `/utterance` path then cleared by the session, null/blank name -> "Competenza {ordinal}", outline entries carrying `code: COL` never rendered, failed outline omits the storyboard, numerator = `/end` tally else ordinal - 1 (mutation: ordinal fallback removed fails). Full vitest 138 files, 3419 |
+| T-C2a2.1 | `call-answer-timer.spec.ts` (+ `answer-budget.spec.ts` `formatBudgetTime`) | answer-budget 18 | module not found; 12 failed for `formatBudgetTime` | 114/114 with arch | `<time>` for 0/12/75/3725 s, no live region or timer/status role, chip per phase it/en and none while idle, muted hint with `aria-hidden` icon, no freeze, bar absent without budget, two budgets' labels and zone widths, per-zone fill 0/60/120/175 s, past max full and calm, reduced motion |
+| T-C2a2.2 | `call-panel.spec.ts` (+8), `interview-session.spec.ts` (+8) | 253 | 7 failed panel + 9 failed page | 253/253 | panel order, figure and chip, intent-only hint, bar with/without budget, one timer role; page: 12 s of silence -> 00:12 + waiting, candidate does not reset, avatar resets, mute 10 s: 00:20 -> 00:30 AND the real countdown fell by 10, forced boundary mute is not the intent, 260 s answer sends no `/end`, pause resets, budget arithmetic 3:20, hidden until the outline arrives, no bar for a failed outline or total 0 |
+| T-C2a2.3 | `call-ui-arch.spec.ts` (+4) | 57 | rules pass at birth; each proven by mutation (a `role="timer"` in `CallAnswerTimer` fails 2; the visual mute state on the panel binding fails 1) | 61/61; full vitest 139 files, 3483 | plain `<time>`, INTENT binding, page owns the timer (no Call* calls `useAnswerTimer`/`answerBudget`), timer and budget never reach `/end` |
+| T-C2b.1 | `call-stage.spec.ts` (+8), `call-panel.spec.ts` (+3), `call-tile-contrast.spec.ts` (22rem) | 106 | 7 failed | 460/460; `theme.spec.ts.snap` regenerated, diff is `18rem` -> `22rem` only | one row at xl (no `rest_panel`), one column below, `h-0 min-h-full` cell, `9rem`/`22rem` cap and `xl:min-h` inside the hosted array, embedded has no viewport unit |
+| T-C2b.2 | `interview-call.spec.ts`, `fixtures/branded-interview.ts` | full file 56 | e2e failed on the old geometry and (first run) exposed a real defect: the title's `basis-full` took 100% of the column height at xl and collapsed the storyboard; fixed in 4c3aea5 with a unit test (mutation: removing `xl:basis-auto` fails it) | interview-call 74/74 (Chromium + WebKit) locally and in the pinned container | hosted 1280x800, 1440x900, 1920x1080: no scroll, panel as tall as the video and inside the screen, all three sections visible, help link inside the panel; 352 px at 1440; 1024x768 and 1100x800 strip (answer beside path, nothing overflows); mute persists across TWO boundaries (open stays open, muted stays muted); axe on the full panel at `#ffd400` and `#771aaf` |
+| T-C2b.3 | arch spec read-only audit | n/a | no gap found, no code | see below | table below |
+
+### Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test commands | `node node_modules/.bin/vitest run tests/unit/call-storyboard.spec.ts tests/unit/call-panel.spec.ts tests/unit/call-answer-timer.spec.ts tests/unit/call-stage.spec.ts tests/unit/arch/call-ui-arch.spec.ts tests/unit/answer-budget.spec.ts tests/unit/interview-session.spec.ts`: green |
+| Full vitest (once per slice) | C2a.1: 138 files, 3419; C2a.2: 139 files, 3483; C2b final with `--coverage`: 139 files, 3494 passed, 98.27% statements / 94.1% branches |
+| Other gates | `bun run lint` exit 0 and `bun run typecheck` exit 0 at every commit boundary and at the final HEAD; prettier clean; pre-commit review gate (gga) PASSED on every commit |
+| Playwright, local (Chromium + WebKit + mobile project), full `bun run test:e2e` equivalent | one full run: 402 passed, 3 skipped, 4 failed: my new mute-persistence test (race on the second boundary, fixed by waiting for the new competency's hint; 8 repeats green) and three known load-related flakes (`reusable-link` webkit 409 copy, `unsupported-gate` webkit visual baseline and Firefox redirect) which passed alone (75 passed on `reusable-link` + `unsupported-gate` webkit re-run). The full run was NOT repeated after the e2e-only stabilisation; the affected specs were re-run alone |
+| Playwright, pinned container | `bash scripts/e2e-container.sh frontend interview-call.spec.ts --update-snapshots`: 73 passed + 1 flaky (the embedded 480 px test, a measurement race in the iframe), then the test was made settle-based (`toPass`) and `bash scripts/e2e-container.sh frontend interview-call.spec.ts` (no update) ran 74 passed, exit 0, with the regenerated linux baselines |
+| Runtime harness | Playwright against the dev server with mocked API routes (the outline route and `interview_max_seconds` are now part of both e2e fixtures); no local docker stack started beyond the pinned Playwright container |
+| Rollback boundary | per branch: C2b (stage grid, 22rem, e2e, snapshots) restores the single-column 18rem stage; c2a2 removes section 1; c2a1-4 restores the panel binding guards; c2a1-3 restores the old duration; c2a1-2 restores the old panel; c2a1 removes the storyboard molecule |
+
+### T-C2b.3 guard audit (D18 rule -> passing assertion; no gap, no code change)
+
+| D18 rule | Assertion in `tests/unit/arch/call-ui-arch.spec.ts` | Status vs the original spec |
+|---|---|---|
+| Inventory: 10 `Call*.vue` | "finds every call component" lists exactly the 10 | extended (7 -> 10), nothing removed |
+| Viewport-height unit only in `HOSTED_HEIGHT_CAP`, one use | the `HOSTED_CAP` stripping test per component; "reaches the hosted cap only when not embedded" (declaration + exactly one use) | unchanged (the new `xl:min-h-[calc(100dvh_-_9rem)]` sits inside the same array) |
+| Panel names competencies, never a code | `CallPanel` and `CallStoryboard`: no `/\bcode\b/`, no `competency_code`, no session | REPLACES "names no competency" (owner reversal), never deleted; plus a guard-can-fail test |
+| No session or outline composable in any `Call*.vue` | `useInterviewSession` / `useInterviewOutline` banned everywhere; `useCandidateSession` allowed only in `CallExitDialog` | tightened; see Deviations |
+| `CallPanel` imports exactly 6 modules | the import-list test (now parses wrapped multi-line imports) | tightened |
+| Exact `<CallPanel>` bindings (14) and `<CallHeader>` bindings (7) | both exact-list tests | tightened |
+| Literals: no literal word | `it.each` over all 10 files | applies to the 3 new files, unchanged |
+| Exactly one `role="timer"`; `CallAnswerTimer`/`CallHeader` plain `<time>` | single-timer-role test; header and answer-timer `<time>` tests | added |
+| Captions overlay only inside the avatar layer | the three captions tests (batch 6) | unchanged |
+| Intent vs visual mute, page owns the timer, timer never reaches `/end` | the four answer-timer rules | added |
+
+### Deviations from design/tasks
+
+1. **Arch changes landed with the commit that forced them, not only in T-C2a1.4 / T-C2a2.3.** The inventory entry rides with each new component, the CallPanel import list with the commit that imports it, and the "no competency" rule was replaced by the no-code rule in T-C2a1.2 (the panel could not name a competency otherwise). T-C2a1.4 and T-C2a2.3 add the remaining rules. No rule was removed or loosened.
+2. **`useCandidateSession` is allowed in `CallExitDialog`.** D18 says no `Call*.vue` imports it, but `CallExitDialog` (pre-existing) reads the resume deadline through it, the "only sanctioned reader" per its own docblock. The rule bans `useInterviewSession` / `useInterviewOutline` everywhere and `useCandidateSession` in every file except that one, asserted exactly.
+3. **Label format.** Owner format "1:00 min · ideale 1:30–3:00 · 4:00 max" (`m:ss`) instead of "Min 1:00 · Ideale ..." (tasks.md) and "mm:ss" (spec); DESIGN.md corrected in 6426902. A `formatBudgetTime` util (+tests) was added to `answer-budget.ts` for it.
+4. **The suggested-length bar is a `progressbar`, not a bare `aria-hidden` track.** The spec scenario "Labels are text" requires the bar to expose the answer time against the maximum to assistive technology, which wins over tasks.md/D14 ("track aria-hidden"). The component has no live region and no timer/status role; the figure stays a plain `<time>`.
+5. **`ProgressBar` gained an optional `label`** (accessible name) so the Percorso and Durata bars differ by name; default output unchanged (existing byte-identical test passes).
+6. **Duration is `v-show`, parts `v-if`.** The whole Durata section is hidden with `v-show` (the countdown inside stays mounted), while the figure, sr text, bar and sentence render only with a usable `maxSeconds`. The `secondsPerQuestion` prop and the `total x 300` fallback are gone (M3).
+7. **Panel title is a visible `<p>`** ("Intervista") that labels the aside via `aria-labelledby` (no heading, so the page outline is unchanged); `panel_label` key kept, value "Intervista" / "Interview".
+8. **`question_context` extras in the page spec fixture.** `total_competencies` and `competency_ordinal` live inside `question_context` in the real `/start`; the spec's `startResponse` got an overridable `questionContextExtras`. The two page-spec session stubs (`interview-session-page`, `-guards`) gained `primaryIndex` and `competencyOrdinal` refs.
+9. **E2E fixtures state `interview_max_seconds: 1200`** (as the real API always does); without it the countdown and the Durata section are hidden by spec and `interview-chrome` failed on `getByRole('timer')`.
+10. **Linux snapshots: frontend only.** `task e2e:update` regenerates BOTH apps; only the frontend call-screen baselines changed, so `scripts/e2e-container.sh frontend interview-call.spec.ts --update-snapshots` was run instead (backoffice untouched; Docker free space was 16 GB, below the 20 GB floor, but the pinned image was already local so nothing large was written). Containers were verified healthy afterwards.
+11. **The embedded 480 px e2e now uses `toPass`** around the single-column read (a measurement of an unsettled iframe flaked once in the container).
+
+### Issues found
+
+- **Real defect found by the e2e fit gate**: `basis-full` on the panel title is 100% of the column height once the panel is a column at xl; it collapsed the storyboard. Fixed (4c3aea5) with a unit regression test.
+- The e2e outline fixture always reports the first competency as `current` while the panel says "Competency 2 of 3" after the first boundary (fixture, not product). Not changed.
+- Not done: "manual check against the owner screenshot" (I do not have it); the 1440x900 and 1024x768 renders were inspected visually from the Playwright output. The PR-description rule table belongs to PR time; the table above is its content.
+- A second full local `bun run test:e2e` after the last e2e-only tweaks was not run; the touched specs (`interview-call`, `interview-chrome`, `integrity-toast`, `browser-gate-middleware`, `unsupported-gate`, `hosted-entry`) were re-run.
+- The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
