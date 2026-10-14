@@ -7,7 +7,8 @@ Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no
 Completed: T0.0, T0.1, T-A1.1, T-A1.2 (batch 1); T-A2.1 to T-A2.4, T-A3.1 to T-A3.6 (batch 2). The whole api phase
 (slices A.i, A.ii, A.iii and the split A.iv) is done except T-A3.7 (release gate, orchestrator-owned).
 Batch 3 (backoffice slice A2): T-A2.1b, T-A2.2b, T-A2.3 complete.
-Remaining: Phase 3 frontend data (B.i) onward, plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
+Batch 4 (frontend slice B.i): T-B1.1 to T-B1.5 complete.
+Remaining: B.ii (T-B2.x) onward, plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
 
 ## Batch 1 (Phase 0 + Slice A.i): complete
 
@@ -167,4 +168,67 @@ The contract came from `git show feature/licc-a4-persona-import:openapi.json` (n
 ### Issues found
 
 - gga reviewed the first feat commit and refused it for a hand-maintained write type; fixed by deriving `PersonaWrite` from `paths`. The second pass was accepted. No hook bypassed.
+- The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
+
+## Batch 4 (Slice B.i, frontend): complete
+
+Completed: T-B1.1, T-B1.2, T-B1.3, T-B1.4, T-B1.5. Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no PR opened. api/ and backoffice/ untouched.
+
+### Branch and commits (frontend)
+
+| Branch | Base | Commit | Task |
+|---|---|---|---|
+| `feature/licc-b1-outline-data` | frontend tracker `feature/live-interview-call-chrome` (61246c9) | a0bf72d `chore(frontend): sync openapi for the interview outline` | T-B1.1 |
+| `feature/licc-b1-outline-data` | | 0b45f39 `feat(interview): add the answer budget arithmetic` | T-B1.2 |
+| `feature/licc-b1-outline-data` | | 90db42e `feat(interview): add the single-flight interview outline composable` | T-B1.3 |
+| `feature/licc-b1-outline-data` | | b9f63af `feat(interview): track primary_index from utterance responses` | T-B1.4 |
+| `feature/licc-b1-outline-data` | | 023d43e `feat(interview): seed the competency total and ordinal from /start` | T-B1.5 |
+
+The contract came from `git show feature/licc-a4-persona-import:openapi.json` (never the api working tree; `cmp` confirms byte identity), then `bun run codegen`.
+
+### TDD Cycle Evidence
+
+| Task | Test file | Safety net | RED (observed) | GREEN | Triangulation / refactor |
+|---|---|---|---|---|---|
+| T-B1.1 | n/a (generated) | n/a | n/a | `API_OPENAPI_SNAPSHOT=/nonexistent bash scripts/check-client-drift.sh`: "generated client matches committed snapshot" (stage 1 compares with the api WORKING TREE, so it was disabled and `cmp` used instead); `types/api.ts` exposes `operations['outline.show']` and `primary_index` | n/a |
+| T-B1.2 | `tests/unit/answer-budget.spec.ts` | n/a (new) | module not found, "no tests" (1 file failed) | 18/18 | O1 values (1200/6, 1210/6), 1 s boundary (6/6), 13 invalid-input rows (0, negative, null, undefined, NaN, Infinity, max < 1), 300 s seed guard |
+| T-B1.3 | `tests/unit/use-interview-outline.spec.ts` | n/a (new) | module not found, "no tests" | 7/7 | single-flight (3 calls, 2 requests), no phantom re-run, failure keeps value, first failure leaves null then recovers, trailing run after a failed first, two instances independent |
+| T-B1.4 | `tests/unit/use-interview-session.spec.ts` (+9) | 115/115 | 9 failed (`primaryIndex` undefined) | 124/124 | set from direct send, latest wins (2 then 3), outbox path, absent field, 409 keeps value, stale-session line ignored, current-session line applied then cleared on swap, cleared on /start. Mutation: dropping the `dbSessionId === sessionId.value` guard fails the stale-session test only |
+| T-B1.5 | `tests/unit/use-interview-session.spec.ts` (+9), `tests/unit/embed-token-page.spec.ts` (+1) | 124/124 + embed 44 | 9 failed (`competencyOrdinal` undefined); the /end-overwrite and the embed test pass at birth by design (existing behaviour pinned) | 168/168 for both files | total/ordinal seeded with `ended` null, in place when `sessionId` first appears, 5 invalid values for both fields, absent fields, /end overwrites with no flicker, total stable and ordinal moves across competencies |
+
+### Work Unit Evidence (B.i)
+
+| Evidence | Value |
+|---|---|
+| Focused test command | `node node_modules/.bin/vitest run tests/unit/answer-budget.spec.ts tests/unit/use-interview-outline.spec.ts tests/unit/use-interview-session.spec.ts tests/unit/embed-token-page.spec.ts`: green |
+| Full suite (once) | `node node_modules/.bin/vitest run`: 132 files, 3164 tests passed |
+| Other gates | `bun run lint`: exit 0; `bun run typecheck`: exit 0; pre-commit review gate (gga) passed on all four code commits |
+| Runtime harness | N/A: nothing renders the outline, budget or ordinal yet (B.ii and C-slices consume them). The 202 and /start shapes are exercised through the real composable with a mocked `candidateFetch`; no local stack started |
+| Rollback boundary | revert the four code commits (023d43e, b9f63af, 90db42e, 0b45f39) and a0bf72d; nothing consumes the new fields |
+
+### Authored size (git diff --numstat; insertions + deletions, excluding `openapi.json` and `types/api.ts`)
+
+| Commit | Lines |
+|---|---|
+| a0bf72d | 262 (generated, excluded) |
+| 0b45f39 | 92 |
+| 90db42e | 201 |
+| b9f63af | 196 |
+| 023d43e | 151 |
+| Total authored | 638 (forecast ~300; about 420 of them are tests) |
+
+Over the 400 budget; it cannot shrink without dropping tests (strict TDD). Recommend `size:exception` for B.i, or accept that the estimate was low (tests were ~65% of the diff).
+
+### Deviations from design/tasks
+
+1. **`useInterviewSession` reset on `sessionId` change uses a `flush: 'sync'` watcher.** A default (pre) watcher could wipe a 202 that lands right after the swap.
+2. **`recordPrimaryIndex` / `isPositiveNumber` helpers** shared by both utterance paths and the /start seeding; `Outline` type is exported from `useInterviewOutline`.
+3. **`makeStartResponse` fixture extended** (`competency_ordinal`, `total_competencies`, sent only when named) so absent fields stay representable. Existing fixtures are unchanged.
+4. **Embed test passes at birth.** The page already reads `endedCompetencies ?? 0` and `totalCompetencies ?? 0`; the test pins it. The real coupling (total present when `sessionId` first changes) is tested at composable level.
+5. **Crossfade side effect.** During a handover, the incoming `/start` seeds `competencyOrdinal` (and `primaryIndex` reset to null) while the outgoing competency still plays, until the swap. Harmless today (nothing renders them); C-slices should be aware.
+
+### Issues found
+
+- Existing UI behaviour changes slightly by design (M1): `InterviewSession.vue` progress now reads `0 / N` from the first competency instead of `0 / 0`. The full suite stayed green, so no existing test pinned the old value.
+- gga flagged two unrelated pre-existing comment inaccuracies in `useInterviewSession.ts` (the "D5" block above `UTTERANCE_DRAIN_CEILING_MS`); left alone as separate cleanup.
 - The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.

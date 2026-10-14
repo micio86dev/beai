@@ -183,26 +183,26 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice B.i: `feature/licc-b1-outline-data` -> frontend tracker (stacked on #95, R8)
 
-- [ ] T-B1.1 Sync contract
+- [x] T-B1.1 Sync contract
   - Files: `frontend/openapi.json`, `frontend/types/api.ts` (`bun run codegen`). Acceptance: types expose `operations['outline.show']` and `primary_index`; `check-client-drift.sh` clean.
   - Commit: `chore(frontend): sync openapi for the interview outline`
 
-- [ ] T-B1.2 `answerBudget()`
+- [x] T-B1.2 `answerBudget()`
   - Files: `frontend/tests/unit/answer-budget.spec.ts` (create, RED first); `frontend/app/utils/answer-budget.ts` (create, D11, `ANSWER_BUDGET_FRACTIONS`).
   - Test-first: `(1200, 6)` -> max 200, min 50, ideal 75-150; `(1210, 6)` -> max 201, min 50, ideal 75-151 (floor then round); `(1200, 0)`, `(null, 6)`, `(1200, undefined)`, `NaN`, negative -> `null`; `(5, 10)` (max < 1) -> `null`; the 300 s countdown fallback is not an input (guard documented in the test name).
   - Commit: `feat(interview): add the answer budget arithmetic`
 
-- [ ] T-B1.3 `useInterviewOutline`
+- [x] T-B1.3 `useInterviewOutline`
   - Files: `frontend/tests/unit/use-interview-outline.spec.ts` (create); `frontend/app/composables/useInterviewOutline.ts` (create, D12; type from `operations['outline.show']`).
   - Test-first: single-flight (second call while in flight issues no second request); trailing re-run once when marked dirty; failure keeps the previous value and never throws; failure on first call leaves `null`; per-instance state (two instances do not share).
   - Commit: `feat(interview): add the single-flight interview outline composable`
 
-- [ ] T-B1.4 `primaryIndex` in `useInterviewSession`
+- [x] T-B1.4 `primaryIndex` in `useInterviewSession`
   - Files: `frontend/tests/unit/use-interview-session.spec.ts` (modify); `frontend/app/composables/useInterviewSession.ts` (`primaryIndex` ref; set from the 202 body in `sendUtterance` `:988-992` and `deliverUtterance` `:889-896` only when the line's `dbSessionId` equals the current `sessionId`; reset to `null` on a successful `/start` (read-only) and on `sessionId` change; export read-only).
   - Test-first: set from 202; stale-session line ignored; reset on new `/start` (read-only); a 409 leaves it unchanged; a response without the field (older API) leaves `null`.
   - Commit: `feat(interview): track primary_index from utterance responses`
 
-- [ ] T-B1.5 Seed the competency total from `/start` (read-only) (M1)
+- [x] T-B1.5 Seed the competency total from `/start` (read-only) (M1)
   - Files: `frontend/tests/unit/use-interview-session.spec.ts` (modify), `frontend/tests/unit/embed-progress.spec.ts` (create or extend the existing embed spec); `frontend/app/composables/useInterviewSession.ts` (near `:1780`: read `question_context.total_competencies` and `competency_ordinal`; set `totalCompetencies` when a positive number; add read-only `competencyOrdinal`; DO NOT touch `endedCompetencies`; update the "deliberately NOT stored" comment at `:1783-1788` to say the ordinal is the field now stored).
   - Test-first: after `/start` (read-only) with `total_competencies = 5`, `competency_ordinal = 3`, `totalCompetencies = 5` and `competencyOrdinal = 3` while `endedCompetencies` is still `null`; `/end` (read-only) later overwrites the total without flicker; a non-number total is ignored; total stable across competencies; the embed page posts `question:changed` with `total: 5` from the first competency and `index` unchanged (still `endedCompetencies ?? 0`); `hasRunACompetency` stays false until the first `/end` (read-only).
   - Acceptance: spec scenarios "Progress reads N/N with the real total, never x/0" and "Progress total is stable" have a unit counterpart; the existing `interview-session` and embed specs stay green.
