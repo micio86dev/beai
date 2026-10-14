@@ -760,9 +760,10 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
   `CallHeader`, which spans the row: the interview title (left, `text-base` semibold
   `text-on-primary`, two lines at most), the elapsed clock, then three 44 px controls in this DOM and
   tab order: Sottotitoli (captions), Microfono, Esci. There is no in-header status indicator, no Camera control, no
-  "Ripeti domanda" control and no Pause control. The title is "Colloquio · {role}" for a Readiness
-  interview with a role, "Colloquio · Potenziale" for a Potential one, and the bare title when the
-  role name is unknown (no separator, no `null`).
+  "Ripeti domanda" control and no Pause control. The title is "Colloquio di assessment · {role}"
+  for a Readiness interview with a role, "Colloquio di assessment · Potenziale" for a Potential
+  one, and the bare "Colloquio di assessment" when the role name is unknown (no separator, no
+  `null`).
   - **Clock.** `<p>` holding a visually hidden "Tempo trascorso" prefix and a `<time>` in
     `font-mono tabular-nums`. It has an accessible name and is **not** a live region and has no
     `role="timer"`: it must not announce each second. It is the elapsed time that is always
@@ -836,8 +837,8 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
      the count. When the server has stated a maximum and the interview has authored primaries, a
      bar shows the **suggested** answer length: zones for under the minimum, minimum to ideal,
      ideal, and ideal to maximum (fractions of the per-question share, `max = floor(interview
-     maximum / primary questions)`), with the same information as text ("Min 0:50 · Ideale
-     1:15–2:30 · Max 3:20") and the note "Tempi suggeriti, non vincolanti". The bands are
+     maximum / primary questions)`), with the same information as text ("0:50 min · ideale
+     1:15–2:30 · 3:20 max", `m:ss`, minutes unpadded) and the note "Tempi suggeriti, non vincolanti". The bands are
      **guidance only**: the fill clamps at the maximum with no error treatment, and nothing ends an
      answer. The earlier "no minimum/ideal/maximum band" rule is replaced by this one.
   2. **Percorso** (D14). "Competenza {n} di {total}" with a thin `ProgressBar`
