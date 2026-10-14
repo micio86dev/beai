@@ -9,7 +9,8 @@ Completed: T0.0, T0.1, T-A1.1, T-A1.2 (batch 1); T-A2.1 to T-A2.4, T-A3.1 to T-A
 Batch 3 (backoffice slice A2): T-A2.1b, T-A2.2b, T-A2.3 complete.
 Batch 4 (frontend slice B.i): T-B1.1 to T-B1.5 complete.
 Batch 5 (frontend slice B.ii, partial): T-B2.1, T-B2.2, T-B2.3 complete; T-B2.4 and T-B2.5 pending (size split requested).
-Remaining: T-B2.4, T-B2.5, then C1a onward, plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
+Batch 6 (frontend): T-B2.4, T-B2.5, T-C1a.1 to T-C1a.5, T-C1b.1 to T-C1b.4 complete (slices B.ii part 2, C1a, C1b).
+Remaining: C2a.1, C2a.2, C2b (T-C2a1.*, T-C2a2.*, T-C2b.*), plus T-A3.7 (orchestrator-owned). Nothing pushed, no PR opened.
 
 ## Batch 1 (Phase 0 + Slice A.i): complete
 
@@ -293,3 +294,67 @@ Stopped at a clean task boundary: this commit alone is 474 authored lines (about
 
 - The mute toggle is not rendered yet (C1a), so `setMicMuted` has no UI caller; the gate review noted it and accepted it.
 - The wrapper working tree still has pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
+
+## Batch 6 (frontend: B.ii part 2, C1a, C1b): complete
+
+Completed: T-B2.4, T-B2.5, T-C1a.1 to T-C1a.5, T-C1b.1 to T-C1b.4. Mode: Strict TDD. Delivery: auto-chain, feature-branch-chain. Nothing pushed, no PR opened. api/ and backoffice/ untouched.
+Each slice branch is stacked on the previous one; five slices were cut so no branch is far above the ~400 budget (every commit is a whole task unit, so none was cut mid-commit).
+
+### Branches, bases and authored size (insertions + deletions, excluding regenerated Playwright snapshots and the regenerated `theme.spec.ts.snap`)
+
+| Branch | Base | Commits | Authored lines |
+|---|---|---|---|
+| `feature/licc-b2b-answer-timer-captions` | `feature/licc-b2-mic-answer-timer` (8584d60, untouched) | 92d4476 `feat(interview): add the answer timer driven by the speaker signal` (T-B2.4, 323), 96f77bf `feat(interview): persist the captions preference` (T-B2.5, 103) | 426 |
+| `feature/licc-c1a-call-header` | `feature/licc-b2b-answer-timer-captions` | 1b29f3d `feat(canvas): let a screen render the logo without the white plate` (T-C1a.1, 99), 817314b `feat(interview): add the live call header` (T-C1a.2, 350) | 449 |
+| `feature/licc-c1a-call-header-2` | `feature/licc-c1a-call-header` | f72d5cb `feat(interview): move Exit into the call header with a visible label` (T-C1a.3 + T-C1a.4, 401), 4f92fac `test(arch): guard the call header inventory, bindings and the single timer role` (T-C1a.5, 61), 0d22332 `test(e2e): cover the live call header, tab order and the outline route` (64) | 526 |
+| `feature/licc-c1b-captions-overlay` | `feature/licc-c1a-call-header-2` | 2f5d2b2 `feat(theme): add the caption prefix colour token held to 4.5:1` (T-C1b.1, 79), b25c2a5 `feat(interview): show the question as captions over the interviewer video` (T-C1b.2, 404) | 483 |
+| `feature/licc-c1b-captions-overlay-2` | `feature/licc-c1b-captions-overlay` | d6da524 `feat(interview): show names on the call tiles with a legible chip` (T-C1b.3, 200), 4ddeb36 `fix(interview): keep the third caption line from being clipped` (8), d5aaa07 `test(interview): guard captions placement and cover captions off end to end` (T-C1b.4, 176) | 384 |
+
+Every slice is over or near 400 because tests are about 60% of each diff (strict TDD); none can shrink without dropping tests. Recommend `size:exception` for c1a-2 (526) and c1b (483), or accept the 350/330 forecasts were low.
+
+### TDD Cycle Evidence
+
+| Task | Test file(s) | Safety net | RED (observed) | GREEN | Triangulation / refactor |
+|---|---|---|---|---|---|
+| T-B2.4 | `tests/unit/use-answer-timer.spec.ts` (15) | n/a (new) | module not found, "no tests" | 15/15 | every D10 row, 12 s silence reads 12, no reset on candidate speech, 3 s pause, avatar resets to listening, candidate while idle and while listening, session change, `live()` false, speaker already talking after a session change, one interval, scope disposal. Mutations: `seconds = 0` on every candidate transition fails 2 tests; a redundant reset the first mutation exposed was deleted (listening always holds 0) |
+| T-B2.5 | `tests/unit/use-captions-preference.spec.ts` (5) | n/a (new) | module not found | 5/5 | default on, off survives a re-instantiation, back on, storage throwing on read and write (console.error spy proves the error is swallowed; mutation: dropping `onError` fails it), no network. The throwing storage is spied on the `localStorage` instance: a `Storage.prototype` spy stops applying once the instance has been used |
+| T-C1a.1 | `brand-canvas.spec.ts` (+5) | 38 tests green | 2 failed (no bare logo, `header-end` class) | 38/38, `brand-canvas-contrast` 106 | bare logo, default and explicit `plate: true` keep the plate, same-colour logo gets no compensation, wordmark untouched. Mutation: `v-if="logoUrl"` fails the parent-is-HEADER test |
+| T-C1a.2 | `call-header.spec.ts` (22) | n/a (new) | module not found | 22/22 | order, three buttons only, EN labels, clock (sr-only prefix, `<time>`, no live region or role), pressed/unpressed and icon swap, `aria-disabled` stays focusable and inert, 44 px, it/en keys. Mutation: dropping the click guard fails the inert test |
+| T-C1a.3 | `call-exit.spec.ts`, `call-panel.spec.ts` | 51 | 2 failed (short label and aria-label; panel still had Exit) | 53/53 | it/en "name starts with the visible word" check; help link is the last focusable of the panel |
+| T-C1a.4 | `interview-session.spec.ts` (+17) | 63 | 30 failed (no header, plate, title, outline, mic) | 63/63 | bare logo while live and plate on the consent screen, title (standard, potential, null, blank, failed, empty outline), outline once on live / on `advanceAttribution` / not per utterance / not on a same-session resume, captions toggle, mic toggle, boundary and handover disable and show muted then restore, a candidate's own mute survives both. Mutation: dropping `&& !session.micMuted.value` (later task) fails its test |
+| T-C1a.5 | `arch/call-ui-arch.spec.ts` (+6) | 21 | rules pass at birth (the implementation already conforms); each rule proven with a mutation: `role="timer"` in the header fails 2, an extra `<CallHeader>` binding fails 1, an `#exit` slot back on the panel fails 1 | 27/27 | exact binding list, VISUAL mic state and forced-mute disable, one `role="timer"` in `InterviewTimer.vue`, plain `<time>` clock, no exit slot |
+| T-C1b.1 | `brand-theme.spec.ts` (+10), `token-parity.spec.ts` (+1) | 49 | 11 failed (token missing) | 62/62; `theme.spec.ts.snap` regenerated, diff is the new token only | 7 brand colours at >= 4.5:1, hue kept (#771aaf gives #ae77cf), differs from the ribbon edge, `--color-primary-light` unchanged, Quint default `#cb43da` (4.55:1) equals `ensureContrast('#c222d3', '#0f172a', 4.5)`. Mutation: floor 4.5 to 3 fails 4 |
+| T-C1b.2 | `call-question.spec.ts` (+14), `call-stage.spec.ts`, `interview-session.spec.ts` (+9) | 31, 63 | 14 failed + 17 failed | 31/31, 73/73 | prefix (4.5:1 token, markup inert, none on the hint), opaque overlay classes and insets, off (`sr-only`, no tabindex, region still written, hint carried, back on shows latest, no focus), page wiring (inside the avatar layer after the tile, persona name or generic, off persists, off + boundary moves no focus) |
+| T-C1b.3 | `call-tile-contrast.spec.ts`, `call-tile.spec.ts`, `call-self-view.spec.ts`, `interview-session.spec.ts` | 130 | 7 failed | 130/130 | chip `bg-black/60 text-white` composites to #666666 (5.74:1) over white, name shown, blank/missing/failed -> "Tu"/"You", markup inert, chip not focusable, ring only for `candidate && !micMuted`. Mutation: dropping `!micMuted` fails the ring test. The markup-inert and "missing name" rows pass at birth (existing behaviour pinned) |
+| T-C1b.4 | `arch/call-ui-arch.spec.ts` (+4), `e2e/interview-call.spec.ts` | 27 | arch rules pass at birth, proven with a mutation (a second `<CallQuestion>` outside the layer fails); e2e failed on the old band assumptions (single-column geometry, snapshots) | 31/31; e2e 56 passed | captions e2e (overlay clear of chip and own tile, off hides every visible word but keeps the region, choice remembered in a fresh page of the same context, off + boundary moves no focus), axe with a caption and with captions off at `#ffd400` and `#771aaf` |
+
+### Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test commands | `node node_modules/.bin/vitest run tests/unit/use-answer-timer.spec.ts tests/unit/use-captions-preference.spec.ts` (20); C1a: `brand-canvas`, `call-header`, `call-exit`, `call-panel`, `interview-session`, `arch` specs; C1b: `brand-theme`, `token-parity`, `call-question`, `call-stage`, `call-tile*`, `call-self-view`, `interview-session`, `arch` specs. All green |
+| Full vitest (once per slice) | b2b: 136 files, 3206 tests; c1a-2: 137 files, 3274; c1b-2: 137 files, 3333; all passed |
+| Other gates | `bun run lint` exit 0 and `bun run typecheck` exit 0 at every commit boundary; `prettier --check` clean; pre-commit review gate (gga) PASSED on every commit |
+| Playwright (Chromium and WebKit, local) | `interview-call.spec.ts`: 50 passed after c1a, 56 passed after c1b. Full `bun run test:e2e` run twice: 381 passed + 1 flaky failure (`root-landing` webkit), then 391 passed + 1 flaky failure (`unsupported-gate` webkit mobile redirect); each passed alone on re-run. The 1440x900 pixel baselines (4 PNGs, darwin) were regenerated in c1a-2 and again in c1b-2 on purpose; the pinned-container (linux) baselines were NOT regenerated and must be refreshed with `task e2e:update` before CI |
+| Runtime harness | Playwright against the dev server with mocked API routes (the new `outline` route lives in `tests/e2e/fixtures/branded-interview.ts`); no local docker stack started |
+| Rollback boundary | per branch: revert the branch commits; b2b is inert without UI, c1a restores the previous header and the panel Exit, c1b restores the question band |
+
+### Deviations from design/tasks
+
+1. **T-C1a.3 and T-C1a.4 share one commit** (f72d5cb). The page specs cannot be green with Exit in neither the panel nor the header, so the panel change and the page wiring land together.
+2. **The arch inventory gained `CallHeader.vue` in T-C1a.2's commit**, not in T-C1a.5, so no commit leaves the arch spec red. T-C1a.5 still adds the binding, timer-role and exit-slot rules; no rule was loosened.
+3. **Header buttons use the card pair** (`bg-card text-card-foreground`) instead of the outline variant's `bg-background`: the existing page guard ("nothing on the bare canvas assumes a white page") forbids `bg-background`, and the card tokens are the design's "white outline buttons". The guard was not edited. The same two classes were added to the `CallExitDialog` trigger.
+4. **T-C1b.1**: `canvas-brand-fallbacks.spec.ts` was not extended. `VoiceVisualizer` has no canvas fallback for the caption token (it is not read there), so the parametrized fallback check would assert a fallback that does not exist. The binding is instead `token-parity.spec.ts` (authored hex) plus `brand-theme.spec.ts` (authored hex equals `ensureContrast('#c222d3', '#0f172a', 4.5)`), and the `theme.spec.ts` snapshot of the `@theme` block was regenerated.
+5. **Caption prefix colon** is rendered as `{{ `${speakerName}:` }}`: the arch rule bans literal text nodes in `Call*.vue`, so the separator is an expression instead of the rule being relaxed. The space between prefix and text is `{{ ' ' }}` for the same reason (and for Prettier, which otherwise removes it).
+6. **Overlay padding**: `py-0` (committed as a fix). At the capped 6 rem height, vertical padding clipped the third line of `leading-8` text instead of letting it scroll.
+7. **`useAnswerTimer` re-applies the current speaker after a session change or `live` returning**: a crossfade that keeps the interviewer speaking would otherwise lose the whole answer timer for the next competency (`avatar -> none` while `idle` is not a transition in the D10 table).
+8. **Outline refresh rule**: the page refetches when the live screen shows with a session id it has not fetched yet, so a resume of the same session after a pause does not refetch; a boundary through `connecting` (live to not live to live with a new id) does.
+9. **Existing page-spec stub changes**: `interview-session.spec.ts` no longer stubs `micMuted` (the header toggles the real one), derives the stubbed `handoverInFlight` as `handover || boundary` (the real definition), and its `useI18n` stub echoes params so the title composition is readable. No assertion was weakened.
+10. **DESIGN.md drift (not fixed here)**: DESIGN.md section 7.3 still says the title is "Colloquio . {role}"; the spec and tasks say "Colloquio di assessment . {role}" and the page follows the spec. Fix in the slice-0 branch.
+
+### Issues found
+
+- **An unrouted `GET /candidate/interview/outline` hijacks the interview in e2e**: the Nuxt server answers 401 and `candidateFetch` treats that as an expired session, so the embed specs stalled after the first end phrase. Real 401s from the outline therefore behave like any other candidate call; other failures keep the bare title. The fixture now routes it. Any other e2e spec that stubs the candidate API without `mockBrandedInterview` will need the same route.
+- The `unsupported-gate` and `root-landing` WebKit failures in the full run are load-related flakes (pass alone), unrelated to this change.
+- gga flagged nothing blocking; it suggested typing the e2e outline fixture with `satisfies` against the generated contract (optional, not done).
+- The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged. Last commit of the previous batch (b2 branch, 8584d60) was left untouched.

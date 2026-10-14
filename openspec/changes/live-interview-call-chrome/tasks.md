@@ -224,12 +224,12 @@ slice 0 merged into the wrapper tracker.
   - Test-first: seeds `true` when `micMuted` true and `muted` false; `true` when `muted` true and `micMuted` false; `false` when both false; the prop is read once after `start()` resolves.
   - Commit (T-B2.1 to T-B2.3): `feat(interview): keep the candidate's microphone choice across boundaries`
 
-- [ ] T-B2.4 `useAnswerTimer`
+- [x] T-B2.4 `useAnswerTimer`
   - Files: `frontend/tests/unit/use-answer-timer.spec.ts` (create); `frontend/app/composables/useAnswerTimer.ts` (create, D10).
   - Test-first (`vi.useFakeTimers`): every row of the D10 table; 12 s of silence after `avatar -> none` reads 12 in `waiting`; candidate speech continues the count without reset; a 3 s pause in speech does not stop it; `avatar` resets to `listening` 0; `candidate` while `idle` starts from 0; `sessionId` change or `live() === false` -> `idle` 0 and the interval cleared; suspended: no advance; exactly one interval at most; unmount clears the interval.
   - Commit: `feat(interview): add the answer timer driven by the speaker signal`
 
-- [ ] T-B2.5 Captions preference
+- [x] T-B2.5 Captions preference
   - Files: `frontend/tests/unit/use-captions-preference.spec.ts` (create); `frontend/app/composables/useCaptionsPreference.ts` (create, `useLocalStorage('beai:interview:captions', true, { onError: () => {} })`, M7).
   - Test-first: default on; off survives a re-instantiation; storage that throws on read and write -> starts on, still toggles in memory, no error thrown; value never sent to the network (no `$fetch` call).
   - Commit: `feat(interview): persist the captions preference`
@@ -239,28 +239,28 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice C1a: `feature/licc-c1a-call-header` -> `feature/licc-b2-mic-answer-timer` (needs slice 0 merged)
 
-- [ ] T-C1a.1 `BrandCanvas` plate opt-out
+- [x] T-C1a.1 `BrandCanvas` plate opt-out
   - Files: `frontend/tests/unit/brand-canvas.spec.ts` (extend `:286-301`, do not replace); `frontend/app/components/organisms/BrandCanvas.vue` (`plate?: boolean` default `true`; `header-end` wrapper `ml-auto flex min-w-0 flex-1 items-center justify-end gap-3`).
   - Test-first: `plate=false` renders the `<img>` with no plate element; default keeps the plate; same-colour logo still bare (no compensation); pre-interview `InterviewSteps` stays at the right edge; `brand-canvas-contrast.spec.ts` and the existing pre-interview screenshots unchanged.
   - Commit: `feat(canvas): let a screen render the logo without the white plate`
 
-- [ ] T-C1a.2 `CallHeader` organism
+- [x] T-C1a.2 `CallHeader` organism
   - Files: `frontend/tests/unit/call-header.spec.ts` (create); `frontend/app/components/organisms/CallHeader.vue` (create, D13); `frontend/i18n/locales/{it,en}.json` (`interview.call.header.*`, `exit.short`).
   - Test-first: title variants (`standard` with role, `potential` -> Potenziale/Potential, standard without role -> bare title, no `·`, no `null` / `undefined`); DOM order title, clock, Sottotitoli, Microfono, Esci slot; no Camera, "Ripeti domanda" or Pausa control; clock has the `sr-only` "Tempo trascorso" prefix, uses `<time>`, has no `aria-live` and no `role`; `aria-pressed` toggles with constant visible labels and swapping icons; mic shows unpressed + slashed icon when `micMuted`; mic is `aria-disabled` (still focusable) when `micDisabled`; events `toggle-captions` and `toggle-mic`; each target >= 44 px class; it/en key parity.
   - Commit: `feat(interview): add the live call header`
 
-- [ ] T-C1a.3 Exit moves to the header
+- [x] T-C1a.3 Exit moves to the header
   - Files: `frontend/tests/unit/call-exit.spec.ts` (modify), `frontend/tests/unit/call-panel.spec.ts` (modify); `frontend/app/components/molecules/CallExitDialog.vue` (trigger shows `exit.short`, `aria-label` = `exit.label`); `frontend/app/components/organisms/CallPanel.vue` (remove the `exit` slot only; the rest of the panel is untouched until C2a).
   - Test-first: visible text "Esci", accessible name contains "Esci" and the resume hint; dialog body, focus return to the trigger, loading/disabled state during a handover unchanged; the panel has no Exit button.
   - Commit: `feat(interview): move Exit into the call header with a visible label`
 
-- [ ] T-C1a.4 Wire header, outline and mic in the page
+- [x] T-C1a.4 Wire header, outline and mic in the page
   - Files: `frontend/tests/unit/interview-session.spec.ts` and `interview-session-page.spec.ts` (modify); `frontend/app/components/InterviewSession.vue` (`:plate="!callStageLive"`; `<CallHeader>` in `#header-end` when `callStageLive`, `v-if="preInterviewStep"` branch untouched; call `outline.refresh()` when `callStageLive` first becomes true and on every `sessionId` change while live; `title` from outline `role_name` / `assessment_type`; `captions-enabled` from `useCaptionsPreference`; `mic-muted = session.micMuted.value || session.handoverInFlight.value`; `mic-disabled = session.handoverInFlight.value` (covers boundary too, M2); `CallExitDialog` into the `exit` slot).
   - Test-first: during a boundary AND during a handover the mic control is present, disabled and shows muted; afterwards it returns to the candidate's own choice (spec "forced mute wins" and "mute survives a boundary"); toggling captions or mic never calls `/end` (read-only); outline fetched once on live and again on `sessionId` change, not per utterance; outline failure shows the bare title and no error; embed page still mounts.
   - Interim state (documented, not released): the Sottotitoli control toggles the preference but has no visible effect until C1b.
   - Commit: `feat(interview): compose the live header, outline refresh and microphone control`
 
-- [ ] T-C1a.5 Arch rules, first stricter step
+- [x] T-C1a.5 Arch rules, first stricter step
   - Files: `frontend/tests/unit/arch/call-ui-arch.spec.ts`.
   - Test-first (RED): inventory expects 8 `Call*.vue` incl. `organisms/CallHeader.vue`; exact binding list on `<CallHeader>` (`title`, `elapsed-seconds`, `captions-enabled`, `mic-muted`, `mic-disabled`, `toggle-captions`, `toggle-mic`); exactly ONE `role="timer"` under `app/components/**` (in `InterviewTimer.vue`); the `<CallPanel>` binding list is updated to drop the `exit` slot; viewport-unit rule unchanged; literal-word rule now covers `CallHeader`.
   - Acceptance: no rule removed or loosened; `bun run lint`, `bun run typecheck`, full vitest, and `bun run test:e2e -- interview-call.spec.ts` green in Chromium and WebKit (tab order Sottotitoli, Microfono, Esci, question, help; axe at `#ffd400` and `#771aaf`).
@@ -268,22 +268,22 @@ slice 0 merged into the wrapper tracker.
 
 ### Slice C1b: `feature/licc-c1b-captions-overlay` -> `feature/licc-c1a-call-header`
 
-- [ ] T-C1b.1 `--color-primary-caption` token
+- [x] T-C1b.1 `--color-primary-caption` token
   - Files: `frontend/tests/unit/brand-theme.spec.ts` (extend), `frontend/tests/unit/arch/canvas-brand-fallbacks.spec.ts` (picks the token via the list); `frontend/app/composables/useBrandTheme.ts` (`BRAND_DERIVED_TOKENS` `:96` + `DERIVE['--color-primary-caption']` = `ensureContrast(mix(color,'#ffffff',0.7), AVATAR_PANEL, 4.5)`); `frontend/app/assets/css/main.css` (Quint default beside `--color-primary-light` `:37`, equal to `ensureContrast('#c222d3','#0f172a',4.5)`).
   - Test-first: >= 4.5:1 on `#0f172a` for the fixture colours and the Quint default; the hex is pinned with its ratio; `--color-primary-light` value unchanged (assert the old value).
   - Commit: `feat(theme): add the caption prefix colour token held to 4.5:1`
 
-- [ ] T-C1b.2 Captions overlay (`CallQuestion`) and stage
+- [x] T-C1b.2 Captions overlay (`CallQuestion`) and stage
   - Files: `frontend/tests/unit/call-question.spec.ts` (modify), `frontend/tests/unit/call-stage.spec.ts` (modify); `frontend/app/components/molecules/CallQuestion.vue` (props `speakerName`, `visible=true`; overlay classes of D8; `text-primary-caption` prefix; off -> `sr-only`, no `tabindex`, `focusOnBoundary()` returns early, text still written); `frontend/app/components/organisms/CallStage.vue` (remove the `#question` slot and grid area); `frontend/app/components/InterviewSession.vue` (render `CallQuestion` inside the `avatar-layer` after `CallTile`, `v-if="live"`; name = `outline.avatar_name ?? t('interview.call.interviewer_name')`; `:visible="captionsEnabled"`).
   - Test-first: prefix shows the name, text interpolated (markup `<img onerror>` inert); off keeps the live-region text and drops `tabindex`; exactly one `aria-live` question region on screen (announced once); turning captions on shows the latest text immediately; hint shown (and carried by the region) before the first utterance and at each competency start, not the previous closing phrase; off + boundary moves no focus, on + boundary focuses the caption surface; the keyed player layer is the same DOM node across `connecting -> live` (no re-parent); overlay never overlaps the name chip or self tile (class assertion on the `right-[calc(...)]` offset).
   - Commit: `feat(interview): show the question as captions over the interviewer video`
 
-- [ ] T-C1b.3 Tile chips and candidate name
+- [x] T-C1b.3 Tile chips and candidate name
   - Files: `frontend/tests/unit/call-tile-contrast.spec.ts`, `call-tile.spec.ts`, `call-self-view.spec.ts` (modify); `frontend/app/components/molecules/CallTile.vue` (chip `bg-black/60 text-white`); `frontend/app/components/molecules/CallSelfView.client.vue` (`name?: string`, default `t('interview.call.you')`); page passes `outline.candidate_name`.
   - Test-first: chip contrast >= 4.5:1 against a white frame at the composited `#666`; name shown, blank or missing or failed outline -> "Tu"/"You"; `<b>x</b>` inert; chip not focusable and not interactive; the speaking ring is lit only when `speaker === 'candidate' && !micMuted`.
   - Commit: `feat(interview): show names on the call tiles with a legible chip`
 
-- [ ] T-C1b.4 Arch captions rule and e2e
+- [x] T-C1b.4 Arch captions rule and e2e
   - Files: `frontend/tests/unit/arch/call-ui-arch.spec.ts`; `frontend/tests/e2e/interview-call.spec.ts`.
   - Test-first: arch: `CallQuestion` is rendered inside the `avatar-layer` element and nowhere else; no `#question` slot remains. e2e (Chromium + WebKit): captions off hides the overlay and keeps the region; preference survives a reload; tab order unchanged; axe zero violations on live at `#ffd400` and `#771aaf`.
   - Acceptance: `bun run lint`, `bun run typecheck`, full vitest, `bun run test:e2e -- interview-call.spec.ts` green.
