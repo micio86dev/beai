@@ -201,9 +201,9 @@ in `main.css` come back. Contrast is guaranteed by that code, never delegated to
 4. Decoration on the canvas uses `--color-canvas-tone` only (rule above).
 5. A client logo is drawn on a white **logo plate** (`bg-card`, `--radius-lg`), never straight on the
    canvas: a logo in the brand colour on a transparent background, the most common logo file there
-   is, would vanish into a canvas of the same colour. The one recorded exception is the live call
-   header (§7.0.1, §7.3), which draws the logo bare; a same-colour logo is accepted there and no
-   compensation is applied.
+   is, would vanish into a canvas of the same colour. There is no exception: the logo is drawn on the
+   plate on every candidate screen, the live call header included (§7.0.1, §7.3), through the one
+   shared `BrandLogo` component.
 
 These tokens are frontend-only. The backoffice paints no canvas, so §17's mirror rule does not
 apply to them; shared tokens keep mirroring as before.
@@ -592,9 +592,9 @@ header.
   the interview (§7.3): the step indicator before the call, and `CallHeader` while the call
   stage is live. The slot wrapper spans the rest of the row (`ml-auto flex min-w-0 flex-1
   items-center justify-end gap-3`), so the live header can fill it while the step indicator
-  stays at the same right edge. While live the logo is drawn **bare**, without the white plate
-  (`BrandCanvas` `plate=false`): the call chrome is dense and the plate would add a heavy block
-  to every frame; the pre-interview screens keep the plate and are unchanged.
+  stays at the same right edge. The logo is drawn on the white plate on every candidate screen,
+  the live call included, by the one shared `BrandLogo` component (there is no per-screen
+  opt-out), so it looks identical before the interview, during it and on the end page.
 - **Surface.** One centred `bg-card` surface, `--radius-surface`, `--shadow-surface`,
   `max-w-[34rem]`. Padding `2.25rem` (`p-9`) on desktop, `1.5rem` below `lg`.
 - **Interview screens.** REVISED 2026-10-06: every state of `InterviewSession` (consent, device
@@ -755,8 +755,8 @@ tile with its captions, the candidate's own tile, the side panel.
 
 The Italian strings in the diagram are copy examples; every string is i18n-keyed in `it` and `en`.
 
-- **Canvas and header** (D13). `BrandCanvas` in bare mode with `wide` (§7.0.1) and `plate=false`:
-  while live the logo is drawn without the white plate. The header's trailing end holds
+- **Canvas and header** (D13). `BrandCanvas` in bare mode with `wide` (§7.0.1):
+  while live the logo keeps the same white plate as on every other screen (`BrandLogo`). The header's trailing end holds
   `CallHeader`, which spans the row: the interview title (left, `text-base` semibold
   `text-on-primary`, two lines at most), the elapsed clock, then three 44 px controls in this DOM and
   tab order: Sottotitoli (captions), Microfono, Esci. There is no in-header status indicator, no Camera control, no
@@ -812,8 +812,11 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
   ("L'intervistatore sta parlando", "Stai parlando"). That text is NOT a live region; announcing
   every turn would bury the question, the same argument §7.3.1 makes for the voice visualizer.
   Motion: §10.
-- **Self-view tile.** The candidate's own camera, inside the interviewer tile's cell, bottom
-  right, 16:9, `width: clamp(9rem, 18%, 14rem)`. It shows the device-check stream (no second
+- **Self-view tile.** The candidate's own camera, an overlay INSIDE the interviewer tile (the
+  avatar layer, never a separate grid cell, so it cannot fall below the video), bottom right with
+  a `0.75rem` margin from the bottom and the right edge (`absolute bottom-3 right-3`), 16:9,
+  `width: clamp(9rem, 18%, 14rem)` of the interviewer tile. The captions are inset by exactly
+  this width plus the margin and a gap, so they never cover it. It shows the device-check stream (no second
   camera request), muted and mirrored (a visual flip only), has no controls, takes no focus
   and no pointer events, and falls back to a static camera-off placeholder when the stream
   has no live video track. It is drawn only while the interview is live.

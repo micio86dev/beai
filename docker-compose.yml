@@ -475,6 +475,7 @@ services:
       # the loud failure that guard exists to produce.
       NUXT_API_ORIGIN: "${BEAI_API_ORIGIN:-http://api:8000}"
       NUXT_PUBLIC_APP_ENV: local
+      NUXT_PUBLIC_PRIVACY_POLICY_URL: "${PRIVACY_POLICY_URL:-https://demo.beai.quint.org/assets/documents/privacy-policy-2026.01.15.pdf}"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     # Depends on `api`, not on postgres/redis. It previously gated on both
