@@ -795,7 +795,11 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
   showing the latest utterance of the **avatar only** and keeping it until the next avatar
   utterance. An utterance longer than one page (about 140 characters, e.g. a long intro phrase)
   is paged: whole sentences per page, each shown for its spoken length (15 characters per
-  second), the last page kept. Until the first question of a competency arrives, and again at each competency
+  second), the last page kept. A sentence longer than a page is split at word boundaries (a
+  single word longer than a page stays whole and scrolls). A new utterance, the same one said
+  again, or a competency reset restarts from its first page and cancels the old timer. Each
+  page swap is announced by the live region; with captions off the region holds the whole
+  utterance at once, and turning them back on shows the page being said. Until the first question of a competency arrives, and again at each competency
   start, it holds the muted listen hint, so a previous closing phrase is not read as the new
   question. **Captions off** (the Sottotitoli toggle, stored in the browser, default on, an
   unreadable store behaves as on): the overlay is hidden visually (`sr-only`), loses its
