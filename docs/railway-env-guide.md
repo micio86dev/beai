@@ -20,6 +20,7 @@ An empty value is safe for every variable below marked "empty = default":
 | `PUBLIC_API_URL` | api, worker, scheduler | `https://api-production-640e.up.railway.app/api/v1` | Public base of `/v1`. Change when the API gets a custom domain. |
 | `INTERVIEW_URL` | api, worker, scheduler | `https://frontend-production-5cb6.up.railway.app` | Origin of the hosted page `/i/{token}`. Falls back to `CANDIDATE_APP_URL` if empty. |
 | `DEVELOPERS_URL` | api, worker, scheduler | `https://backoffice-production-ec05.up.railway.app/developers` | Where the Scalar docs are served. |
+| `NUXT_PUBLIC_PRIVACY_POLICY_URL` | frontend | `https://demo.beai.quint.org/assets/documents/privacy-policy-2026.01.15.pdf` | Privacy policy linked in the candidate footer. Already set; read by the frontend since 0.27.1. Absolute `https:` only; empty renders no link. |
 
 Already correct and untouched: `frontend` `NUXT_API_ORIGIN` (the embed page's CSP lookup and the `/api` proxy
 both use it; verified the proxy answers), `backoffice` `BEAI_API_ORIGIN`.
