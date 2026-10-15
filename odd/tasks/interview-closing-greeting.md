@@ -41,7 +41,7 @@ Strict TDD on. Runners: api `vendor/bin/pest` (serialize: one Pest run at a time
 - [x] T4 backoffice: closing form + locale tabs, i18n, tests, codegen, release 0.54.0 (delegated writer
   `5f77bca` `4ea143d` `e314ecd` `97038b4`; `b0b704b` clears a locale error on edit). Vitest 4125, e2e 26/26.
 - frontend 0.27.4: api 0.75.0 spec sync only (`a79efb1`), required by the wrapper's identical-openapi gate.
-- [ ] T5 wrapper: pins + release, deploy, verify in prod
+- [x] T5 wrapper: pins + release, deploy, verify in prod (wrapper v0.58.0, PR #131; 4-lens review approved; all 5 Railway services SUCCESS, api ready ok, default closing row present in prod)
 
 ## Progress
 - 2026-10-15: document created; exploration done (intro phrase mapped end to end).
