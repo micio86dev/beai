@@ -1154,6 +1154,18 @@ available cue rather than a preference. `role="tab"` + `aria-selected` already
 carry the state to assistive tech, so the gap was never an AT failure — it was
 a sighted reader who cannot tell `--color-primary` from `--foreground`.
 
+**Locale tabs inside a form** (the interview intro phrase and closing greeting, one
+tab per language) follow different rules from the section rail, because a hidden tab
+holds unsaved input:
+
+- Every panel is **force-mounted**, so a value typed in one language survives a
+  switch to another; lazy mounting would discard it.
+- A tab whose field has a validation error shows a **marker plus screen-reader
+  text** on its trigger (not colour alone), so an error in a hidden language is not
+  invisible. Submitting, or a server error mapped to a language, **switches to the
+  first tab with an error**.
+- Editing a language clears that language's error and marker until the next submit.
+
 ### 8.2.2 Selected state on toggles
 
 `ToggleGroup` / `Toggle` selected state is `--color-primary` fill with
