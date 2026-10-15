@@ -443,3 +443,49 @@ The C2a.1 work unit was cut into four branches at whole-task commit boundaries (
 - Not done: "manual check against the owner screenshot" (I do not have it); the 1440x900 and 1024x768 renders were inspected visually from the Playwright output. The PR-description rule table belongs to PR time; the table above is its content.
 - A second full local `bun run test:e2e` after the last e2e-only tweaks was not run; the touched specs (`interview-call`, `interview-chrome`, `integrity-toast`, `browser-gate-middleware`, `unsupported-gate`, `hosted-entry`) were re-run.
 - The wrapper working tree still has `M api` / `M backoffice` / `M frontend` pointer changes and the untracked `odd/tasks/seamless-primary-transition.md`: not staged.
+
+## Review follow-ups (C3, frontend)
+
+Mode: Strict TDD. Nothing pushed, no PR opened. api/ and backoffice/ untouched. Base `feature/licc-c2b-stage-sizing`; three stacked branches, each under 400 authored lines (frontend repo only).
+
+### Branches (frontend)
+
+| Branch | Base | Commits | Authored lines |
+|---|---|---|---|
+| `feature/licc-c3-review-followups` | `feature/licc-c2b-stage-sizing` | 7612750 outline refresh (item 2), eb0e2e9 answer timer (item 4), a865c04 alias guard (item 1), 4e1b2e5 mic restore + progress swap (items 3, 5), 072dc39 arch import spelling | 329 |
+| `feature/licc-c3-review-followups-2` | `feature/licc-c3-review-followups` | 8600456 countdown stays visible (item 7), 423cec9 minutes-left wiring test (items 8, 9) | 68 |
+| `feature/licc-c3-review-followups-3` | `feature/licc-c3-review-followups-2` | 2e32d3e mic e2e (item 10), 9f870e7 panel scroll (item 11) | 91 |
+
+### Per-item verdict
+
+| # | Verdict | RED | GREEN / evidence |
+|---|---|---|---|
+| 1 | Not a bug as claimed; one real inconsistency fixed | Both spellings resolve to `app/` (the `~/app/` shim in `nuxt.config.ts` and the Vite regex alias); `bun run build` exit 0. `CallPanel` spelled its component imports `~/app/components/...` unlike the rest of `app/`; new arch rule failed on it (1 failed / 3 passed) | `tests/unit/arch/import-alias-arch.spec.ts` (4): every `~/` and `~/app/` import in `app/` resolves; call components use `~/components`. The pinned import list in `call-ui-arch.spec.ts` followed (072dc39) |
+| 2 | Fixed | outline spec 1 failed (second `refresh()` queued between the last dirty check and the `.finally` was dropped: 1 request) | `inFlight` guard now cleared synchronously with the last dirty check (`running` flag); 8/8 |
+| 3 | Fixed | mic spec 2 failed (toggle during the restore await never reached the provider) | `micChoicePending` flag + sync watcher on `handoverInFlight` re-applies the latest intent; 19/19, no extra provider call when nothing was toggled |
+| 4 | Fixed | timer spec 2 failed (constructed with `avatar` or `candidate`) | `onSpeaker(options.speaker.value)` at construction; 17/17 |
+| 5 | Fixed, plus a real adjacent defect | 3 failed: ordinal/total moved at the incoming `/start`; a granted continuation (Tavus joined room) never moved ordinal/total at all | `progressOf()` + `applyProgress()`: applied before the id appears (first start), at `promote()` (crossfade), and at the cursor move (continuation). `primaryIndex` left as is: an existing test pins "cleared as soon as a new /start succeeds"; see Deviations |
+| 6 | Proven not a bug | n/a | `interview.call.interviewer_name` exists in `it.json` ("Intervistatore AI") and `en.json` ("AI interviewer"); `i18n-interview-keys.spec.ts` already reads the real locale files and lists the key. Mutation (renamed the key in `en.json`) failed 3 tests |
+| 7 | Fixed | 5 failed (null, 0, -5, NaN, Infinity maxima hid the enforcing countdown) | The API contract makes `interview_max_seconds` a required `int` (default 1200/3600 in `SessionLiveClock::resolveMaxSeconds`), but the client validates it and a null/invalid value keeps the 300 s fallback enforcing. The `v-show` is gone: heading, figure, bar and sentence still need a stated max, the countdown is always visible (exact figure only). 75/75 |
+| 8 | Proven not a bug | n/a (passes at birth) | Integration test through `InterviewSession`: 20 min at 1200 s, 19 at 1139 s, 9 at 539 s. Mutation (`@tick` handler removed) fails it (20 vs 19) |
+| 9 | Proven not a bug | n/a | `call-panel.spec.ts` has a file-level `afterEach(() => { ...; vi.useRealTimers() })` (line 80). A guard test (`vi.isFakeTimers()` is false after the fake-timer tests) pins it |
+| 10 | Fixed | Mutation (`:mic-disabled="false"`) fails the new wait on `aria-disabled="true"`; the old assertions passed under it | The mock gained `holdStart()` so the forced-mute window is held open; wait for `aria-disabled="true"`, release, wait for it to clear, then assert `aria-pressed` (open and muted cases) |
+| 11 | Fixed | unit: `xl:overflow-y-auto` missing (1 failed); e2e at a 1280 px embed with a 125% text size: panel overflowed and did not scroll (overflowY `visible`) | The scroller is the `aside` (`xl:overflow-y-auto`), not the stage cell: a cell scroller would clip the card's shadow. New e2e: embedded 1280 px, panel beside the tile, never outgrows the row, last element reachable. At default text size the sections fit; the overflow appears with larger text |
+
+### Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Full vitest (once, final HEAD) | `node node_modules/.bin/vitest run`: 140 files, 3514 tests passed |
+| Other gates | `bun run lint` exit 0; `bun run typecheck` no errors; `bun run build` exit 0 (run at item 1 and at the final HEAD, "Build complete"); `prettier` clean; pre-commit review gate (gga) passed on every commit |
+| Playwright (Chromium + WebKit) | `interview-call.spec.ts`: 76 passed, no pixel snapshot changed (darwin or linux baselines untouched, so no Docker run). Full `bun run test:e2e`: 406 passed, 3 skipped, 2 failed (`unsupported-gate` webkit: renders the gate element, visual baseline): both passed on a solo re-run (8 passed), the known load-related flake |
+| Rollback boundary | per branch: revert the branch commits; each fix is independent of the others |
+
+### Deviations and notes
+
+1. **Item 1 spelling.** Components use `~/components/...`; composables and utils keep the repo-wide shimmed `~/app/...` (about 40 files). `CallHeader` already follows that split, so it was not edited. `CallPanel` was the outlier.
+2. **Items 3 and 5 share one commit** (4e1b2e5): both live in `useInterviewSession.ts` and could not be split without a partial-hunk commit.
+3. **Item 5, `primaryIndex`.** The review said it belongs to the outgoing session during a handover; in fact it is cleared at the incoming `/start` (an existing test pins that). Moving it to the swap would reverse a decided behaviour, so it is left and flagged here.
+4. **Item 7 changes the "hidden until the server states the max" scenario** for the invalid-max path only: the Durata heading and the maximum stay hidden, the enforcing countdown does not. The openspec scenario text should say so at archive time.
+5. **Test added in the first commit regressed the arch import list** (a865c04 left `call-ui-arch.spec.ts` red because only the panel and alias specs were run); fixed by 072dc39 before the next branch. The arch suite is green at every branch head.
+6. **Item 11 e2e uses a 125% text size** to force the overflow, because at the default size the fixed sections fit the 1280 px row (464 px cell, 464 px content).
