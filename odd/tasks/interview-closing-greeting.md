@@ -18,8 +18,9 @@ configurable closing. The owner wants a proper farewell, configurable like the i
   `final_phrase`, Tavus waits for `stopped_speaking`) is unchanged, so the frontend needs no
   change. Applies to both the per-competency prompt (`buildAdvanceSection`) and the Tavus
   single-session plan (`ComposeConversationPlan`).
-- Validation: the closing text must not contain `end_phrase` (would end a competency early);
-  containing `final_phrase` is harmless but the default does not repeat it.
+- Validation: the closing text must contain neither completion phrase. An `end_phrase` would end a
+  competency early; a `final_phrase` inside the greeting would end the interview before the greeting
+  is over (the client contains-matches it). Same `NoCompletionPhrase` rule as the intro.
 - Default: seeded by migration only when no row exists (never overwrites an admin edit).
 - Backoffice: the intro and closing forms group their locales in Tabs (existing
   `components/ui/tabs`), one textarea per tab.
