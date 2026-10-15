@@ -297,11 +297,13 @@ continuation or a resume within the page.
    - The prop is read at the seed moment, after `start()` resolves, so it carries the intent as it is then: no
      second write races the seed.
 4. `setMicMuted(m)`, with no forced mute active, sets the intent and applies it to `activeSession`'s provider.
-5. **The toggle is disabled during a handover** (`aria-disabled`, not hidden, like the Exit loading state) and
-   its **visual state is `micMuted || handoverInFlight`**: during a handover the mic is really closed, so the
-   control shows muted and cannot be changed; afterwards `restoreMic` reapplies the candidate's own choice and
-   the control shows it again. During a boundary (short, `boundaryInFlight`) the toggle stays enabled and shows
-   the intent; a change is recorded and applied by the boundary's `restoreMic`.
+5. **The toggle is disabled during a handover AND during a boundary** (`aria-disabled`, not hidden, like the Exit
+   loading state; `handoverInFlight` already includes `boundaryInFlight`, `useInterviewSession.ts:638`) and its
+   **visual state is `micMuted || handoverInFlight`**: while either forced mute is active the mic is really
+   closed, so the control shows muted and cannot be changed; afterwards `restoreMic` reapplies the candidate's
+   own choice and the control shows it again. This follows the spec ("during the boundary the control is present,
+   disabled and shows muted"; tasks.md M2). The earlier wording that kept the toggle enabled during a boundary is
+   withdrawn; `setMicMuted` still records an intent set in that window (rule 1) for programmatic callers.
 
 **Known behaviour, accepted and documented:** muting during an answer is silence to the provider's turn
 detection, so it can end the answer, exactly like the candidate falling silent ("An answer ends by silence only"
@@ -472,7 +474,10 @@ unchanged):
        and `n ≥ 1`, "In corso · domanda {clamp(k, 1, n)} di {n}"; when `k` is `null` or `n = 0`, "In corso" with
        no counts. So `0` reads "domanda 1 di n" (the first primary is being asked) and an overshoot reads "n di n";
        "domanda 0 di n" and "domanda 4 di 3" cannot render.
-3. **Durata dell'intervista** (inline): "03:12 / 25:00" (existing keys, shown under the existing condition),
+3. **Durata dell'intervista** (inline): "03:12 / 25:00", shown **only once the server has stated
+   `interview_max_seconds`** (the 300 s fallback is never presented as a maximum, and the old
+   `total x secondsPerQuestion` fallback is removed; tasks.md M3). The visible countdown is hidden with `v-show`
+   while the maximum is unknown, so `InterviewTimer` stays mounted, keeps ticking and still enforces `timeout`,
    `ProgressBar` of elapsed over max, then the remaining time: the approximate sentence "Restano circa {N}
    minuti" with `InterviewTimer` ("Tempo rimanente", exact) beside it (D11). Then the help link slot.
 
@@ -757,8 +762,8 @@ C1a-C2b.
 - [ ] Evaluation-retry runs: `primary_total_all` counts every competency (stable budget), so the suggested time
       per answer is conservative when only some competencies are re-interviewed. Non-blocking; owner may prefer
       "competencies still to ask".
-- [ ] "Competenza n di N" stays hidden during the first competency, because `total_competencies` reaches the
-      client only from `/end` today (`useInterviewSession.ts:1082-1084`), although `/start` already returns it
-      under `question_context` (`BuildInterviewSessionResponse.php:105`). Seeding it from `/start` is a one-line
-      change but also alters the embed page (`pages/embed/[token].vue:282`); left out of scope unless the owner
-      wants it. Non-blocking.
+- [x] CLOSED (tasks.md M1, M8): "Competenza n di N" is no longer hidden during the first competency. The spec
+      requires the real total from the first competency, so `total_competencies` and `competency_ordinal` are
+      seeded from `/start` (`question_context`, `BuildInterviewSessionResponse.php:105`) in T-B1.5, with a
+      regression test on the embed page (`pages/embed/[token].vue:281-282`). `endedCompetencies` stays
+      `/end`-only.
