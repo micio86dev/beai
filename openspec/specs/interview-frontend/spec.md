@@ -3221,9 +3221,11 @@ per-question timer, Exit and the help link, was 18 rem wide, and MUST NOT contai
 
 #### Scenario: The duration is hidden until the server states it
 
-- GIVEN `interview_max_seconds` has not been returned
+- GIVEN `interview_max_seconds` has not been returned, or is not a positive finite number
 - WHEN the panel renders
-- THEN no duration bar, maximum, remaining sentence or visible countdown is shown
+- THEN no duration heading, bar, maximum or remaining sentence is shown
+- AND the enforcing countdown (the page's only `role="timer"`) stays visible, because the fallback clock still ends the
+  interview on expiry and an enforcing timeout MUST never be invisible to the candidate
 
 #### Scenario: Past the maximum the values are clamped
 
