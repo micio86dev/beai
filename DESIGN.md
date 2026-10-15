@@ -793,7 +793,9 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
   purpose: any translucency composites against unknown video and voids every contrast guarantee.
   It is one persistent `aria-live="polite"` `aria-atomic` region labelled "Domanda corrente",
   showing the latest utterance of the **avatar only** and keeping it until the next avatar
-  utterance. Until the first question of a competency arrives, and again at each competency
+  utterance. An utterance longer than one page (about 140 characters, e.g. a long intro phrase)
+  is paged: whole sentences per page, each shown for its spoken length (15 characters per
+  second), the last page kept. Until the first question of a competency arrives, and again at each competency
   start, it holds the muted listen hint, so a previous closing phrase is not read as the new
   question. **Captions off** (the Sottotitoli toggle, stored in the browser, default on, an
   unreadable store behaves as on): the overlay is hidden visually (`sr-only`), loses its
