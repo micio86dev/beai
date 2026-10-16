@@ -14,8 +14,8 @@ Completion is detected by a contains-match of the final phrase (the LAST words o
 Both providers: a heard end phrase is held while the avatar is speaking OR an avatar utterance/transcription is pending; completion is released only after the avatar has been continuously silent for a settle window (about 2 s); the fallback grows with the spoken text length. Mock provider and the question flow are unchanged.
 
 ## Tasks
-- [ ] T1 frontend (branch hotfix/0.28.1 from main): Tavus and HeyGen providers + unit tests (RED first), release 0.28.1.
-- [ ] T2 wrapper: pin frontend v0.28.1, release 0.59.2, deploy, verify in prod.
+- [x] T1 frontend (a44f2b1, PR #116, tag v0.28.1): Tavus and HeyGen providers + unit tests (RED first: 7 + 5 failures), shared `app/utils/closing-completion.ts`; native review approved; unit 3713 passed; CI incl. e2e green; deploy SUCCESS 2026-10-16.
+- [ ] T2 wrapper: pin frontend v0.28.1, release 0.59.2.
 
 ## Constraints
 Strict TDD, Vitest via bun. Repo language English. Conventional commits, no AI attribution. Hotfix Git Flow: from main, merge to main with tag, back-merge to develop. Owner asked for an immediate release to retest.
@@ -24,4 +24,7 @@ Strict TDD, Vitest via bun. Repo language English. Conventional commits, no AI a
 Delegated direct: one writer (2 provider files plus tests).
 
 ## Progress
-Root cause identified from code; branch created.
+Confirmed by the owner's live test: the greeting was cut at `...riceverai un risc` (164 of 209 characters, about 12 s at 13.7 chars/s), which is exactly the old 12 s `COMPLETION_FALLBACK_MS`. Fix released as frontend 0.28.1. Constants: settle 2000 ms, fallback 12 s + 100 ms per character (cap 5 min), unmeasured on a live run.
+
+## Next step
+Owner retests live. If the pause after the greeting is too long, shorten the per-character estimate.
