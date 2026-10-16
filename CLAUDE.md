@@ -286,8 +286,8 @@ Full rationale in `openspec/ROADMAP.md`. Summary:
    - C12 notifications stay operator-facing. The candidate invitation is a separate,
      transactional message — static and multilingual per ruling 10, never a C12 trigger.
 9. **REOPENED 2026-09-01, partially** — white-label. The requirement that was missing now exists
-   and is narrow: an **admin** sets a **logo** and a **primary colour** in Settings, and both Nuxt
-   apps render in them. Nothing else is in scope — no per-tenant copy, no per-tenant layout, and
+   and is narrow: an **admin** sets a **logo**, a **primary colour** and (2026-10-16) a
+   **background colour** in Settings, and both Nuxt apps render in them. Nothing else is in scope — no per-tenant copy, no per-tenant layout, and
    the **FR-006 multi-test portal stays PARKED**, still underspecified.
    - Both fields are **nullable permanently**. An organization that configures neither renders in
      the Quint palette this file and `DESIGN.md` define: the product has a brand of its own, and
@@ -296,6 +296,11 @@ Full rationale in `openspec/ROADMAP.md`. Summary:
      CHECK. It is interpolated into a CSS custom property in two apps, so a malformed value is a
      stylesheet that silently does not apply and one carrying `;`/`}` is a CSS injection into every
      page a candidate sees. The DB constraint is what also holds for the portability import path.
+   - `organizations.background_color` is the candidate page canvas, validated exactly like the
+     primary (`#rrggbb`, anchored regex **and** a database CHECK) and **nullable permanently**.
+     When unset the canvas is the dark default `#0f172a`, not the Quint purple; the primary no
+     longer paints the canvas and is the accent of active states. Transactional emails stay on
+     the primary colour only.
    - `organizations.logo_path` is a **path on the configured disk, never a URL** (the disk differs
      per environment), and is written **only** by `POST /api/organization/logo` — the one place
      that knows a file was actually stored. It is deliberately not accepted by the settings PATCH.
