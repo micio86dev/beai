@@ -183,8 +183,9 @@ guaranteed by that code, never delegated to the operator.
 |-------|---------|------------|-------|
 | `--color-canvas` | `#0f172a` | the organization `background_color`, verbatim; the dark default when null | The page background (`bg-canvas`). |
 | `--color-on-canvas` | `#ffffff` | `readableForeground(background)`: black or white, whichever has the higher WCAG contrast; a tie and an invalid value go to white. Same function and fixtures as the backoffice. | Every text, icon and hairline drawn DIRECTLY on the canvas: wordmark, organization name, footer, the focus outline on the canvas. |
-| `--color-on-canvas-muted` | `#cbd5e1` | on-canvas mixed toward the canvas (weights 0.78 → 0.95, softest first) as far as it stays **≥ 4.5:1** on the canvas | Secondary text on the canvas (tagline, footer, steps ahead). |
-| `--color-canvas-tone` | `#020617` | the background moved AWAY from on-canvas: mixed toward black (55% background) when on-canvas is white, toward white (30% background) when on-canvas is black | The only colour the decorative canvas layer may use (§7.0.1). Moving away from on-canvas can only RAISE text contrast, so the decoration can never pull a line under 4.5:1. |
+| `--color-on-canvas-muted` | `#caccd0` | on-canvas mixed toward the canvas (weights 0.78 → 0.95, softest first) as far as it stays **≥ 4.5:1** on the canvas | Secondary text on the canvas (tagline, footer, steps ahead). |
+| `--color-canvas-tone` | `#080d17` | the background moved AWAY from on-canvas: mixed toward black (55% background) when on-canvas is white, toward white (30% background) when on-canvas is black | The only colour the decorative canvas layer may use (§7.0.1). Moving away from on-canvas can only RAISE text contrast, so the decoration can never pull a line under 4.5:1. |
+| `--color-primary-edge` | `#ffffff` | the primary when it reaches **3:1** against the canvas, otherwise `--color-on-canvas`. Written by both `applyBrandColor()` and `applyBrandCanvas()`, since it depends on both colours (the Quint primary on the dark default is 2.1:1, so the default edge is white) | The 1 px border of a solid primary fill drawn DIRECTLY on the canvas: the current step disc (§7.3). Rule 3 below. |
 | `--color-on-primary` | `#ffffff` | `readableForeground(primary)`, as above | What sits ON the primary: a primary `Button`, the info chip, the step numerals. Also `--primary-foreground`, so a primary `Button` is legible on any brand. It no longer styles canvas text. |
 | `--color-on-primary-muted` | `#e1cded` | on-primary mixed toward the primary as far as it stays **≥ 4.5:1** on the primary | Secondary text on a primary fill. |
 | `--color-primary-surface` | `#f4edf9` | 8% primary, 92% white | Tinted insets INSIDE an elevated surface (chips, step numerals backgrounds, callouts) and the "on" tint of a header toggle (§7.3). Never the page. |
@@ -381,17 +382,18 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
      Quint defaults; useBrandTheme.ts overrides them per tenant. */
   --color-canvas: #0f172a;
   --color-on-canvas: #ffffff;
-  --color-on-canvas-muted: #cbd5e1;
+  --color-on-canvas-muted: #caccd0;
   --color-on-primary: #ffffff;
   --color-on-primary-muted: #e1cded;
   --color-primary-surface: #f4edf9;
   --color-on-primary-surface: #0f172a;
   --color-primary-ink: #771aaf;
-  --color-canvas-tone: #020617;
+  --color-canvas-tone: #080d17;
+  --color-primary-edge: #ffffff;
 
   /* frontend only — the call tile speaking ring (§3.1, §3.5, §7.3): derived from the
      primary, 3:1 against avatar-bg; this literal is ensureContrast('#771aaf', '#0f172a', 3) */
-  --color-speaking-ring: #9248bf;
+  --color-speaking-ring: #9c59c5;
 
   /* === Typography === */
   /* Open Sans loaded via @fontsource/open-sans (self-hosted, GDPR-safe) */
