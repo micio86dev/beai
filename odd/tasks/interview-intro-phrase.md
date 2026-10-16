@@ -42,6 +42,17 @@ Git Flow release, Railway deploy, production check.
 - [x] F6 Candidate app: no change expected (provider speaks `custom_greeting` / `opening_text` verbatim); confirm with tests and one E2E (frontend).
 - [x] F7 Release: api, frontend (spec sync), backoffice, wrapper SDK regeneration; deploy and verify.
 
+## Design notes from the code mapping (2026-10-13)
+
+Kept from the original mapping; the feature itself is delivered, see Tasks and Evidence.
+
+- Mapping: one delegated read-only explorer (7 touchpoints across 4+ files).
+- PATCH semantics: `interview_intro_phrase` is nullable; `null` clears the setting; a map REPLACES it (`en` required, `it` optional, max 600 chars, no edge whitespace).
+- The intro is prepended INSIDE the single opening string (`OpeningTextComposer`, variant `first` only), so the provider speaks one utterance and `TurnClassifier` (suffix match) still sees the primary question as the tail.
+- Forbidden: any end or final phrase of any locale (normalised like `normalizePhrase` in `proctor-config.ts`).
+- `SpokenOpening` gets an `introSpoken` flag and a new prompt fragment; output stays byte-identical when false.
+- Settings writes get an audit row (none existed before); pattern from `PlatformCurrencyController`.
+
 ## Evidence
 
 Closed 2026-10-13 and released: api v0.73.0, frontend v0.26.11 (spec sync only), backoffice v0.52.0, wrapper v0.56.0.
