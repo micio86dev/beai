@@ -70,21 +70,25 @@ apps (`assets/css/main.css`). They MUST be kept in sync.
 | `--color-accent-dark` | `var(--color-primary-dark)` (`#431695`) | Active / pressed state of accent — aliased to `--color-primary-dark`, not a separate orange literal (reversed: it used to be `#B8431E`) |
 | `--color-lavender` | `#8373D2` | Supporting secondary (lavender) — subtle highlights, badges |
 
-**Background** — two rules, one per app, REVISED 2026-10-06 (`odd/brand-colour-candidate-canvas`):
+**Background** — two rules, one per app, REVISED 2026-10-16 (`odd/org-background-color`; first
+written 2026-10-06, `odd/brand-colour-candidate-canvas`):
 
 - **`frontend` candidate flow: the brand canvas.** Every candidate page outside the live
-  interview renders on a full-bleed canvas painted in the client organization's primary
-  colour (`--color-primary`, Quint `#771AAF` when the organization configured none). Content
-  sits on elevated surfaces on top of it, and everything drawn directly on the canvas uses the
-  on-primary token family. Rules, tokens and guarantees: "Candidate brand canvas" below and
-  §7.0. The live interview screen keeps `--color-avatar-bg` (§7.3).
+  interview renders on a full-bleed canvas painted in the client organization's BACKGROUND
+  colour (`organizations.background_color`, nullable `#rrggbb`; DARK `#0f172a` when the
+  organization configured none). The primary colour no longer paints the canvas: it stays the
+  Quint `#771AAF` default PRIMARY and is the accent of active states (current step, who is
+  speaking, toggles on, buttons, progress, links). Content sits on elevated surfaces on top of
+  the canvas, and everything drawn directly on the canvas uses the on-canvas token family.
+  Rules, tokens and guarantees: "Candidate brand canvas" below and §7.0. The live interview
+  screen keeps `--color-avatar-bg` (§7.3).
 - **`backoffice`: the light gradient.**
   `--color-bg-gradient: linear-gradient(135deg, #FAF7FD 0%, #F6F1FC 45%, #FDF4EF 100%)`
   (near-white lavender→peach; supersedes flat `--color-neutral-50` for page backgrounds).
 
 This supersedes the earlier statement that strong purple/orange stay "for accents only" on
-every page: in the backoffice that still holds, on the candidate canvas the primary IS the
-page. Orange `#E45526` is still never used for small body text (WCAG AA, §9.1).
+every page: in the backoffice that still holds, and on the candidate canvas the primary is an
+accent of active states, never the page. Orange `#E45526` is still never used for small body text (WCAG AA, §9.1).
 
 #### Neutrals
 
@@ -159,37 +163,43 @@ surface carries the same signal. Enforced by a test, not by convention.
 |-------|-------|-------|
 | `--color-recording` | `#dc2626` | The urgent question timer (last 10 seconds, §7.3). It also names the recording indicator (live red dot), which the shipped live screen does **not** render (§7.3 "Status elements of the live screen, as shipped") |
 | `--color-avatar-bg` | `#0f172a` | Avatar panel and call tile background (dark, immersive); also the dark bands either side of the speaking ring |
-| `--color-speaking-ring` | `#ffffff` | `frontend` only: the white band of the call tile's speaking ring (§3.5, §7.3). Always drawn between two `--color-avatar-bg` bands, about 17.9:1 against it, so it holds on any brand colour and any video content. Not derived from the brand and never tinted |
+| `--color-speaking-ring` | authored hex equal to `ensureContrast('#771aaf', '#0f172a', 3)` (the Quint primary is under 3:1, so the default is its lightened variant) | `frontend` only: the band of the call tile's speaking ring (§3.5, §7.3). REVISED 2026-10-16: it is the organization PRIMARY, no longer a fixed white. Contrast guard: the primary when it reaches **3:1 against `--color-avatar-bg`**, otherwise a lightened variant of it (primary mixed toward white only as far as 3:1 needs). Always drawn between two `--color-avatar-bg` keyline bands. Written as a concrete hex by `applyBrandColor()`, removed on the no-colour path |
 
-`--color-speaking-ring` is a `frontend`-only constant like the canvas tokens below, so §17's
+`--color-speaking-ring` is a `frontend`-only derived token like the canvas tokens below, so §17's
 mirror rule does not apply to it.
 
 #### Candidate brand canvas (`frontend` only)
 
-The candidate flow paints the client's primary colour as the page background (see
-"Background" above). The colour is arbitrary, chosen by an operator, so nothing drawn on it
-may be a constant: white text on a saturated yellow is unreadable. Every token below is
-**derived in JavaScript** by `applyBrandColor()` (`app/composables/useBrandTheme.ts`) from the
-validated `#rrggbb`, written to `document.documentElement` as a **concrete hex** (never
-`color-mix()`, §7.3.2 rule 1), and removed on the no-colour path so the Quint defaults declared
-in `main.css` come back. Contrast is guaranteed by that code, never delegated to the operator.
+The candidate flow paints the client's BACKGROUND colour as the page (see "Background" above;
+dark `#0f172a` when unset). The colour is arbitrary, chosen by an operator, so nothing drawn on
+it may be a constant: white text on a pale background is unreadable. Every token below is
+**derived in JavaScript** by `applyBrandCanvas()` / `applyBrandColor()`
+(`app/composables/useBrandTheme.ts`) from the validated `#rrggbb` values, written to
+`document.documentElement` as a **concrete hex** (never `color-mix()`, §7.3.2 rule 1), and
+removed on the no-colour path so the defaults declared in `main.css` come back. Contrast is
+guaranteed by that code, never delegated to the operator.
 
-| Token | Quint default | Derivation | Usage |
-|-------|---------------|------------|-------|
-| `--color-on-primary` | `#ffffff` | `readableForeground(primary)`: black or white, whichever has the higher WCAG contrast; a tie and an invalid value go to white. Same function and fixtures as the backoffice. | Every text, icon and hairline drawn DIRECTLY on the canvas: wordmark, organization name, footer. Also `--primary-foreground`, so a primary `Button` is legible on any brand. |
-| `--color-on-primary-muted` | `#e1cded` | on-primary mixed toward the primary (weights 0.78 → 0.95, softest first) as far as it stays **≥ 4.5:1** on the primary | Secondary text on the canvas (tagline, footer). |
-| `--color-primary-surface` | `#f4edf9` | 8% primary, 92% white | Tinted insets INSIDE an elevated surface (chips, step numerals backgrounds, callouts). Never the page. |
+| Token | Default | Derivation | Usage |
+|-------|---------|------------|-------|
+| `--color-canvas` | `#0f172a` | the organization `background_color`, verbatim; the dark default when null | The page background (`bg-canvas`). |
+| `--color-on-canvas` | `#ffffff` | `readableForeground(background)`: black or white, whichever has the higher WCAG contrast; a tie and an invalid value go to white. Same function and fixtures as the backoffice. | Every text, icon and hairline drawn DIRECTLY on the canvas: wordmark, organization name, footer, the focus outline on the canvas. |
+| `--color-on-canvas-muted` | `#caccd0` | on-canvas mixed toward the canvas (weights 0.78 → 0.95, softest first) as far as it stays **≥ 4.5:1** on the canvas | Secondary text on the canvas (tagline, footer, steps ahead). |
+| `--color-canvas-tone` | `#080d17` | the background moved AWAY from on-canvas: mixed toward black (55% background) when on-canvas is white, toward white (30% background) when on-canvas is black | The only colour the decorative canvas layer may use (§7.0.1). Moving away from on-canvas can only RAISE text contrast, so the decoration can never pull a line under 4.5:1. |
+| `--color-primary-edge` | `#ffffff` | the primary when it reaches **3:1** against the canvas, otherwise `--color-on-canvas`. Written by both `applyBrandColor()` and `applyBrandCanvas()`, since it depends on both colours (the Quint primary on the dark default is 2.1:1, so the default edge is white) | The 1 px border of a solid primary fill drawn DIRECTLY on the canvas: the current step disc (§7.3). Rule 3 below. |
+| `--color-on-primary` | `#ffffff` | `readableForeground(primary)`, as above | What sits ON the primary: a primary `Button`, the info chip, the step numerals. Also `--primary-foreground`, so a primary `Button` is legible on any brand. It no longer styles canvas text. |
+| `--color-on-primary-muted` | `#e1cded` | on-primary mixed toward the primary as far as it stays **≥ 4.5:1** on the primary | Secondary text on a primary fill. |
+| `--color-primary-surface` | `#f4edf9` | 8% primary, 92% white | Tinted insets INSIDE an elevated surface (chips, step numerals backgrounds, callouts) and the "on" tint of a header toggle (§7.3). Never the page. |
 | `--color-on-primary-surface` | `#0f172a` | `#0f172a` if it clears 4.5:1 on the surface, otherwise black | Text and icons on `--color-primary-surface`. |
-| `--color-primary-ink` | `#771aaf` | the primary darkened toward black in fixed steps until it clears **4.5:1 on white** (the primary itself when it already does) | The brand colour used as text or as a mark on a white surface: links, the focus ring inside a surface, the mic level meter, the info chip outline. Never `text-primary` on a surface: yellow on white is 1.07:1. |
-| `--color-canvas-tone` | `#410e60` | the primary moved AWAY from on-primary: mixed toward black (55% primary) when on-primary is white, toward white (30% primary) when on-primary is black | The only colour the decorative canvas layer may use (§7.0.1). Moving away from on-primary can only RAISE text contrast, so the decoration can never pull a line under 4.5:1. |
+| `--color-primary-ink` | `#771aaf` | the primary darkened toward black in fixed steps until it clears **4.5:1 on white** (the primary itself when it already does) | The brand colour used as text or as a mark on a white surface: links, the focus ring inside a surface, the mic level meter, the info chip outline, the border of a toggle that is on. Never `text-primary` on a surface: yellow on white is 1.07:1. |
 | `--color-primary-caption` | authored hex equal to `ensureContrast('#c222d3', '#0f172a', 4.5)` | the primary mixed 70% toward white, lifted only as far as **4.5:1 against `--color-avatar-bg`** (`#0f172a`) needs | The speaker prefix of the captions overlay on the interviewer tile (§7.3), and nothing else. It is a separate token because `--color-primary-light` is the 3:1 graphical-object floor of the voice ribbon (§7.3.2) and must not be raised for a text requirement only the caption prefix has. |
 
 **Usage rules (binding).**
 
-1. Text, icons and links drawn directly on the canvas use `text-on-primary` or
-   `text-on-primary-muted`, nothing else. `text-foreground`, `text-muted-foreground` and
-   `text-primary` are **forbidden on the canvas**: the first two assume a white page, the third is
-   the canvas colour itself and is invisible on it.
+1. Text, icons and links drawn directly on the canvas use `text-on-canvas` or
+   `text-on-canvas-muted`, nothing else. `text-foreground`, `text-muted-foreground`,
+   `text-on-primary` and `text-primary` are **forbidden on the canvas**: the first two assume a
+   white page, `on-primary` is measured against the primary and not the background, and the bare
+   primary is an arbitrary colour that can equal or sit next to the background.
 2. Content (headings, body copy, forms, actions) sits on an **elevated surface**, never on the
    bare canvas. The surface is `bg-card` (white) with the ordinary card foreground tokens, so the
    whole existing component vocabulary (inputs, alerts, selects, muted text) keeps its measured
@@ -198,12 +208,16 @@ in `main.css` come back. Contrast is guaranteed by that code, never delegated to
 3. The brand colour inside a surface is `--color-primary-ink` (text, outlines, marks) or a solid
    `bg-primary` fill carrying `text-on-primary` (the primary button, the info chip, the step
    numerals). `bg-primary/10 text-primary` is forbidden: it is invisible for light brands.
+   **An element filled with the primary that sits directly on the canvas** (not inside a
+   surface) needs a visible edge when background and primary are close: if the primary reaches
+   less than **3:1** (non-text) against the canvas, it carries a 1 px `--color-on-canvas`
+   border; otherwise no border is added.
 4. Decoration on the canvas uses `--color-canvas-tone` only (rule above).
 5. A client logo is drawn on a white **logo plate** (`bg-card`, `--radius-lg`), never straight on the
-   canvas: a logo in the brand colour on a transparent background, the most common logo file there
-   is, would vanish into a canvas of the same colour. There is no exception: the logo is drawn on the
-   plate on every candidate screen, the live call header included (§7.0.1, §7.3), through the one
-   shared `BrandLogo` component.
+   canvas: a logo on a transparent background can be the colour of the canvas (a dark logo on the
+   dark default, a light one on a light background) and would vanish. There is no exception: the
+   logo is drawn on the plate on every candidate screen, the live call header included (§7.0.1,
+   §7.3), through the one shared `BrandLogo` component.
 
 These tokens are frontend-only. The backoffice paints no canvas, so §17's mirror rule does not
 apply to them; shared tokens keep mirroring as before.
@@ -284,12 +298,15 @@ box-shadow ring, not a token of its own, built from `--color-avatar-bg` and
 
 | State | Composite (outside in) |
 |-------|------------------------|
-| Resting | 2 px `--color-avatar-bg` |
-| Active (that tile's party is speaking) | 2 px `--color-avatar-bg`, 3 px `--color-speaking-ring`, 2 px `--color-avatar-bg` keyline, then a soft 32 px halo of white at 30% |
+| Resting | 2 px `--color-avatar-bg`, then a 1 px hairline of `--color-on-canvas` at 28% |
+| Active (that tile's party is speaking) | 2 px `--color-avatar-bg`, 3 px `--color-speaking-ring` (the primary, contrast-guarded, §3.1), 2 px `--color-avatar-bg` keyline, the same 1 px hairline, then a soft 32 px halo of the ring colour at 30% |
 
 Reference declaration (first shadow paints on top, so the rings step outward):
-`0 0 0 2px avatar-bg, 0 0 0 5px speaking-ring, 0 0 0 7px avatar-bg, 0 0 32px rgb(255 255 255 / 0.3)`.
-The halo is decoration; the measured indicator is the white band between the two dark bands.
+`0 0 0 2px avatar-bg, 0 0 0 5px speaking-ring, 0 0 0 7px avatar-bg, 0 0 0 8px <on-canvas at 28%>, 0 0 32px <speaking-ring at 30%>`
+(resting: `0 0 0 2px avatar-bg, 0 0 0 3px <on-canvas at 28%>`). The hairline, `color-mix(in oklab, var(--color-on-canvas) 28%, transparent)`,
+keeps the tile edge visible when the canvas is as dark as the tile (the default canvas, the Dark preset); on a light canvas the dark tile already contrasts and it is harmless.
+The halo is decoration; the measured indicator is the primary band (≥ 3:1 against `--color-avatar-bg`,
+lightened when the primary alone would not reach it) between the two dark bands.
 The ring is a state indicator drawn on a tile, not a fourth elevation level: the tiles are not
 cards, so it nests no raised card inside a raised card. Under `forced-colors: active` the shadows
 are dropped, so the active state becomes a 4 px `Highlight` outline. Motion: §10.
@@ -365,15 +382,20 @@ analytics consent banner (2, `--shadow-lg`). Nothing nests a raised card inside 
 
   /* Candidate brand canvas — frontend only (§3.1 "Candidate brand canvas").
      Quint defaults; useBrandTheme.ts overrides them per tenant. */
+  --color-canvas: #0f172a;
+  --color-on-canvas: #ffffff;
+  --color-on-canvas-muted: #caccd0;
   --color-on-primary: #ffffff;
   --color-on-primary-muted: #e1cded;
   --color-primary-surface: #f4edf9;
   --color-on-primary-surface: #0f172a;
   --color-primary-ink: #771aaf;
-  --color-canvas-tone: #410e60;
+  --color-canvas-tone: #080d17;
+  --color-primary-edge: #ffffff;
 
-  /* frontend only — the call tile speaking ring (§3.1, §3.5, §7.3) */
-  --color-speaking-ring: #ffffff;
+  /* frontend only — the call tile speaking ring (§3.1, §3.5, §7.3): derived from the
+     primary, 3:1 against avatar-bg; this literal is ensureContrast('#771aaf', '#0f172a', 3) */
+  --color-speaking-ring: #9c59c5;
 
   /* === Typography === */
   /* Open Sans loaded via @fontsource/open-sans (self-hosted, GDPR-safe) */
@@ -538,7 +560,7 @@ tell a candidate in one glance what happened and what to do next.
 `NoticeShell` fills the canvas's content surface with, top to bottom: a tone chip, the `<h1>`,
 one paragraph, and an optional slot for the route's single action. REVISED 2026-10-06: it used
 to be a two-column grid with a solid primary band beside a white content column; the brand
-colour is now the whole page, so the band is gone and the logo lockup moved to the canvas
+colour was then the whole page (since 2026-10-16 the background colour is), so the band is gone and the logo lockup moved to the canvas
 header.
 
 - `tone` (`info` / `success` / `warning` / `danger`) may change the **icon chip
@@ -571,22 +593,22 @@ header.
 │                                                                      │
 │  Tagline                                                              │  footer, on canvas
 └──────────────────────────────────────────────────────────────────────┘
-        canvas: bg-primary, decorative tone layer, text-on-primary
+        canvas: bg-canvas, decorative tone layer, text-on-canvas
 ```
 
-- **Canvas.** Full bleed, `min-h-screen`, `bg-primary`, `text-on-primary`. It replaces every
+- **Canvas.** Full bleed, `min-h-screen`, `bg-canvas`, `text-on-canvas` (the organization background colour, dark `#0f172a` when unset). It replaces every
   per-page `min-h-screen bg-background` in the candidate flow. The page `<main>` landmark is the
   region between header and footer and carries the route's `data-testid` and `aria-labelledby`.
 - **Decorative layer.** ONE layer, `aria-hidden`, CSS only (no image, no font, no script): two
   large soft radial gradients of `--color-canvas-tone` fading to transparent, one from the top
   corner and one from the opposite bottom corner. Because the tone only moves away from
-  on-primary (§3.1), the layer can deepen or lift the canvas without lowering any text contrast.
+  on-canvas (§3.1), the layer can deepen or lift the canvas without lowering any text contrast.
   No noise texture, no blur filter, no glass.
 - **Header.** On the canvas, left aligned to the same column as the footer: the client logo on a
   white logo plate (`max-h-8` image, `px-4 py-2.5`, `--radius-lg`, `--shadow-sm`, a 1px
   `--color-border` hairline so a light logo on a light canvas still has an edge to sit on) or,
-  with no logo, the `BEAI` wordmark in `text-on-primary`; then, when known, the organization
-  name in `text-on-primary` at `--text-sm`/semibold, separated by a short vertical hairline.
+  with no logo, the `BEAI` wordmark in `text-on-canvas`; then, when known, the organization
+  name in `text-on-canvas` at `--text-sm`/semibold, separated by a short vertical hairline.
   Never nothing (CLAUDE.md ruling 9). The logo is `alt=""`: the name beside it is the
   accessible text. The header's trailing end (`header-end` slot) holds the where-am-I chrome of
   the interview (§7.3): the step indicator before the call, and `CallHeader` while the call
@@ -609,7 +631,7 @@ header.
   (§7.3). When set, the header column and the main container widen from `max-w-6xl` to
   `max-w-[96rem]` (1536 px, `2xl`), so the logo plate stays aligned with the stage's left edge.
   Nothing else about the canvas changes: colours, logo plate, bare mode and focus are as above.
-- **Footer.** On the canvas: the product tagline in `text-on-primary-muted`, `--text-sm`. While
+- **Footer.** On the canvas: the product tagline in `text-on-canvas-muted`, `--text-sm`. While
   the analytics consent banner is open it publishes its height as
   `--consent-banner-clearance`, which the canvas reserves as bottom padding, so the banner never
   covers the tagline.
@@ -638,7 +660,7 @@ screen needs one, is `variant="outline"` at the same height. The `link` variant 
 
 **Focus.** Every focusable element shows a 2px outline with a 2px offset. Inside a surface the
 outline is `--color-primary-ink` (≥ 4.5:1 on white for any brand). On the canvas itself it is
-`--color-on-primary`. Neither is ever the bare primary.
+`--color-on-canvas`. Neither is ever the bare primary.
 
 **Motion** (§10). Every canvas surface (`.brand-canvas__surface`, declared globally in
 `main.css`) enters with a fade plus an 8px upward translate, `280ms`,
@@ -648,18 +670,21 @@ state enters the same way. Nothing else on the canvas moves, and nothing loops (
 placeholder is a still dark panel, not a pulsing skeleton).
 
 **Contrast guarantees** (asserted by a unit test over the screenshot matrix colours, never by
-eye): on-primary and on-primary-muted on the primary ≥ 4.5:1; on-primary on the primary blended
-with the canvas tone at any opacity ≥ the unblended ratio; primary-ink on white ≥ 4.5:1;
+eye): on-canvas and on-canvas-muted on the canvas ≥ 4.5:1; on-canvas on the canvas blended
+with the canvas tone at any opacity ≥ the unblended ratio; on-primary and on-primary-muted on the
+primary ≥ 4.5:1; the speaking ring on `--color-avatar-bg` ≥ 3:1; a primary fill sitting on the
+canvas ≥ 3:1 against it or carrying an `on-canvas` border (§3.1 rule 3); primary-ink on white ≥ 4.5:1;
 on-primary-surface on primary-surface ≥ 4.5:1; card text tokens on `bg-card` unchanged from
 §9.1; the primary-ink edge on white ≥ 3:1; the progress fill (primary-ink) on its
-`--secondary` track ≥ 3:1; the current-step numeral (primary on an on-primary disc) ≥ 4.5:1;
+`--secondary` track ≥ 3:1; the current-step numeral (on-primary on the primary disc) ≥ 4.5:1;
 the urgent timer (`--color-recording`) on its white surface ≥ 4.5:1 (the call panel's `bg-card`;
 4.83:1 measured on white).
 
 **Screenshot matrix.** Any change to the canvas, the shell or a candidate page is reviewed in
 screenshots at 1440×900 for four brands: light `#ffd400` (black on-primary), dark `#771aaf`
 (the Quint default, white on-primary), mid-tone `#2f6fed` (the closest call: black wins at about
-4.8:1 against 4.4:1 for white), and no colour configured (the Quint fallback). The routes covered
+4.8:1 against 4.4:1 for white), and no colour configured (the Quint primary on the dark default
+canvas); each is also reviewed on a Light (`#f1f5f9`) and a Dark (`#0f172a`) background. The routes covered
 are the landing, the entry loading state, the reusable identity form, the consent screen, the
 device check, the live interview, the scheduled pause, done, error, a terminal reason and the
 SA-11 gate.
@@ -758,7 +783,7 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
 - **Canvas and header** (D13). `BrandCanvas` in bare mode with `wide` (§7.0.1):
   while live the logo keeps the same white plate as on every other screen (`BrandLogo`). The header's trailing end holds
   `CallHeader`, which spans the row: the interview title (left, `text-base` semibold
-  `text-on-primary`, two lines at most), the elapsed clock, then three 44 px controls in this DOM and
+  `text-on-canvas`, two lines at most), the elapsed clock, then three 44 px controls in this DOM and
   tab order: Sottotitoli (captions), Microfono, Esci. There is no in-header status indicator, no Camera control, no
   "Ripeti domanda" control and no Pause control. The title is "Colloquio di assessment · {role}"
   for a Readiness interview with a role, "Colloquio di assessment · Potenziale" for a Potential
@@ -768,10 +793,15 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
     `font-mono tabular-nums`. It has an accessible name and is **not** a live region and has no
     `role="timer"`: it must not announce each second. It is the elapsed time that is always
     available, even when the panel's duration is hidden.
-  - **Controls.** White outline buttons (card tokens on white keep their measured contrast on any
-    brand canvas). Sottotitoli and Microfono are `aria-pressed` toggles with a constant visible
-    label and an icon that swaps (on / slashed), so state is never colour alone; pressed means the
-    feature is on. Focus is the canvas rule, a 2 px `--color-on-primary` outline (§7.0.1). The
+  - **Controls.** Outline buttons on card tokens (they keep their measured contrast on any
+    background). Sottotitoli and Microfono are `aria-pressed` toggles; pressed means the feature is
+    on. REVISED 2026-10-16: the visible label changes with the state ("Captions on" / "Captions
+    off", "Microphone on" / "Microphone off", in `it`/`en`) and `aria-pressed` is kept, with an icon that swaps
+    (on / slashed), so state is never colour alone. A toggle that is **on** uses the primary
+    accent: a `--color-primary-surface` tint with a `--color-primary-ink` border and
+    `--color-on-primary-surface` text. A **muted microphone** is `--color-error-dark` on
+    `--color-error-light` with a dot marker. Esci (Exit) is a `--color-error-dark` outline on
+    `bg-card`. Focus is the canvas rule, a 2 px `--color-on-canvas` outline (§7.0.1). The
     header content stays within 2.75 rem so the integrity toasts (§10) still clear it.
 - **Grid** (D15). At `xl` and up: one row, `minmax(0, 1fr)` beside `--spacing-call-panel`
   (22 rem, §3.3), container `max-w-[96rem]`, `px-10`, `gap-6`. At 1280 the tile is 824 px wide, at
@@ -896,9 +926,9 @@ The Italian strings in the diagram are copy examples; every string is i18n-keyed
 
 - **Step indicator.** On consent and the device check the header's trailing end shows the
   three-step indicator (`InterviewSteps`: Consent, Devices, Interview), an `<ol>` with
-  `aria-current="step"`, drawn with on-primary tokens only: the current step is an on-primary
-  disc with the numeral in the primary, steps ahead `text-on-primary-muted`, steps behind a
-  check plus a screen-reader "completed".
+  `aria-current="step"`: the current step is the primary accent, a `bg-primary` disc with the
+  numeral in `text-on-primary` (with the on-canvas border guard of §3.1 rule 3), steps ahead
+  `text-on-canvas-muted`, steps behind a check in `text-on-canvas` plus a screen-reader "completed".
 - **Other states** (pause, scheduled pause, done, error, terminal, session expired, the
   between-competencies transition) are one canvas surface each, `max-w-[34rem]`, primary action
   44px. The scheduled pause shows the server progress bar (primary-ink fill) once; support links
@@ -1165,6 +1195,19 @@ holds unsaved input:
   invisible. Submitting, or a server error mapped to a language, **switches to the
   first tab with an error**.
 - Editing a language clears that language's error and marker until the next submit.
+
+**Settings → Organization: branding colours.** The branding form (logo upload, primary colour)
+gains a **background colour** field (ADDED 2026-10-16), the colour of the candidate page canvas
+(§3.1). It is a nullable `#rrggbb`; empty means the default dark canvas `#0f172a`.
+
+- A two-option preset selector, **Light** (`#f1f5f9`) and **Dark** (`#0f172a`), as `aria-pressed`
+  buttons that set the field; the active preset also carries a check, so state is never colour
+  alone. Beside it, the same native colour picker plus hex text input used for the primary
+  colour, for a free colour, and a **Clear** button that sets the field back to null (default
+  dark). The primary colour field is unchanged and is now described as the accent of active
+  states.
+- Same Save, toast and inline error pattern as the primary colour; an invalid hex is refused
+  server side (`background_color_invalid`) and shown inline. Emails keep using the primary only.
 
 ### 8.2.2 Selected state on toggles
 
@@ -1565,13 +1608,14 @@ All text against its background MUST achieve:
 
 > **The candidate brand canvas (§3.1, §7.0.1) is contrast-guaranteed by code.** The canvas
 > colour is chosen by an operator, so its pairs cannot be pre-verified in the table above.
-> Instead `applyBrandColor()` derives every foreground from it and `tests/unit/brand-canvas-contrast.spec.ts`
+> Instead `applyBrandCanvas()` / `applyBrandColor()` derive every foreground from the background and primary and `tests/unit/brand-canvas-contrast.spec.ts`
 > asserts, for each colour of the screenshot matrix (`#ffd400`, `#771aaf`, `#2f6fed`, none):
+> `--color-on-canvas` and `--color-on-canvas-muted` ≥ 4.5:1 on `--color-canvas`;
+> `--color-on-canvas` ≥ 4.5:1 on the canvas blended with `--color-canvas-tone` at 0–100%;
 > `--color-on-primary` and `--color-on-primary-muted` ≥ 4.5:1 on `--color-primary`;
-> `--color-on-primary` ≥ 4.5:1 on the primary blended with `--color-canvas-tone` at 0–100%;
 > `--color-primary-ink` ≥ 4.5:1 on white; `--color-on-primary-surface` ≥ 4.5:1 on
 > `--color-primary-surface`. `text-primary`, `text-foreground` and `text-muted-foreground`
-> directly on the canvas are forbidden (§3.1 rule 1); a source test enforces it for the shell.
+> and `text-on-primary` directly on the canvas are forbidden (§3.1 rule 1); a source test enforces it for the shell.
 
 > ⚠️ Do NOT use `--color-success` (`#22c55e`) or `--color-warning` (`#f59e0b`) as text/icon color on white or on their own `-light` background — both measure well under 3:1 (a real @axe-core WCAG failure caught this exact pattern for `--color-success` during C11 PR B2's status badges, see `sdd/admin-dashboards/apply-progress`). Use `--color-success-dark`/`--color-warning-dark` for any text-sized or icon-sized success/warning element (BARS `ScoreChip`, `CompetencyMean`).
 
