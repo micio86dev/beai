@@ -298,11 +298,13 @@ box-shadow ring, not a token of its own, built from `--color-avatar-bg` and
 
 | State | Composite (outside in) |
 |-------|------------------------|
-| Resting | 2 px `--color-avatar-bg` |
-| Active (that tile's party is speaking) | 2 px `--color-avatar-bg`, 3 px `--color-speaking-ring` (the primary, contrast-guarded, §3.1), 2 px `--color-avatar-bg` keyline, then a soft 32 px halo of the ring colour at 30% |
+| Resting | 2 px `--color-avatar-bg`, then a 1 px hairline of `--color-on-canvas` at 28% |
+| Active (that tile's party is speaking) | 2 px `--color-avatar-bg`, 3 px `--color-speaking-ring` (the primary, contrast-guarded, §3.1), 2 px `--color-avatar-bg` keyline, the same 1 px hairline, then a soft 32 px halo of the ring colour at 30% |
 
 Reference declaration (first shadow paints on top, so the rings step outward):
-`0 0 0 2px avatar-bg, 0 0 0 5px speaking-ring, 0 0 0 7px avatar-bg, 0 0 32px <speaking-ring at 30%>`.
+`0 0 0 2px avatar-bg, 0 0 0 5px speaking-ring, 0 0 0 7px avatar-bg, 0 0 0 8px <on-canvas at 28%>, 0 0 32px <speaking-ring at 30%>`
+(resting: `0 0 0 2px avatar-bg, 0 0 0 3px <on-canvas at 28%>`). The hairline, `color-mix(in oklab, var(--color-on-canvas) 28%, transparent)`,
+keeps the tile edge visible when the canvas is as dark as the tile (the default canvas, the Dark preset); on a light canvas the dark tile already contrasts and it is harmless.
 The halo is decoration; the measured indicator is the primary band (≥ 3:1 against `--color-avatar-bg`,
 lightened when the primary alone would not reach it) between the two dark bands.
 The ring is a state indicator drawn on a tile, not a fourth elevation level: the tiles are not
