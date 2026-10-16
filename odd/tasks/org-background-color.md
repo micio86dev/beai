@@ -25,4 +25,7 @@ Strict TDD, repo language English (i18n it/en excepted), conventional commits wi
 Delegated direct, one writer per repo. T0 and T1 in parallel; T2 parallel with T1 once openapi is copied; T3 last.
 
 ## Progress
-T0-T3 committed. api/backoffice/frontend branches pushed (api pending full-suite result). Open: the interviewer tile (#0f172a) equals the default canvas, so its edge disappears; fix with a hairline band on the tile. DESIGN.md defaults corrected to real derivations (speaking ring #9c59c5, on-canvas-muted #caccd0, canvas-tone #080d17, new --color-primary-edge).
+T0-T3 committed, reviewed and merged to develop with answer-time-range (api #198, backoffice #95, frontend #115, 2026-10-16). The tile hairline edge landed (`--color-primary-edge`); the linux baselines were refreshed from the CI report. Released as api 0.76.0, backoffice 0.55.0, frontend 0.28.0.
+
+## Next step
+Optional follow-up: `ClientForm.vue` (superadmin client form) has no background colour field.

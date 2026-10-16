@@ -31,7 +31,7 @@ Delegated direct, one writer per repo (mapping already done by one explorer: 4+ 
 Strategy: ask-on-risk. Forecast: well under 400 changed lines per repo except generated files.
 
 ## Progress
-All three tasks committed and pushed on feature/answer-time-range. API suites per directory green; full suite run pending at the time of writing. Review advisories to fix in a follow-up commit: api (concurrent PATCH can 500 instead of 422, import bounds untested), backoffice (server max copy, form re-seed on template change, test name).
+All three tasks and the review follow-ups are committed, reviewed and merged to develop through the per-repo PRs (api #198, backoffice #95, frontend #115, 2026-10-16). Released as api 0.76.0, backoffice 0.55.0, frontend 0.28.0.
 
 ## Next step
-Follow-up commits for the advisories, then PRs when requested.
+None for this feature. Optional: an HTTP-level import test for the missing-key case.
