@@ -46,6 +46,11 @@ both use it; verified the proxy answers), `backoffice` `BEAI_API_ORIGIN`.
 Public API and have code defaults; several are read with plain `env()`, so an empty value could override a default
 with `0` or `''`. Set them only with a real value.
 
+The HR-Avatar provider variables (`HR_AVATAR_BASE_URL`, `HR_AVATAR_SECRET_KEY`, `HR_AVATAR_PUBLISHABLE_KEY` on the
+api; `NUXT_PUBLIC_HR_AVATAR_ENABLED` on the frontend) are intentionally **absent** from this guide: the provider
+is opt-in and off by default. See [extraction/SUMMARY.md](extraction/SUMMARY.md) before enabling it outside local
+(the GDPR retention sign-off is an open item).
+
 ## Where to find things you may still need
 
 | Secret / value | Where |

@@ -599,6 +599,17 @@ and a test asserts that pin still holds.
 
 ---
 
+## HR-Avatar provider (opt-in, flag off by default)
+
+BEAI can run an interview through the standalone **HR-Avatar** service (`hr-avatar/`) instead of the
+built-in HeyGen/Tavus code. It is additive and dark by default: with `HR_AVATAR_BASE_URL`,
+`HR_AVATAR_SECRET_KEY` and `HR_AVATAR_PUBLISHABLE_KEY` unset on the api, and
+`NUXT_PUBLIC_HR_AVATAR_ENABLED` unset on the frontend, nothing changes. To wire it locally, see
+[docs/extraction/SUMMARY.md](extraction/SUMMARY.md) ("Run BEAI against HR-Avatar locally") and
+[hr-avatar/README.md](../hr-avatar/README.md). Nothing here is deployed.
+
+---
+
 ## References
 
 - Version Catalog: `docs/version-catalog.md`
