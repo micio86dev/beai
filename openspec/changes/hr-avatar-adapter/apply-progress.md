@@ -514,3 +514,42 @@ The deleted hook now writes through `$template->getConnection()->table(...)->whe
 
 Commits: `51839c7` (test: `Models` guarded + allowlist entry `Models/AvatarTemplate.php`, mutation checked: renaming the entry fails the guard with `Unlisted: Models/AvatarTemplate.php`) and `8bc022a` (fix). `app/Models` holds no other scope strip, so guarding the whole directory surfaced nothing else and no broadening was needed. gga: `51839c7` passed (only test files); `8bc022a` took 4 attempts. Findings addressed: undocumented superadmin bypass of `scopeAvailableToTenant()` (docblock), half-bound comment contradicting the code (comment). Findings left: inline `//` comments in `booted()` (soft style preference, pre-existing, repeated); `saveQuietly()` not checking the binding when a quiet write dirties it (latent, no caller writes `llm_model_id` quietly; already noted in A12); gga passed on the last attempt.
 Gates: `php artisan test --parallel` exit 0 (10149 / 10140 passed / 9 skipped); coverage `--min=98` exit 0, 98.3 %; pint exit 0; phpstan exit 0; `openapi.v1.json` identical to develop; develop-test changes: only `AdminTenancySafetyArchTest.php` (+13 -1, one array line extended).
+
+## A14 - template delete documentation (2026-10-20) - DONE
+
+Commit in `api`: `6a4f300` fix(api): document the template delete 204 without a body and keep the 409 discriminated.
+
+| Item | Test | RED observed | GREEN |
+|---|---|---|---|
+| 204 declared a JSON `null` body on both DELETE routes | new `tests/Feature/Contract/AvatarTemplateDeleteDocumentedTest.php` (reads the committed `openapi.json`) | org and platform 204 both had `content` | `ResponseDoc(204)` dropped on both controllers; the inferred `No content` response has no `content` |
+| org 409 flattened into one object | same file: `anyOf` with exactly 2 variants; `template_in_use` requires `error`, `message`, `project_count`, `organization_count` (described); `template_active` carries no counts | no `anyOf` (3 cases) | the org route returns `(new AvatarTemplateInUseException($projectCount, 1))->render()` instead of throwing; its 409 `ResponseDoc` is dropped, so Scramble infers the returned body beside the inline `template_active` body. The exception's `render()` documents both counts with PHPDoc, one body source |
+
+Deviation: `project_count` no longer carries `minimum: 0` (develop inferred it from `count()`; a PHPDoc `int<0, max>` does not render one). The platform 409 keeps its flat attribute shape (develop shape, not in the finding). The branch-added `OrganizationAvatarTemplateInUseCountsTest.php` spec case now compares the `template_in_use` variant with the platform schema.
+
+Gates: `php artisan test --parallel` exit 0 (10154 / 10145 passed / 9 skipped); coverage `--min=98` exit 0, 98.3 %; `pint --test` 0; `phpstan --memory-limit=1G` 0; fresh Postgres export identical to the committed `openapi.json`; `openapi.v1.json` identical to develop (fresh `--api=v1` export too); develop-test changes: only the owner-authorized `AdminTenancySafetyArchTest.php` (+13 -1), not touched here. gga: attempt 1 FAILED on pre-existing org-controller findings (audit not atomic with the mutation; `activate()` deactivates the previous template without an audit row), re-run PASSED with the same items as non-blocking; the commit hook passed. These remain follow-ups outside this unit. Accepted: R3-001 (suggestion).
+
+## A15 - audit the swap deactivation (api, commit `bde7a28`) - DONE
+
+Mode: Strict TDD. Branch `feature/extract-avatar-service`, HEAD before `6a4f300`.
+
+| Item | Test | RED observed | GREEN |
+|---|---|---|---|
+| activate() demoted the previous template with no audit row | new `tests/Feature/C14/AvatarTemplateActivateSwapAuditTest.php` | swap case: `Undefined array key 0` (no `avatar_template.deactivated` row); the no-replacement / other-provider case already held (characterization) | 2/2; plus `AvatarTemplateActivateIsolationTest` and `AvatarTemplateApiTest` 35/35 |
+
+Decisions: item 1 was real (`deactivate()` and the platform controller both write `avatar_template.deactivated`; the platform controller has no swap), fixed with the same action name and `before` shape, one row per replaced template. Item 2 confirmed and cited, no change: tenant `AuditRecorder` audits after commit and contains its own failures (class docblock; A11 "Audit inside the write transaction NOT done").
+
+Gates: full suite exit 0 (10156 / 10147 passed / 9 skipped); coverage `--min=98` exit 0, 98.3 %; pint, phpstan (`--memory-limit=1G`) exit 0; fresh Postgres export leaves `openapi.json` and `openapi.v1.json` unchanged; `openapi.v1.json` identical to develop. gga: failed 5 times on mostly different pre-existing whole-file findings, passed on the 6th (unchanged code in between apart from dropping my own added inline comment); findings left: English immutability message, `answeringAnswerRangeRace` name, unlocked activation / delete races, inline comment density.
+
+## Sixteenth attempt (unit A16: activation race and delete 409 documentation, api) - DONE
+
+Strict TDD. Commits `0ba2c71` and `54d4b3d` on `feature/extract-avatar-service`; details in tasks 8.41 and 8.42.
+
+| Item | RED | GREEN |
+|---|---|---|
+| activation race | `AvatarTemplateActivateRaceTest`: loser got a 500 (`23505` on `avatar_templates_one_active_per_org_provider`), read had no `for update` | 422 on `is_active` (en/it), `lockForUpdate()` on the replaced rows, no audit row on the lost race |
+| English literals flagged by gga | `AvatarTemplateValidationLocaleTest`: 4 Italian cases failed (English already passed) | `messages.avatar_templates.*` keys, English text unchanged |
+| 409 description and `message` | `AvatarTemplateDeleteDocumentedTest`: org description was the controller rationale; platform `message` had no enum | `#[ResponseDoc(409, description: ...)]` on the org route, platform `message` typed as the two codes |
+
+Verified, not changed: the "two active templates" claim (the partial unique index prevents it); the org `message` `const` (the server sends `message` equal to `error`). Not done: a discriminated platform 409 (it would require editing the develop test `PlatformAvatarTemplateSpecTest`).
+
+Gates: full suite exit 0 (10170 / 10161 passed / 9 skipped); coverage `--min=98` exit 0, 98.32 %; pint, phpstan exit 0; fresh Postgres export identical to the committed `openapi.json`; `openapi.v1.json` identical to develop.

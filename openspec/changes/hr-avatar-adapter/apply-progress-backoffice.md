@@ -175,3 +175,11 @@ Commits in `backoffice` (HEAD was `1dae127`): `fcf738d` fix(backoffice): ignore 
 | sync | `codegen:check` stage 1 was green against `../api/openapi.json` (clean at HEAD) after the copy; stage 2 green after `bun run codegen` | `types/api.ts` +/-27 lines, typecheck 0 |
 
 Gates on the final tree: lint 0, typecheck 0, `codegen:check` 0, `test:unit:coverage` 0 (257 files, 4332 tests; 99.45 / 95.89 / 96.45). `git diff develop --name-status -- tests`: all `A` except `tests/unit/avatar-template-form.spec.ts` and `tests/unit/components/organisms/AvatarTemplateForm.spec.ts` (the two owner-authorized `M`, not touched in this unit). gga passed on the fix commit (it reviewed `http-error.ts`; it noted the new spec was outside its review set). e2e not run. This closes the earlier non-blocking gga note about `getErrorFields`.
+
+## Twelfth attempt (unit B5: contract sync after api A14) - DONE
+
+Commit `2aa7847` chore(backoffice): sync the api contract (api `6a4f300`): `openapi.json` copied from api HEAD, `bun run codegen`. Both template DELETE 204s are `content?: never`; the org 409 is the `template_in_use` (both counts required) | `template_active` union. No backoffice code reads these types. Gates: lint 0, typecheck 0, `codegen:check` 0, `test:unit:coverage` 0 (257 files, 4332 tests; 99.45 / 95.89 / 96.45); tests diff vs develop all `A` except the two owner-authorized `M` (untouched). Accepted, no change: R3-003 (suggestion). e2e not run.
+
+## Thirteenth attempt (unit B6: contract sync after api A16) - DONE
+
+Commit `887b249` chore(backoffice): sync the api contract (api `54d4b3d`): `openapi.json` copied from api HEAD, `bun run codegen`. The org delete 409 carries a two-code description; the platform 409 types `message` as `"template_active" | "template_in_use"`. No backoffice code reads `message`, so nothing else changed. Gates: lint 0, typecheck 0, `codegen:check` 0, `test:unit:coverage` 0 (257 files, 4332 tests; 99.45 / 95.89 / 96.45).

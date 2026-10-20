@@ -208,3 +208,52 @@ Strict TDD, failing test first for every code change. Tasks 10.21-10.25 in `task
 | `git diff develop --name-status -- tests` | 9 entries, all `A` |
 
 e2e not run. Deviation: the factory flag-off path now throws through a shared `unknownProviderError()` helper; the message text is unchanged (pinned by `hr-avatar-factory.spec.ts`).
+
+## F2-cleanup (approved-review findings, contract sync) - DONE
+
+Commits: `6cc96c1` chore(frontend): sync the api contract (api `6a4f300`); `8b6862b` fix(frontend): queue a mic choice made while an hr_avatar re-start is connecting; `9f6b4f7` test(frontend): assert a partial hr_avatar join object fails the real adapter start; `11a37c3` docs(frontend): describe the inline mock provider the factory actually returns.
+
+| Item | RED / mutation (observed) | GREEN |
+|------|---------------------------|-------|
+| deferred handle `started` latch never reset | `hr-avatar-factory-mic.spec.ts`, 4 new cases with a gated fake adapter: 3 failed (re-start mute, re-start toggle, newest start only), re-observed against the unfixed file; the 4th is a regression guard | 10/10; per-start generation, latch reset on every `start()` |
+| start-config cases only checked the absent key | behaviour present, no RED possible; mutation: dropping `!cfg.hrAvatar` from the adapter guard fails 7 of 7 (`sdkLoader` called), reverted | 14/14; cases drive the real `HrAvatarProvider` and assert `sdk_error` and no SDK load |
+
+Gates (final tree): lint 0; typecheck 0; `codegen:check` 0; `test:unit:coverage` 0 (150 files, 3828 tests; 98.5 / 94.49 / 96.86); tests diff vs develop 9 entries, all `A`. gga passed on every commit. Accepted, no change: R3-002 (the SDK `state` union is closed and versioned with the vendored tarball; a new state only arrives with a tarball update, which must update the adapter), R3-004 (suggestion). gga non-blocking notes left: a failed post-connect `setMicMuted` is swallowed; a toggle before connect assumes the adapter starts unmuted. e2e not run.
+
+## F3 follow-up (gga notes on the deferred handle) - DONE
+
+Commit `3d4cb3a` fix(frontend): apply a queued mic toggle as a flip and log a refused queued mic choice.
+
+| Item | RED (observed) | GREEN |
+|------|----------------|-------|
+| a refused queued mic choice was swallowed | `hr-avatar-factory-mic.spec.ts`: 2 cases (explicit choice, toggle) with an adapter that throws: `warn` called 0 times | logged once with a stable reason, no `error` event, start still resolves `{}` |
+| a queued toggle assumed an unmuted start | stateful fake adapter that starts muted: the toggle ended muted (3 failures with the two updated expectations) | the toggle is kept as a flip and applied through the adapter's own `toggleMic()` after any queued explicit choice; an explicit choice supersedes earlier flips |
+
+Why not `error`: a provider `error` moves the session to the error state; a mic is not worth ending the interview. Why a flip instead of reading the adapter: neither the adapter nor the SDK conversation exposes the mute state. The two toggle expectations in the branch-added `hr-avatar-factory-mic.spec.ts` changed from `setMicMuted:true` to `toggleMic` (not a develop test).
+
+Gates: lint 0; typecheck 0; `codegen:check` 0; `test:unit:coverage` 0 (150 files, 3834 tests; 98.5 / 94.5 / 96.86; `sentry-scrub.spec.ts` linear-time timing test failed once under load, passes alone and on rerun); tests diff vs develop 9 entries, all `A`. gga passed on the first attempt (non-blocking note: the unknown-provider text still says only heygen/tavus, pinned by tests, unchanged). e2e not run.
+
+## Unit F4: the deferred hr_avatar handle after a failed re-start and during the flush - DONE
+
+Strict TDD. Commits `b58f992` (contract sync, api `54d4b3d`) and `8a7ae6b` on `feature/extract-avatar-service`; details in task 13.7.
+
+| Defect | RED (`hr-avatar-factory-mic.spec.ts`) | GREEN |
+|---|---|---|
+| a rejected re-start left `started` false while the first adapter was connected | a mic call after the rejection reached no adapter; a choice queued during the failing start never applied; an older start connecting after the newest failed was ignored | `live` + `newestFailed`: the mic goes back to the connected adapter, the queue is applied there |
+| the flush ran beside a user toggle | the toggle was forwarded while the queued mute was still pending; an explicit unmute made during the flush hung behind it | `flushing` queues new controls; a loop drains them after the queued choice |
+
+Characterizations that already held: no connected adapter keeps the choice for the retry; an older start failing late does not take the mic from a newer one.
+
+Gates: lint 0; typecheck 0; `codegen:check` 0; `test:unit:coverage` 0 (150 files, 3842 tests; 98.51 / 94.5 / 96.88); tests diff vs develop 9 entries, all `A`.
+
+## Unit F6: a queued hr_avatar mic step that never settles - DONE
+
+Strict TDD. Commit `887a002` on `feature/extract-avatar-service`; details in task 13.8.
+
+| Defect (fe3 R3-001) | RED (`hr-avatar-factory-mic.spec.ts`, fake timers) | GREEN |
+|---|---|---|
+| `flushing` cleared only after `flushQueued()` settled, so one adapter mic call that never settled queued every later control forever | an adapter whose first `setMicMuted` never settles: after 5 s the warning was logged 0 times and `start()` never resolved | each flush iteration races a 5000 ms timeout (`MIC_APPLY_TIMEOUT_MS`); on timeout it logs once with `reason: 'mic_apply_timeout'`, clears its timer, drains what queued behind it, clears `flushing`, and later controls are forwarded directly |
+
+Accepted, no change: fe3 R3-002 (the `error` event `message`): the server emits `message` equal to the error code (verified in A16), so the handle's `{ code: 'sdk_error', message: 'provider_unavailable' }` is consistent with it. gga non-blocking notes left: the unknown-provider text still lists only heygen/tavus (pinned by tests, unchanged).
+
+Gates: lint 0; typecheck 0; `codegen:check` 0; `test:unit:coverage` 0 (150 files, 3843 tests; 98.51 / 94.51 / 96.88); tests diff vs develop 9 entries, all `A`. e2e not run.
