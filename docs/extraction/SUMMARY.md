@@ -178,9 +178,8 @@ Before enabling `hr_avatar` outside local:
 Operations:
 6. Railway config-as-code is deprecated (works until 2026-12-01); move to IaC before then.
 7. `HRA_TRUSTED_PROXIES=*` on Railway; healthcheck stays liveness (`/v1/health`).
-8. hr-avatar is now public (https://github.com/micio86dev/hr-avatar) and the fifth submodule. Only its
-   `feature/extract-avatar-service` branch is published; its `develop` and `main` (still at the init commit)
-   are not, so `task submodules:update` cannot advance it until `develop` is published. The api parity
+8. hr-avatar is now public (https://github.com/micio86dev/hr-avatar) and the fifth submodule, tracking
+   `develop`; its `main` is not published (no release yet). The api parity
    test still skips in the api's own CI, which checks out `api` alone without its `hr-avatar` sibling. The
    vendored SDK tarball in `frontend/vendor/` must be rebuilt (with `bun.lock` and the version-catalog row)
    whenever the SDK changes.
@@ -234,6 +233,26 @@ security and review fix units SF-1..SF-41 (54). Full list: `git -C hr-avatar log
 `hr-avatar/openspec/changes/hr-avatar-engine/tasks.md` and `apply-progress.md`, rulings in `reconciliation.md`.
 
 ## Delivery
+
+**Merged into `develop` on 2026-10-20** at the owner's request ("merge into develop, no release, never touch
+`main`"), through pull requests whose CI was green before merging:
+
+| Repo | Pull request | Merge commit on `develop` |
+|---|---|---|
+| api | backend#199 (extraction) | `750ca95` |
+| api | backend#200 (database seeder fix) | `0012e45` |
+| frontend | frontend#117 | `336d17b` |
+| backoffice | backoffice#97 | `aa3c2d5` |
+| hr-avatar | hr-avatar#1 (first `develop`, published at the init commit) | `f797640` |
+| wrapper | see its own pull request into `develop` | — |
+
+`main` was not touched in any repository and no release was made. Railway was checked read-only before the
+merges: the `beai` project has a single `production` environment and all five code services deploy from
+`main` only (no service tracks `develop`); hr-avatar is not on Railway. The hr-avatar CI exposed one real
+defect on its first run (the new `DB_SSLMODE=require` default against the TLS-less CI database), fixed in
+`c38d42c` before the merge.
+
+The feature branches below were pushed first:
 
 Pushed on 2026-10-20 at the owner's request ("push only to the feature branch, never deploy"), each
 verified with `git ls-remote` against the local HEAD:

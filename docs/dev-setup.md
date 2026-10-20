@@ -608,10 +608,8 @@ built-in HeyGen/Tavus code. It is additive and dark by default: with `HR_AVATAR_
 [docs/extraction/SUMMARY.md](extraction/SUMMARY.md) ("Run BEAI against HR-Avatar locally") and
 [hr-avatar/README.md](../hr-avatar/README.md). Nothing here is deployed.
 
-`hr-avatar/` is the fifth git submodule (`https://github.com/micio86dev/hr-avatar`, public). Only its
-`feature/extract-avatar-service` branch is published so far; its `develop` (the `.gitmodules` tracking branch,
-as for the other submodules) is not, so `task submodules:update` cannot advance it until `develop` exists on
-the remote. `git submodule update --init` works at the pinned commit.
+`hr-avatar/` is the fifth git submodule (`https://github.com/micio86dev/hr-avatar`, public), tracking
+`develop` like the other submodules. Its `main` is not published yet (no release has been made).
 
 ---
 
