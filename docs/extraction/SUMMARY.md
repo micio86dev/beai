@@ -24,16 +24,17 @@ Organization branding and templates stay in BEAI. BEAI stores only the template 
 
 ## Goal criteria and evidence
 
-Evidence is from the final verification run of 2026-10-20 (full log:
-the session scratchpad `final-verification.md`; numbers below are copied from it).
+Evidence is from the second final verification run of 2026-10-20, after all review fixes (full log: the
+session scratchpad `final-verification-2.md`; numbers below are copied from it). HEADs verified: hr-avatar
+`6ae74f6`, api `324228d`, frontend `887a002`, backoffice `887b249`.
 
 | # | Criterion | Evidence |
 |---|---|---|
-| 1 | Service and SDK exist; mechanics harvested from `frontend/app/providers/*`; config, provider integrations, webhooks and API-key logic extracted; independent key system | hr-avatar service: `php artisan test --parallel --processes=4` exit 0, **2803 passed**; SDK: 358 tests exit 0, Playwright smoke 2/2 (Chromium, WebKit). Key system: `hra_sk_`/`hra_pk_`/`client_secret`, no shared secret with BEAI. |
+| 1 | Service and SDK exist; mechanics harvested from `frontend/app/providers/*`; config, provider integrations, webhooks and API-key logic extracted; independent key system | hr-avatar service: `php artisan test --parallel --processes=4` exit 0, **2917 passed**; SDK: 384 tests exit 0, Playwright smoke 2/2 (Chromium, WebKit). Key system: `hra_sk_`/`hra_pk_`/`client_secret`, no shared secret with BEAI. |
 | 2 | `@beai/embed` unchanged | `git -C embed diff --exit-code develop -- .` exit 0 (no diff). |
 | 3 | Frontend consumes the SDK behind a flag OFF by default; integrated path untouched and default | `frontend/nuxt.config.ts:174` `hrAvatarEnabled: ''` (off). `git diff develop -- app/providers/tavus.ts app/providers/heygen.ts` empty. Flag-off unit and e2e specs pass. |
-| 4 | Full suites exit 0, coverage > 85 % on new code | hr-avatar service: coverage `--min=90` exit 0, **100.0 %**; high-integrity `--min=95` exit 0, **100.0 %**. SDK: lines **100 %**, branches **98.57 %**. api: 10149 tests (10140 passed, 9 skipped) exit 0; coverage `--min=98` exit 0, **98.3 %**. backoffice: 4332 tests exit 0, lines **99.45 %**. frontend: 3824 tests exit 0, lines **98.5 %**; Playwright e2e: see "Frontend e2e" below. Lint, typecheck, pint, PHPStan (0 errors), codegen checks: all exit 0. |
-| 5 | Scramble generates valid OpenAPI for both services covering touched endpoints | hr-avatar: fresh export identical to committed `service/openapi.json`, Spectral exit 0. api: fresh `openapi.json` export identical to committed; `openapi.v1.json` (public `/v1`) export identical and `git diff --exit-code develop -- openapi.v1.json` exit 0. Touched internal endpoints are in `openapi.json` (+405 −55 vs develop); backoffice and frontend `codegen:check` exit 0 against it. |
+| 4 | Full suites exit 0, coverage > 85 % on new code | hr-avatar service: coverage `--min=90` exit 0, **100.0 %**; high-integrity `--min=95` exit 0, **100.0 %**. SDK: lines **100 %**, branches **98.65 %**. api: 10170 tests (10161 passed, 9 skipped) exit 0; coverage `--min=98` exit 0, **98.3 %**. backoffice: 4332 tests exit 0, lines **99.45 %** (the first run had one flaky failure in the untouched develop spec `tests/unit/pages/settings/index.spec.ts`, `tabsListVariants is not a function`; it passed alone and the full re-run passed 4332/4332). frontend: 3843 tests exit 0, lines **98.51 %**; Playwright e2e: see "Frontend e2e" below. Lint, typecheck, pint, PHPStan (0 errors), codegen checks: all exit 0. |
+| 5 | Scramble generates valid OpenAPI for both services covering touched endpoints | hr-avatar: fresh export identical to committed `service/openapi.json`, Spectral exit 0. api: fresh `openapi.json` export identical to committed; `openapi.v1.json` (public `/v1`) export identical and `git diff --exit-code develop -- openapi.v1.json` exit 0. Touched internal endpoints are in `openapi.json` (+391 −28 vs develop); backoffice and frontend `codegen:check` exit 0 against it. |
 | 6 | English docs for HR-Avatar and the SDK; BEAI docs updated | `hr-avatar/README.md`, `service/README.md`, `sdk/README.md`, `docs/architecture.md`, `docs/api-usage.md`, `docs/sdk-usage.md`, `docs/railway.md`; BEAI `docs/dev-setup.md` (HR-Avatar section), `docs/railway-env-guide.md`, this file. |
 | 7 | Railway config as code only, nothing applied | `hr-avatar/service/railway.json`, `railway.worker.json`, `railway.scheduler.json`, `hr-avatar/docs/railway.md`. No Railway CLI/API call was made. |
 | 8 | No behaviour change in the default demo path | api `TavusProvider.php`/`HeygenProvider.php` and frontend `tavus.ts`/`heygen.ts` have no diff vs develop; golden `/start` fixtures (`start-tavus.json`, `start-heygen.json`, recorded before any change) pass; selection reaches `hr_avatar` only through a template explicitly pinned to it; the frontend flag is off. Every BEAI test that exists on `develop` passes unedited, except the ones listed under "Existing tests edited". |
@@ -46,7 +47,9 @@ Full Playwright suite with the flag unset, run exactly as CI
 - First run, under load from a parallel verification: exit 1, 413 passed, 3 failed, 3 skipped. The 3 were
   WebKit `page.goto` 30 s timeouts in `tests/e2e/unsupported-gate.spec.ts`, a `develop` spec this branch
   does not touch; that file alone on WebKit with `--retries=0` passed.
-- Second run on a quiet machine: **exit 0, 416 passed, 3 skipped (3.0 m)**. This is the result of record.
+- Second run on a quiet machine: **exit 0, 416 passed, 3 skipped (3.0 m)**.
+- After all review fixes and the SDK re-vendor (frontend `887a002`): **exit 0, 416 passed, 3 skipped, 0 failed
+  (3.0 m)** on the first try. This is the result of record.
 
 ### Existing tests edited (all owner-authorized)
 
@@ -110,16 +113,28 @@ Not verified, or manual and pending:
 ## Reviews
 
 - Native reviews (receipt-driven, owner consent per candidate), all approved and acknowledged:
-  api A–M and A12; backoffice BO1–BO6; frontend whole branch; hr-avatar H1–H6, H8, H10, H12 and the fix
-  slices SF1–SF6.
+  - api: A–M, A12, the tail `51839c7..8bc022a`, and every later fix range (`6a4f300..324228d`).
+  - backoffice: BO1–BO6, the B4 tail and both later contract syncs.
+  - frontend: the whole branch, then every later range up to `887a002`.
+  - hr-avatar: **every commit of the repository** — the security slices H1–H6, H8, H10, H12; the full-coverage
+    pass rv02..rv28 (all service slices and every SDK commit); the scaffold `c8788a2` reviewed without its
+    generated `composer.lock` (10,098 lines) through a tree-identical two-commit split in a detached worktree
+    (the only bytes never reviewed); and all fix units SF-1..SF-41 (slices SF1..SF6, sf7..sf14).
+- Every review finding at CRITICAL or WARNING level was fixed with a failing-first test, shown already fixed
+  or not reproducible (pinned by a test), or accepted with a written ruling (`hr-avatar` rulings 57–96 in
+  `reconciliation.md`; BEAI dispositions in `openspec/changes/hr-avatar-adapter/apply-progress*.md`).
+  Two late reviewer CRITICALs did not reproduce on the installed versions and are pinned by tests:
+  `ReconcileTranscript::fail()` (the Foundation `Queueable` trait includes `InteractsWithQueue`) and the
+  `LimitWebhookBody` body re-read (the body is now handed back explicitly anyway).
+- Accepted last warnings (no further change): the frontend mic flush gives up a hung adapter call after 5 s
+  without cancelling it (a late settle is ignored); the HR-Avatar config-sync double-failure path logs the
+  push failure under the "could not be queued" message.
 - **Needs a maintainer decision:** the hr-avatar lineages H7 (`863d32d`), H9 (`386b7a4`) and H11
   (`b33c6ce`) stay `correction_required`. Correcting historical commits is not possible; their CRITICAL
   findings (stuck webhook deliveries, DNS pin fail-open, stuck `connecting`, unprocessed provider events)
   are fixed at HEAD (`d9e92d8`, `7251fe2`, `81d3146`) and the fixes were reviewed and approved (SF1–SF3).
   Closing the old lineages needs `gentle-ai review abandon` with maintainer authorization. Their detached
   worktrees are kept under `~/Desktop/beai-worktrees/hra-review-{863d32d,386b7a4,b33c6ce}` until then.
-- Trailing slices below the review budget (native assessment `under_budget`), not separately reviewed:
-  api `51839c7..8bc022a`, hr-avatar SF-19..SF-23, backoffice B4, frontend F1.
 - Guardian Angel ran on every commit; `--no-verify` was never used.
 
 ## Open items and owner decisions
@@ -145,9 +160,18 @@ HR-Avatar limits chosen during the fixes (adjustable):
 10. The relay re-queues a lost provider receipt for 24 h at most; a conversation holds at most 10,000 events.
 11. The DNS check at webhook-endpoint creation has no timeout; endpoint creation is not idempotent.
 12. Guard files under `service/tests/Arch` are exempt from the vocabulary scan (CLAUDE.md exemption to confirm).
+12a. `DB_SSLMODE` now defaults to `require` outside `local`/`testing`; confirm Railway's PostgreSQL offers TLS
+     (otherwise set `DB_SSLMODE=prefer` explicitly). Redis and PostgreSQL connect/read timeouts are bounded.
+12b. Paged provider catalogue and voice lists stop at 20 pages or 30 s; a cut list is returned partial,
+     cached 5 minutes and logged, but no response field says so (adding one is an `openapi.json` change).
+12c. On a synchronous queue (local development only), a provider failure during config create/update now
+     answers the job's error instead of a 2xx.
 
 BEAI side:
-13. No `name_taken` code for localized name refusals; the "provider cannot be changed" 422 is English-only.
+13. No `name_taken` code for localized name refusals. (The template 422 refusals, including "provider cannot
+    be changed", are now localized en/it — `0ba2c71`.)
+13a. The platform template DELETE 409 stays documented as the flat develop shape, because the develop test
+     `PlatformAvatarTemplateSpecTest` pins it; the organization DELETE 409 is the discriminated shape.
 14. Export: dropped keys are reported, not mapped; ambiguous timeouts are reported, not retried; LLM binding and persona are not exported.
 15. Latent: `saveQuietly()` on `AvatarTemplate` skips the LLM-binding check (no caller does it today).
 
@@ -155,19 +179,22 @@ BEAI side:
 
 **api** (28): `8f0a10a` `3009330` `4c3b7a5` `a35a91d` `de0ca87` `131c33e` `9e18a96` `0b1b773` `8ec96fa`
 `f06b3b2` `b0b0beb` `7f565a2` `fb87863` `e99f5fb` `06ac648` `bad81c5` `8d44cc8` `24c546b` `dfebbfa`
-`9fa94c4` `0e6f5a5` `adf9b79` `101a016` `80271a7` `2bd711f` `645226a` `51839c7` `8bc022a`
+`9fa94c4` `0e6f5a5` `adf9b79` `101a016` `80271a7` `2bd711f` `645226a` `51839c7` `8bc022a` `6a4f300`
+`bde7a28` `0ba2c71` `54d4b3d` `324228d`
 (`git log --oneline develop..feature/extract-avatar-service` in `api` for subjects).
 
-**backoffice** (11): `99d28e9` `579b149` `06eea64` `b11edae` `80c0332` `f9bf141` `df073cb` `1dae127`
-`fcf738d` `a0b646d` `b74b1cf`.
+**backoffice** (13): `99d28e9` `579b149` `06eea64` `b11edae` `80c0332` `f9bf141` `df073cb` `1dae127`
+`fcf738d` `a0b646d` `b74b1cf` `2aa7847` `887b249`.
 
-**frontend** (9): `0168bab` `5bf62fa` `2871e94` `86a6128` `3b1c85e` `68292db` `28c03f6` `25b8789` `6281241`.
+**frontend** (18): `0168bab` `5bf62fa` `2871e94` `86a6128` `3b1c85e` `68292db` `28c03f6` `25b8789` `6281241`
+`6cc96c1` `8b6862b` `9f6b4f7` `11a37c3` `3d4cb3a` `b58f992` `8a7ae6b` `65b5fe1` (SDK re-vendored at hr-avatar
+`6104726`) `887a002`.
 
 **wrapper**: `dd79d38` (findings, design), `f161e48` (adapter SDD), `72a0eb4` (version catalog), plus the
 close-out commit carrying this file, the adapter apply-progress and the docs updates.
 
-**hr-avatar** (82, local only): repository and SDD (5), SDK (9), service slices 1–40 (44), security fix
-units SF-1..SF-23 (24). Full list: `git -C hr-avatar log --oneline`; per-slice mapping in
+**hr-avatar** (112, local only, HEAD `6ae74f6`): repository and SDD (5), SDK (9), service slices 1–40 (44),
+security and review fix units SF-1..SF-41 (54). Full list: `git -C hr-avatar log --oneline`; per-slice mapping in
 `hr-avatar/openspec/changes/hr-avatar-engine/tasks.md` and `apply-progress.md`, rulings in `reconciliation.md`.
 
 ## Delivery
@@ -177,9 +204,9 @@ verified with `git ls-remote` against the local HEAD:
 
 | Repo | Branch | Commit |
 |---|---|---|
-| api (`micio86dev/backend`) | `feature/extract-avatar-service` | `8bc022a` |
-| frontend (`micio86dev/frontend`) | `feature/extract-avatar-service` | `6281241` |
-| backoffice (`micio86dev/backoffice`) | `feature/extract-avatar-service` | `b74b1cf` |
+| api (`micio86dev/backend`) | `feature/extract-avatar-service` | `324228d` (first push `8bc022a`) |
+| frontend (`micio86dev/frontend`) | `feature/extract-avatar-service` | `887a002` (first push `6281241`) |
+| backoffice (`micio86dev/backoffice`) | `feature/extract-avatar-service` | `887b249` (first push `b74b1cf`) |
 | wrapper | `feature/extract-avatar-service` | the commit that pins the three above |
 | hr-avatar | — | not pushed: no remote exists yet |
 
