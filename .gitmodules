@@ -14,3 +14,7 @@
 	path = embed
 	url = https://github.com/micio86dev/embed.git
 	branch = develop
+[submodule "hr-avatar"]
+	path = hr-avatar
+	url = https://github.com/micio86dev/hr-avatar.git
+	branch = develop
