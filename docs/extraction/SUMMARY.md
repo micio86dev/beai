@@ -2,8 +2,9 @@
 
 Branch `feature/extract-avatar-service` in every repository. `main` and `develop` are untouched. Nothing
 was deployed anywhere; the Railway files for HR-Avatar are configuration as code and were never applied.
-Pushed: the `feature/extract-avatar-service` branches of the wrapper, `api`, `frontend` and `backoffice`
-(see "Delivery" at the end). `hr-avatar` has no remote yet and exists only locally.
+Pushed: the `feature/extract-avatar-service` branches of the wrapper, `api`, `frontend`, `backoffice` and
+`hr-avatar` (see "Delivery" at the end). `hr-avatar` is public at https://github.com/micio86dev/hr-avatar and
+is the wrapper's fifth submodule.
 
 Inputs: `docs/extraction/PROMPT.md` (mission), `FINDINGS.md` (phase 0), `DESIGN.md` (phase 1), the SDD
 changes `openspec/changes/hr-avatar-adapter/` (BEAI side) and `hr-avatar/openspec/changes/hr-avatar-engine/`
@@ -68,7 +69,31 @@ OpenAPI drift and Spectral, golden `/start` fixtures, flag-off bundle and e2e ch
 SDK Playwright smoke. Provider behaviour was exercised against HTTP fakes and the mock transport only.
 
 Not verified, or manual and pending:
-- Local wiring smoke (BEAI → HR-Avatar end to end): **not run**. Steps below.
+- Local wiring smoke (BEAI → HR-Avatar end to end): **run and passed on 2026-10-20**, fully isolated from
+  the demo stack (no `beai_*` container or database touched: BEAI api and frontend ran as host processes
+  against a throwaway `pgvector` container, HR-Avatar on its own compose with a throwaway database; all
+  removed afterwards). Results:
+  - a real Chromium interview (flag on, live-mode participant) went consent → device check → start →
+    call screen → end, twice (Exit/suspend and server-side `/end`);
+  - BEAI `interview_sessions.provider = hr_avatar` with a `conv_…` reference;
+  - HR-Avatar lifecycle `created → connecting → live → ended` (`ended_reason` `client` and `api`), transcript
+    ready with 3 utterances after the async reconcile; no errors in either log, `failed_jobs` 0;
+  - api restarted without `HR_AVATAR_*`: `422 interview_configuration_invalid` (`provider_key_missing`);
+  - frontend flag off with the api on: retryable error screen; backoffice picker lists the `org_<id>`
+    config, and a key without `avatar_configs:read` degrades to `provider_unauthorized`;
+  - Tavus/HeyGen templates on the same stack fail their own provider validation (422) and create no
+    HR-Avatar conversation;
+  - `hr-avatar:export-templates`: dry run makes no request; `--apply` creates one config per eligible
+    template (`sync_status` `pending` for Tavus, `not_required` for HeyGen), links them, reports
+    `dropped_key`, `voice_missing` and `already_linked`; a second `--apply` is idempotent (no duplicate).
+    The command exits 1 whenever any row is refused (by design: every refused record is reported), so a
+    script calling it must not treat exit 1 as a crash.
+  Not covered by the smoke: the SDK's browser mock speaks no lines, so utterances were posted from the
+  page with the real publishable key and client secret; the `host.docker.internal` step (everything ran on
+  the host); a Tavus config reaching `synced` (no provider credentials). Observed behaviour worth knowing:
+  with the frontend flag off and the api on, the api still creates an HR-Avatar conversation that stays
+  `created` until HR-Avatar's 900 s expiry (roll back `HR_AVATAR_*` first, as step 9 says); a browser closed
+  abruptly leaves the conversation `live` until the sweeper ends it.
 - Real Tavus and HeyGen LiveAvatar calls: **never made**.
 - Railway configuration: **never applied** (by design).
 - Backoffice Playwright e2e against a live stack: not run.
@@ -129,12 +154,15 @@ Not verified, or manual and pending:
 - Accepted last warnings (no further change): the frontend mic flush gives up a hung adapter call after 5 s
   without cancelling it (a late settle is ignored); the HR-Avatar config-sync double-failure path logs the
   push failure under the "could not be queued" message.
-- **Needs a maintainer decision:** the hr-avatar lineages H7 (`863d32d`), H9 (`386b7a4`) and H11
-  (`b33c6ce`) stay `correction_required`. Correcting historical commits is not possible; their CRITICAL
-  findings (stuck webhook deliveries, DNS pin fail-open, stuck `connecting`, unprocessed provider events)
-  are fixed at HEAD (`d9e92d8`, `7251fe2`, `81d3146`) and the fixes were reviewed and approved (SF1–SF3).
-  Closing the old lineages needs `gentle-ai review abandon` with maintainer authorization. Their detached
-  worktrees are kept under `~/Desktop/beai-worktrees/hra-review-{863d32d,386b7a4,b33c6ce}` until then.
+- The hr-avatar lineages H7 (`863d32d`), H9 (`386b7a4`) and H11 (`b33c6ce`) ended `correction_required`.
+  Correcting historical commits is not possible; their CRITICAL findings (stuck webhook deliveries, DNS pin
+  fail-open, stuck `connecting`, unprocessed provider events) are fixed at HEAD (`d9e92d8`, `7251fe2`,
+  `81d3146`) and those fixes were reviewed and approved (SF1–SF3). With the owner's authorization
+  (2026-10-20) the three lineages were closed with `gentle-ai review abandon --reason operator_disposition`
+  (records committed, no open lineage left) and their worktrees removed.
+- No review lineage of this extraction is open in any repository, and every review worktree is removed.
+  The api, frontend and backoffice review stores still hold older lineages dated 2026-09-15 to 2026-10-13,
+  from earlier features unrelated to this extraction; they were left untouched.
 - Guardian Angel ran on every commit; `--no-verify` was never used.
 
 ## Open items and owner decisions
@@ -150,9 +178,12 @@ Before enabling `hr_avatar` outside local:
 Operations:
 6. Railway config-as-code is deprecated (works until 2026-12-01); move to IaC before then.
 7. `HRA_TRUSTED_PROXIES=*` on Railway; healthcheck stays liveness (`/v1/health`).
-8. hr-avatar needs a GitHub remote, then becomes the 5th submodule. Until then the api parity test skips
-   in CI, and the vendored SDK tarball in `frontend/vendor/` must be rebuilt (with `bun.lock` and the
-   version-catalog row) whenever the SDK changes.
+8. hr-avatar is now public (https://github.com/micio86dev/hr-avatar) and the fifth submodule. Only its
+   `feature/extract-avatar-service` branch is published; its `develop` and `main` (still at the init commit)
+   are not, so `task submodules:update` cannot advance it until `develop` is published. The api parity
+   test still skips in the api's own CI, which checks out `api` alone without its `hr-avatar` sibling. The
+   vendored SDK tarball in `frontend/vendor/` must be rebuilt (with `bun.lock` and the version-catalog row)
+   whenever the SDK changes.
 
 HR-Avatar limits chosen during the fixes (adjustable):
 9. A JSON callback body is decoded by Laravel before middleware, so its memory is bounded by nginx
@@ -174,6 +205,11 @@ BEAI side:
      `PlatformAvatarTemplateSpecTest` pins it; the organization DELETE 409 is the discriminated shape.
 14. Export: dropped keys are reported, not mapped; ambiguous timeouts are reported, not retried; LLM binding and persona are not exported.
 15. Latent: `saveQuietly()` on `AvatarTemplate` skips the LLM-binding check (no caller does it today).
+16. Found by the smoke, unrelated to the extraction and pre-existing on `develop`: `php artisan db:seed` on a
+    fresh database failed (`organizations.public_id` NOT NULL) because `DatabaseSeeder` muted model events.
+    Fixed on its own branch `feature/fix-database-seeder-public-id` (api `042bd60`, pushed, reviewed and
+    approved, full api suite and PHPStan green), to be merged into `develop` separately. The review notes
+    that every model event now fires during seeding; the full-seed test passes.
 
 ## Commits
 
@@ -193,7 +229,7 @@ BEAI side:
 **wrapper**: `dd79d38` (findings, design), `f161e48` (adapter SDD), `72a0eb4` (version catalog), plus the
 close-out commit carrying this file, the adapter apply-progress and the docs updates.
 
-**hr-avatar** (112, local only, HEAD `6ae74f6`): repository and SDD (5), SDK (9), service slices 1–40 (44),
+**hr-avatar** (112, HEAD `6ae74f6`): repository and SDD (5), SDK (9), service slices 1–40 (44),
 security and review fix units SF-1..SF-41 (54). Full list: `git -C hr-avatar log --oneline`; per-slice mapping in
 `hr-avatar/openspec/changes/hr-avatar-engine/tasks.md` and `apply-progress.md`, rulings in `reconciliation.md`.
 
@@ -208,7 +244,13 @@ verified with `git ls-remote` against the local HEAD:
 | frontend (`micio86dev/frontend`) | `feature/extract-avatar-service` | `887a002` (first push `6281241`) |
 | backoffice (`micio86dev/backoffice`) | `feature/extract-avatar-service` | `887b249` (first push `b74b1cf`) |
 | wrapper | `feature/extract-avatar-service` | the commit that pins the three above |
-| hr-avatar | — | not pushed: no remote exists yet |
+| hr-avatar (`micio86dev/hr-avatar`, public, created 2026-10-20 at the owner's request after a gitleaks scan of the whole branch history: 37 hits, all fake test/doc fixtures) | `feature/extract-avatar-service` (the only branch) | `6ae74f6` |
 
-CI does not run on `feature/*` pushes in any of these repositories (workflows trigger on `develop`, `main`,
-`release/**`, `hotfix/**`), and Railway deploys only from `main`. No pull request was opened.
+CI does not run on `feature/*` pushes in the wrapper, `api`, `frontend` or `backoffice` (workflows trigger on
+`develop`, `main`, `release/**`, `hotfix/**`), and Railway deploys only from `main`. In `hr-avatar` the
+`service` and `sdk` workflows DO run on this branch push: they are test-only (no deploy step), and their
+result is recorded below. No pull request was opened.
+
+Observed after the first push of the new `hr-avatar` repository: GitHub registered 0 workflows and started no
+run (Actions is enabled; both workflow files are on the branch). The first later push will register them.
+The same gates were run locally on `6ae74f6` (see criteria 1, 4 and 5), all exit 0.
